@@ -332,6 +332,15 @@ class Level1Scene extends Phaser.Scene {
         };
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         
+        // Cheat code: B key to jump to boss fight (for testing)
+        this.bossKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+        this.bossKey.on('down', () => {
+            if (!this.isBossFight && !this.boss) {
+                console.log('Cheat code activated: Jumping to boss fight!');
+                this.skipToBossFight();
+            }
+        });
+        
         // Mobile controls
         this.isFiring = false;
         this.autoFire = false;
@@ -1471,15 +1480,13 @@ class Level1Scene extends Phaser.Scene {
         // Clean up off-screen bullets
         this.bullets.children.each((bullet) => {
             if (bullet.active && bullet.y < -20) {
-                bullet.setActive(false);
-                bullet.setVisible(false);
+                this.disableBulletPhysics(bullet);
             }
         });
         
         this.enemyBullets.children.each((bullet) => {
             if (bullet.active && (bullet.y > this.cameraHeight + 20 || bullet.y < -20 || bullet.x < -20 || bullet.x > this.cameraWidth + 20)) {
-                bullet.setActive(false);
-                bullet.setVisible(false);
+                this.disableBulletPhysics(bullet);
             }
         });
         
@@ -1540,6 +1547,28 @@ class Level1Scene extends Phaser.Scene {
         this.time.delayedCall(500, () => {
             particles.destroy();
         });
+    }
+    
+    skipToBossFight() {
+        // Clear all enemies, bullets, and power-ups
+        this.enemies.clear(true, true);
+        this.enemyBullets.clear(true, true);
+        this.powerUps.clear(true, true);
+        this.escapePods.clear(true, true);
+        
+        // Stop any wave spawning
+        if (this.waveSpawnEvent) {
+            this.waveSpawnEvent.remove();
+        }
+        
+        // Reset player to full health
+        this.playerStats.health = this.playerStats.maxHealth;
+        this.playerStats.shields = this.playerStats.maxShields;
+        this.updateHUD();
+        
+        // Jump to boss fight
+        this.currentWave = 5;
+        this.startBossFight();
     }
     
     startBossFight() {
