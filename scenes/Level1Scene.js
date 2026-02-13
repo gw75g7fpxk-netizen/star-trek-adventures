@@ -29,6 +29,10 @@ const ENEMY_VISIBLE_THRESHOLD = 10; // Y position where enemy is considered visi
 // Sound interval for charging sound during pod rescue (in milliseconds)
 const CHARGING_SOUND_INTERVAL = 500;
 
+// Cheat code constants for testing
+const CHEAT_INVINCIBILITY_DURATION = 60000; // 60 seconds in milliseconds
+const CHEAT_FIRE_RATE = 100; // Milliseconds between shots
+
 // Escape pod spawn position (above screen top)
 const ESCAPE_POD_SPAWN_Y = -20;
 
@@ -1488,6 +1492,8 @@ class Level1Scene extends Phaser.Scene {
     
     cleanupOffScreen() {
         // Clean up off-screen bullets
+        // Use disableBulletPhysics to properly disable physics bodies, preventing
+        // recycled bullets from causing unintended collisions
         this.bullets.children.each((bullet) => {
             if (bullet.active && bullet.y < -20) {
                 this.disableBulletPhysics(bullet);
@@ -1575,9 +1581,9 @@ class Level1Scene extends Phaser.Scene {
         this.playerStats.health = this.playerStats.maxHealth;
         this.playerStats.shields = this.playerStats.maxShields;
         
-        // Give player temporary invincibility for boss fight testing (60 seconds) and rapid fire
-        this.invincibleUntil = this.time.now + 60000;
-        this.playerStats.fireRate = 100; // Super fast fire rate for testing
+        // Give player temporary invincibility for boss fight testing
+        this.invincibleUntil = this.time.now + CHEAT_INVINCIBILITY_DURATION;
+        this.playerStats.fireRate = CHEAT_FIRE_RATE;
         
         this.updateHUD();
         
