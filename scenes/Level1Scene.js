@@ -60,6 +60,9 @@ class Level1Scene extends Phaser.Scene {
         // Create HUD
         this.createHUD();
         
+        // Setup sound effects
+        this.setupSounds();
+        
         // Setup weapon system
         this.lastFired = 0;
         this.bullets = this.physics.add.group({
@@ -214,7 +217,34 @@ class Level1Scene extends Phaser.Scene {
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement
         
+        // Add thrust particle emitter to player ship
+        this.createThrustParticles();
+        
         console.log(`Level1Scene: USS Defiant created at (${startX}, ${startY})`);
+    }
+    
+    createThrustParticles() {
+        // Create a small texture for thrust particles
+        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        graphics.fillStyle(0x00FFFF, 1);
+        graphics.fillCircle(2, 2, 2);
+        graphics.generateTexture('thrust-particle', 4, 4);
+        graphics.destroy();
+        
+        // Create thrust particle emitter
+        this.thrustEmitter = this.add.particles(0, 0, 'thrust-particle', {
+            speed: 50,
+            angle: { min: 80, max: 100 },
+            scale: { start: 0.8, end: 0 },
+            alpha: { start: 0.8, end: 0 },
+            lifespan: 200,
+            blendMode: 'ADD',
+            frequency: 30,
+            follow: this.player,
+            followOffset: { x: 0, y: 20 }
+        });
+        
+        this.thrustEmitter.start();
     }
 
     setupControls() {
@@ -350,10 +380,27 @@ class Level1Scene extends Phaser.Scene {
     }
 
     createHUD() {
-        // Health bar background
+        // Star Trek inspired HUD styling
+        const hudStyle = {
+            fontSize: '14px',
+            color: '#00FFFF', // LCARS cyan
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        };
+        
+        const titleStyle = {
+            fontSize: '16px',
+            color: '#FF9900', // LCARS orange
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        };
+        
+        // Health bar background with LCARS style
         const healthBarBg = this.add.graphics();
         healthBarBg.fillStyle(0x333333, 1);
         healthBarBg.fillRect(10, 10, 204, 24);
+        healthBarBg.lineStyle(2, 0x00FFFF, 1);
+        healthBarBg.strokeRect(10, 10, 204, 24);
         healthBarBg.setScrollFactor(0);
         healthBarBg.setDepth(999);
         
@@ -363,65 +410,130 @@ class Level1Scene extends Phaser.Scene {
         this.healthBar.setDepth(999);
         this.updateHealthBar();
         
-        // Health text
-        this.healthText = this.add.text(10, 40, `Health: ${this.playerStats.health}/${this.playerStats.maxHealth}`, {
-            fontSize: '14px',
-            color: '#FFFFFF',
-            fontFamily: 'Arial'
-        });
+        // Health text with LCARS styling
+        this.healthText = this.add.text(10, 40, `HULL: ${this.playerStats.health}/${this.playerStats.maxHealth}`, hudStyle);
         this.healthText.setScrollFactor(0);
         this.healthText.setDepth(999);
         
-        // Shields text
-        this.shieldsText = this.add.text(10, 58, `Shields: ${this.playerStats.shields}/${this.playerStats.maxShields}`, {
-            fontSize: '14px',
-            color: '#00FFFF',
-            fontFamily: 'Arial'
-        });
+        // Shields text with LCARS styling
+        this.shieldsText = this.add.text(10, 58, `SHIELDS: ${this.playerStats.shields}/${this.playerStats.maxShields}`, hudStyle);
         this.shieldsText.setScrollFactor(0);
         this.shieldsText.setDepth(999);
         
-        // Score text (top right)
-        this.scoreText = this.add.text(this.cameraWidth - 10, 10, `Score: ${this.score}`, {
-            fontSize: '18px',
-            color: '#FFFF00',
-            fontFamily: 'Arial'
-        });
+        // Score text (top right) with LCARS styling
+        this.scoreText = this.add.text(this.cameraWidth - 10, 10, `SCORE: ${this.score}`, titleStyle);
         this.scoreText.setOrigin(1, 0);
         this.scoreText.setScrollFactor(0);
         this.scoreText.setDepth(999);
         
-        // Wave text
-        this.waveText = this.add.text(this.cameraWidth - 10, 35, `Wave: ${this.currentWave}`, {
-            fontSize: '16px',
-            color: '#FFFFFF',
-            fontFamily: 'Arial'
-        });
+        // Wave text with LCARS styling
+        this.waveText = this.add.text(this.cameraWidth - 10, 35, `WAVE: ${this.currentWave}`, hudStyle);
         this.waveText.setOrigin(1, 0);
         this.waveText.setScrollFactor(0);
         this.waveText.setDepth(999);
         
-        // Multiplier text
-        this.multiplierText = this.add.text(this.cameraWidth - 10, 58, `Multiplier: x${this.scoreMultiplier.toFixed(1)}`, {
-            fontSize: '14px',
-            color: '#00FF00',
-            fontFamily: 'Arial'
-        });
+        // Multiplier text with LCARS styling
+        this.multiplierText = this.add.text(this.cameraWidth - 10, 58, `MULTIPLIER: x${this.scoreMultiplier.toFixed(1)}`, hudStyle);
         this.multiplierText.setOrigin(1, 0);
         this.multiplierText.setScrollFactor(0);
         this.multiplierText.setDepth(999);
         
-        // Pods rescued text
-        this.podsText = this.add.text(this.cameraWidth - 10, 78, `Pods Rescued: ${this.podsRescued}`, {
-            fontSize: '14px',
-            color: '#00FFFF',
-            fontFamily: 'Arial'
-        });
+        // Pods rescued text with LCARS styling
+        this.podsText = this.add.text(this.cameraWidth - 10, 78, `PODS: ${this.podsRescued}`, hudStyle);
         this.podsText.setOrigin(1, 0);
         this.podsText.setScrollFactor(0);
         this.podsText.setDepth(999);
         
+        // High score text with LCARS styling
+        const highScore = this.getHighScore();
+        const highScoreStyle = {
+            fontSize: '12px',
+            color: '#FFD700',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        };
+        this.highScoreText = this.add.text(this.cameraWidth - 10, 98, `HIGH: ${highScore}`, highScoreStyle);
+        this.highScoreText.setOrigin(1, 0);
+        this.highScoreText.setScrollFactor(0);
+        this.highScoreText.setDepth(999);
+        
         console.log('Level1Scene: HUD created');
+    }
+
+    setupSounds() {
+        // Create simple procedural sound effects using Phaser's audio system
+        // These are lightweight and don't require external audio files
+        
+        this.sounds = {
+            enabled: true // Can be toggled by user
+        };
+        
+        console.log('Level1Scene: Sound system initialized');
+    }
+
+    playSound(type) {
+        if (!this.sounds.enabled) return;
+        
+        // Generate and play simple beep sounds using Web Audio API
+        // This is a lightweight approach that works cross-platform
+        const audioContext = this.sound.context;
+        if (!audioContext) return;
+        
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Configure sound based on type
+        switch (type) {
+            case 'phaser':
+                // Phaser fire sound - high frequency sweep
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+                break;
+            case 'explosion':
+                // Explosion sound - noise burst
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(100, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+                break;
+            case 'rescue':
+                // Rescue success - ascending tones
+                oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+                break;
+            case 'boss':
+                // Boss alert - low ominous tone
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(80, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+                break;
+            case 'powerup':
+                // Power-up collection - bright chirp
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.15);
+                break;
+        }
     }
 
     updateHealthBar() {
@@ -517,18 +629,21 @@ class Level1Scene extends Phaser.Scene {
             bullet.setVisible(true);
             bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
             
+            // Play phaser fire sound
+            this.playSound('phaser');
+            
             // Haptic feedback on fire
             this.triggerHaptic('light');
         }
     }
 
     updateHUD() {
-        this.healthText.setText(`Health: ${this.playerStats.health}/${this.playerStats.maxHealth}`);
-        this.shieldsText.setText(`Shields: ${this.playerStats.shields}/${this.playerStats.maxShields}`);
-        this.scoreText.setText(`Score: ${this.score}`);
-        this.waveText.setText(`Wave: ${this.currentWave}`);
-        this.multiplierText.setText(`Multiplier: x${this.scoreMultiplier.toFixed(1)}`);
-        this.podsText.setText(`Pods Rescued: ${this.podsRescued}`);
+        this.healthText.setText(`HULL: ${this.playerStats.health}/${this.playerStats.maxHealth}`);
+        this.shieldsText.setText(`SHIELDS: ${this.playerStats.shields}/${this.playerStats.maxShields}`);
+        this.scoreText.setText(`SCORE: ${this.score}`);
+        this.waveText.setText(`WAVE: ${this.currentWave}`);
+        this.multiplierText.setText(`MULTIPLIER: x${this.scoreMultiplier.toFixed(1)}`);
+        this.podsText.setText(`PODS: ${this.podsRescued}`);
         this.updateHealthBar();
     }
 
@@ -593,6 +708,9 @@ class Level1Scene extends Phaser.Scene {
         // Add score
         this.addScore(enemy.points);
         this.enemiesKilled++;
+        
+        // Play explosion sound
+        this.playSound('explosion');
         
         // Spawn explosion
         this.createExplosion(enemy.x, enemy.y);
@@ -662,6 +780,9 @@ class Level1Scene extends Phaser.Scene {
             this.addScore(PodConfig.points);
             this.scoreMultiplier = Math.min(5.0, this.scoreMultiplier + 0.2);
             
+            // Play rescue success sound
+            this.playSound('rescue');
+            
             // Haptic feedback on rescue
             this.triggerHaptic('medium');
             
@@ -676,6 +797,9 @@ class Level1Scene extends Phaser.Scene {
     collectPowerUp(player, powerUp) {
         this.applyPowerUp(powerUp.powerUpType);
         this.addScore(powerUp.points);
+        
+        // Play power-up collection sound
+        this.playSound('powerup');
         
         powerUp.setActive(false);
         powerUp.setVisible(false);
@@ -733,8 +857,45 @@ class Level1Scene extends Phaser.Scene {
         console.log(`Power-up applied: ${config.name}`);
     }
     
+    
+    getHighScore() {
+        try {
+            const saved = localStorage.getItem('starTrekAdventuresHighScore');
+            return saved ? parseInt(saved, 10) : 0;
+        } catch (e) {
+            console.warn('localStorage not available:', e);
+            return 0;
+        }
+    }
+    
+    saveHighScore() {
+        try {
+            const currentHigh = this.getHighScore();
+            if (this.score > currentHigh) {
+                localStorage.setItem('starTrekAdventuresHighScore', this.score.toString());
+                console.log('New high score:', this.score);
+                return true;
+            }
+        } catch (e) {
+            console.warn('Could not save high score:', e);
+        }
+        return false;
+    }
+    
+    updateHighScoreDisplay() {
+        if (this.highScoreText) {
+            const highScore = this.getHighScore();
+            this.highScoreText.setText(`HIGH: ${highScore}`);
+        }
+    }
+    
     addScore(points) {
         this.score += Math.floor(points * this.scoreMultiplier);
+        // Check if we beat the high score
+        if (this.score > this.getHighScore()) {
+            this.saveHighScore();
+            this.updateHighScoreDisplay();
+        }
     }
     
     startNextWave() {
@@ -1062,11 +1223,38 @@ class Level1Scene extends Phaser.Scene {
                 explosion.destroy();
             }
         });
+        
+        // Add particle effect for explosion
+        this.createExplosionParticles(x, y);
+    }
+    
+    createExplosionParticles(x, y) {
+        // Create particle emitter for explosion effect
+        const particles = this.add.particles(x, y, 'explosion', {
+            speed: { min: 50, max: 150 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.5, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 400,
+            blendMode: 'ADD',
+            quantity: 10,
+            emitting: false
+        });
+        
+        particles.explode(10);
+        
+        // Clean up particles after animation
+        this.time.delayedCall(500, () => {
+            particles.destroy();
+        });
     }
     
     startBossFight() {
         this.isBossFight = true;
         console.log('Boss fight starting!');
+        
+        // Play boss alert sound
+        this.playSound('boss');
         
         // Spawn boss
         const x = this.cameraWidth / 2;
