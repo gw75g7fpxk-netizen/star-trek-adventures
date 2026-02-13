@@ -891,9 +891,8 @@ class Level1Scene extends Phaser.Scene {
     
     addScore(points) {
         this.score += Math.floor(points * this.scoreMultiplier);
-        // Check if we beat the high score
+        // Update high score display if we beat it (but don't save yet to reduce I/O)
         if (this.score > this.getHighScore()) {
-            this.saveHighScore();
             this.updateHighScoreDisplay();
         }
     }
@@ -1540,6 +1539,9 @@ class Level1Scene extends Phaser.Scene {
         if (this.waveTimer) this.waveTimer.remove();
         if (this.podTimer) this.podTimer.remove();
         
+        // Save high score before transitioning
+        this.saveHighScore();
+        
         // Transition to victory scene
         this.scene.start('VictoryScene', {
             score: this.score,
@@ -1555,6 +1557,9 @@ class Level1Scene extends Phaser.Scene {
         // Stop all timers
         if (this.waveTimer) this.waveTimer.remove();
         if (this.podTimer) this.podTimer.remove();
+        
+        // Save high score before transitioning
+        this.saveHighScore();
         
         // Transition to game over scene
         this.scene.start('GameOverScene', {
