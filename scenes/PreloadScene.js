@@ -19,7 +19,7 @@ class PreloadScene extends Phaser.Scene {
         this.load.on('progress', (value) => {
             this.progressBar.clear();
             this.progressBar.fillStyle(0x00FFFF, 1);
-            this.progressBar.fillRect(250, 280, 300 * value, 30);
+            this.progressBar.fillRect(this.progressBarX, this.progressBarY, this.progressBarWidth * value, this.progressBarHeight);
         });
         
         this.load.on('complete', () => {
@@ -30,10 +30,39 @@ class PreloadScene extends Phaser.Scene {
     create() {
         console.log('PreloadScene: Assets ready, starting Level 1...');
         
+        // Initialize audio context early to reduce sound delay later
+        this.initializeAudioContext();
+        
         // Small delay for effect
         this.time.delayedCall(this.SCENE_TRANSITION_DELAY, () => {
             this.scene.start('Level1Scene');
         });
+    }
+    
+    initializeAudioContext() {
+        // Try to resume audio context early during preload
+        // This helps reduce sound delay when the game starts
+        if (this.sound && this.sound.context) {
+            if (this.sound.context.state === 'suspended') {
+                // Set up user interaction listeners to resume audio context
+                const resumeAudio = () => {
+                    this.sound.context.resume().then(() => {
+                        console.log('PreloadScene: Audio context resumed early');
+                    });
+                    // Remove listeners after first interaction
+                    this.input.off('pointerdown', resumeAudio);
+                    if (this.input.keyboard) {
+                        this.input.keyboard.off('keydown', resumeAudio);
+                    }
+                };
+                
+                // Listen for first user interaction
+                this.input.on('pointerdown', resumeAudio);
+                if (this.input.keyboard) {
+                    this.input.keyboard.on('keydown', resumeAudio);
+                }
+            }
+        }
     }
 
     createLoadingUI() {
@@ -56,13 +85,21 @@ class PreloadScene extends Phaser.Scene {
         });
         this.loadingText.setOrigin(0.5);
         
+        // Progress bar dimensions (centered on screen)
+        const barWidth = 300;
+        const barHeight = 30;
+        this.progressBarX = (width - barWidth) / 2;
+        this.progressBarY = height / 2;
+        
         // Progress bar background
         const progressBarBg = this.add.graphics();
         progressBarBg.fillStyle(0x222222, 1);
-        progressBarBg.fillRect(250, 280, 300, 30);
+        progressBarBg.fillRect(this.progressBarX, this.progressBarY, barWidth, barHeight);
         
         // Progress bar
         this.progressBar = this.add.graphics();
+        this.progressBarWidth = barWidth;
+        this.progressBarHeight = barHeight;
     }
 
     loadPlaceholderAssets() {

@@ -6,7 +6,9 @@ const SOUND_CONFIG = {
     explosion: { startFreq: 100, endFreq: 50, duration: 0.3, gain: 0.2 },
     rescue: { startFreq: 400, endFreq: 800, duration: 0.2, gain: 0.15 },
     boss: { freq: 80, duration: 0.5, gain: 0.2 },
-    powerup: { startFreq: 600, endFreq: 1200, duration: 0.15, gain: 0.15 }
+    powerup: { startFreq: 600, endFreq: 1200, duration: 0.15, gain: 0.15 },
+    hit: { startFreq: 300, endFreq: 150, duration: 0.08, gain: 0.12 },
+    charging: { startFreq: 200, endFreq: 600, duration: 0.5, gain: 0.08 }
 };
 
 // Invincibility durations (in milliseconds)
@@ -86,6 +88,8 @@ class Level1Scene extends Phaser.Scene {
         this.activePowerUps = [];
         this.podRescueTracking = new Map();
         this.invincibleUntil = 0; // Timestamp for invincibility after taking damage
+        this.lastShieldRecharge = 0; // Timestamp for last shield recharge
+        this.shieldRechargeRate = 30000; // 30 seconds in milliseconds
         
         // Store camera dimensions for responsive layout
         this.updateCameraDimensions();
@@ -621,6 +625,25 @@ class Level1Scene extends Phaser.Scene {
                 oscillator.start(time);
                 oscillator.stop(time + config.duration);
                 break;
+            case 'hit':
+                // Short impact sound for enemy hits
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(config.startFreq, time);
+                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
+                break;
+            case 'charging':
+                // Charging sound that rises in pitch
+                oscillator.frequency.setValueAtTime(config.startFreq, time);
+                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
+                break;
         }
     }
 
@@ -643,6 +666,9 @@ class Level1Scene extends Phaser.Scene {
         // Scroll background (infinite vertical scrolling)
         this.starsLayer.tilePositionY -= 0.5; // Slow movement
         this.nebulaLayer.tilePositionY -= 1.5; // Faster movement for parallax
+        
+        // Handle shield regeneration
+        this.handleShieldRegeneration(time);
         
         // Handle player movement
         this.handlePlayerMovement();
@@ -697,6 +723,17 @@ class Level1Scene extends Phaser.Scene {
         
         // Apply velocity
         this.player.setVelocity(velocityX, velocityY);
+    }
+    
+    handleShieldRegeneration(time) {
+        // Regenerate 1 shield point every 30 seconds
+        if (this.playerStats.shields < this.playerStats.maxShields) {
+            if (time > this.lastShieldRecharge + this.shieldRechargeRate) {
+                this.playerStats.shields++;
+                this.lastShieldRecharge = time;
+                console.log('Shield recharged! Current shields:', this.playerStats.shields);
+            }
+        }
     }
 
     handleShooting(time) {
@@ -802,6 +839,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Set invincibility after taking damage
         enemy.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
+        
+        // Play hit sound when enemy is damaged
+        this.playSound('hit');
         
         if (enemy.health <= 0) {
             this.destroyEnemy(enemy);
@@ -1095,7 +1135,7 @@ class Level1Scene extends Phaser.Scene {
     
     spawnEscapePod() {
         const x = Phaser.Math.Between(50, this.cameraWidth - 50);
-        const y = Phaser.Math.Between(50, 200); // Spawn in upper area
+        const y = -20; // Spawn from top of screen
         
         const pod = this.escapePods.get(x, y, 'escape-pod');
         
@@ -1271,13 +1311,23 @@ class Level1Scene extends Phaser.Scene {
                     indicator.setDepth(500);
                     this.podRescueTracking.set(pod, {
                         startTime: this.time.now,
-                        indicator: indicator
+                        indicator: indicator,
+                        lastChargingSound: 0
                     });
                 }
                 
                 const tracking = this.podRescueTracking.get(pod);
                 const elapsed = this.time.now - tracking.startTime;
                 const progress = Math.min(elapsed / this.rescueTime, 1.0);
+                
+                // Play charging sound periodically while rescuing
+                if (progress > 0 && progress < 1.0) {
+                    // Play charging sound every 500ms
+                    if (this.time.now - tracking.lastChargingSound > 500) {
+                        this.playSound('charging');
+                        tracking.lastChargingSound = this.time.now;
+                    }
+                }
                 
                 // Draw progress indicator (green circle that fills up)
                 tracking.indicator.clear();
