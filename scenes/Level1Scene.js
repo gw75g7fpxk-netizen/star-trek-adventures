@@ -39,7 +39,7 @@ class Level1Scene extends Phaser.Scene {
         // Escape pod rescue tracking
         this.podRescueTracking = new Map(); // Map of pod -> { startTime, indicator }
         this.rescueDistance = 80; // Distance to hover near pod
-        this.rescueTime = 5000; // 5 seconds to rescue
+        this.rescueTime = 4000; // 4 seconds to rescue
         
         // Mobile UI safe area offset (accounts for browser chrome)
         this.safeAreaOffset = 120; // pixels from bottom edge
@@ -79,6 +79,7 @@ class Level1Scene extends Phaser.Scene {
         this.isBossFight = false;
         this.activePowerUps = [];
         this.podRescueTracking = new Map();
+        this.invincibleUntil = 0; // Timestamp for invincibility after taking damage
         
         // Store camera dimensions for responsive layout
         this.updateCameraDimensions();
@@ -730,6 +731,11 @@ class Level1Scene extends Phaser.Scene {
 
     // Method for taking damage (to be used when enemies are implemented)
     takeDamage(amount) {
+        // Check invincibility (prevents multiple hits in rapid succession)
+        if (this.time.now < this.invincibleUntil) {
+            return; // Still invincible, ignore damage
+        }
+        
         // Haptic feedback on damage
         this.triggerHaptic('medium');
         
@@ -743,6 +749,9 @@ class Level1Scene extends Phaser.Scene {
         } else {
             this.playerStats.health -= amount;
         }
+        
+        // Set invincibility for 500ms after taking damage
+        this.invincibleUntil = this.time.now + 500;
         
         if (this.playerStats.health <= 0) {
             this.playerStats.health = 0;
@@ -1247,14 +1256,14 @@ class Level1Scene extends Phaser.Scene {
                 
                 // Draw progress indicator (green circle that fills up)
                 tracking.indicator.clear();
-                tracking.indicator.lineStyle(4, 0x00FF00, 1);
-                tracking.indicator.strokeCircle(pod.x, pod.y, 30);
+                tracking.indicator.lineStyle(3, 0x00FF00, 1);
+                tracking.indicator.strokeCircle(pod.x, pod.y, 25);
                 
                 // Draw filled arc showing progress
                 if (progress > 0) {
                     tracking.indicator.fillStyle(0x00FF00, 0.3);
                     tracking.indicator.beginPath();
-                    tracking.indicator.slice(pod.x, pod.y, 30, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2, false);
+                    tracking.indicator.slice(pod.x, pod.y, 25, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2, false);
                     tracking.indicator.closePath();
                     tracking.indicator.fillPath();
                 }

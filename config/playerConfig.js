@@ -8,7 +8,7 @@ const PlayerConfig = {
     shields: 3, // 3 hits at 1 damage each
     maxShields: 3,
     speed: 200,
-    fireRate: 200, // milliseconds between shots
+    fireRate: 250, // milliseconds between shots (reduced fire rate)
     
     // Weapon Configuration
     bulletSpeed: 400, // pixels per second (upward)
