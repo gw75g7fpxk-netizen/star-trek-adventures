@@ -2,6 +2,8 @@
 class PreloadScene extends Phaser.Scene {
     constructor() {
         super({ key: 'PreloadScene' });
+        // Scene transition delay in milliseconds
+        this.SCENE_TRANSITION_DELAY = 500;
     }
 
     preload() {
@@ -29,7 +31,7 @@ class PreloadScene extends Phaser.Scene {
         console.log('PreloadScene: Assets ready, starting Level 1...');
         
         // Small delay for effect
-        this.time.delayedCall(500, () => {
+        this.time.delayedCall(this.SCENE_TRANSITION_DELAY, () => {
             this.scene.start('Level1Scene');
         });
     }

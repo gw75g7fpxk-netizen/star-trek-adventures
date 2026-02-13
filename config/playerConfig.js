@@ -10,7 +10,11 @@ const PlayerConfig = {
     speed: 200,
     fireRate: 200, // milliseconds between shots
     
+    // Weapon Configuration
+    bulletSpeed: 400, // pixels per second (upward)
+    
     // Starting position (will be calculated relative to screen size)
     startX: 0.5, // 50% of screen width
     startY: 0.85  // 85% of screen height (near bottom)
 };
+

@@ -255,7 +255,7 @@ class Level1Scene extends Phaser.Scene {
         if (bullet) {
             bullet.setActive(true);
             bullet.setVisible(true);
-            bullet.body.setVelocity(0, -400);
+            bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
         }
     }
 
