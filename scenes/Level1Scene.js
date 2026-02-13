@@ -1689,7 +1689,7 @@ class Level1Scene extends Phaser.Scene {
             ease: 'Power2'
         });
         
-        // Add collision
+        // Add collision - but boss should only be hittable in phase 3
         this.physics.add.overlap(this.bullets, this.boss, this.hitBoss, null, this);
         this.physics.add.overlap(this.player, this.boss, this.playerHitByBoss, null, this);
         
@@ -1888,6 +1888,11 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitBoss(bullet, boss) {
+        // Check if bullet is already inactive (already processed by another collision handler)
+        if (!bullet.active) {
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (boss.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
@@ -1911,6 +1916,11 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitBossGenerator(bullet, generator) {
+        // Check if bullet is already inactive (already processed by another collision handler)
+        if (!bullet.active) {
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (generator.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
@@ -1944,9 +1954,21 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitBossTurret(bullet, turret) {
+        // Check if bullet is already inactive (already processed by another collision handler)
+        if (!bullet.active) {
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (turret.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
+        }
+        
+        // Only allow damage to turrets if in phase 2 or later (generators must be destroyed first)
+        if (this.boss.phase < 2) {
+            // Disable bullet but don't damage turret
+            this.disableBulletPhysics(bullet);
+            return;
         }
         
         // Disable bullet using helper function
