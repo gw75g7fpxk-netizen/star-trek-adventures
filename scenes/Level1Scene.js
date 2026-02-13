@@ -20,6 +20,9 @@ const INVINCIBILITY_DURATION = {
 // Sound interval for charging sound during pod rescue (in milliseconds)
 const CHARGING_SOUND_INTERVAL = 500;
 
+// Escape pod spawn position (above screen top)
+const ESCAPE_POD_SPAWN_Y = -20;
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -732,7 +735,7 @@ class Level1Scene extends Phaser.Scene {
     }
     
     handleShieldRegeneration(time) {
-        // Regenerate 1 shield point every 30 seconds
+        // Regenerate 1 shield point based on shieldRechargeRate (default: every 30 seconds)
         if (this.playerStats.shields < this.playerStats.maxShields) {
             if (time > this.lastShieldRecharge + this.shieldRechargeRate) {
                 this.playerStats.shields++;
@@ -1141,7 +1144,7 @@ class Level1Scene extends Phaser.Scene {
     
     spawnEscapePod() {
         const x = Phaser.Math.Between(50, this.cameraWidth - 50);
-        const y = -20; // Spawn from top of screen
+        const y = ESCAPE_POD_SPAWN_Y; // Spawn from top of screen
         
         const pod = this.escapePods.get(x, y, 'escape-pod');
         
