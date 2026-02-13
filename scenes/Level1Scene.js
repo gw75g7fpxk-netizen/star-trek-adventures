@@ -761,6 +761,10 @@ class Level1Scene extends Phaser.Scene {
         if (bullet) {
             bullet.setActive(true);
             bullet.setVisible(true);
+            // Re-enable physics body in case it was disabled after collision
+            if (bullet.body) {
+                bullet.body.enable = true;
+            }
             bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
             
             // Play phaser fire sound
@@ -841,8 +845,12 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
+        // Disable bullet immediately to prevent multiple hits
         bullet.setActive(false);
         bullet.setVisible(false);
+        if (bullet.body) {
+            bullet.body.enable = false;
+        }
         
         enemy.health -= 10; // Bullet damage
         
@@ -1136,6 +1144,10 @@ class Level1Scene extends Phaser.Scene {
             enemy.invincibleUntil = 0; // Initialize invincibility timer
             enemy.movementPattern = config.movementPattern;
             enemy.patternOffset = Math.random() * Math.PI * 2; // Random phase for patterns
+            enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
+            
+            // Disable physics body initially - will be enabled when enemy enters screen
+            enemy.body.enable = false;
             
             // Set velocity
             enemy.body.setVelocity(0, config.speed);
@@ -1190,6 +1202,12 @@ class Level1Scene extends Phaser.Scene {
     updateEnemies(time) {
         this.enemies.children.each((enemy) => {
             if (!enemy.active) return;
+            
+            // Enable physics body once enemy enters screen (y >= 0)
+            if (!enemy.hasEnteredScreen && enemy.y >= 0) {
+                enemy.hasEnteredScreen = true;
+                enemy.body.enable = true;
+            }
             
             // Update movement pattern
             this.updateEnemyMovement(enemy);
@@ -1512,6 +1530,8 @@ class Level1Scene extends Phaser.Scene {
         this.boss = this.physics.add.sprite(x, y, 'boss');
         this.boss.setActive(true);
         this.boss.setVisible(true);
+        // Ensure boss is rendered behind its components (generators/turrets)
+        this.boss.setDepth(0);
         
         // Initialize boss stats
         this.boss.phase = 0;
@@ -1562,6 +1582,7 @@ class Level1Scene extends Phaser.Scene {
                 'enemy-cruiser'
             );
             generator.setScale(0.5);
+            generator.setDepth(1); // Render above boss
             generator.health = EnemyConfig.boss.phases[0].generatorHealth;
             generator.invincibleUntil = 0; // Initialize invincibility timer
             generator.isBossComponent = true;
@@ -1588,6 +1609,7 @@ class Level1Scene extends Phaser.Scene {
                 'enemy-fighter'
             );
             turret.setScale(0.7);
+            turret.setDepth(1); // Render above boss
             turret.health = EnemyConfig.boss.phases[1].turretHealth;
             turret.invincibleUntil = 0; // Initialize invincibility timer
             turret.isBossComponent = true;
@@ -1698,8 +1720,12 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
+        // Disable bullet immediately to prevent multiple hits
         bullet.setActive(false);
         bullet.setVisible(false);
+        if (bullet.body) {
+            bullet.body.enable = false;
+        }
         
         // Only damage in phase 3 (core exposed)
         if (boss.phase === 3) {
@@ -1721,8 +1747,12 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
+        // Disable bullet immediately to prevent multiple hits
         bullet.setActive(false);
         bullet.setVisible(false);
+        if (bullet.body) {
+            bullet.body.enable = false;
+        }
         
         generator.health -= 10;
         
@@ -1754,8 +1784,12 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
+        // Disable bullet immediately to prevent multiple hits
         bullet.setActive(false);
         bullet.setVisible(false);
+        if (bullet.body) {
+            bullet.body.enable = false;
+        }
         
         turret.health -= 10;
         
@@ -1791,11 +1825,24 @@ class Level1Scene extends Phaser.Scene {
         // Mark boss as defeated to stop updates
         this.isBossFight = false;
         
+        // Immediately disable boss to prevent post-defeat collisions
+        if (this.boss) {
+            this.boss.setActive(false);
+            this.boss.setVisible(false);
+            // Disable physics body immediately to prevent collisions
+            if (this.boss.body) {
+                this.boss.body.enable = false;
+            }
+        }
+        
         // Massive explosion
         for (let i = 0; i < 10; i++) {
             this.time.delayedCall(i * 200, () => {
-                const x = this.boss.x + Phaser.Math.Between(-100, 100);
-                const y = this.boss.y + Phaser.Math.Between(-100, 100);
+                // Store boss position before it's destroyed
+                const bossX = this.boss ? this.boss.x : this.cameraWidth / 2;
+                const bossY = this.boss ? this.boss.y : 150;
+                const x = bossX + Phaser.Math.Between(-100, 100);
+                const y = bossY + Phaser.Math.Between(-100, 100);
                 this.createExplosion(x, y);
             });
         }
@@ -1803,11 +1850,9 @@ class Level1Scene extends Phaser.Scene {
         // Award points
         this.addScore(EnemyConfig.boss.points);
         
-        // Remove boss
+        // Destroy boss and transition to victory after explosions
         this.time.delayedCall(2000, () => {
             if (this.boss) {
-                this.boss.setActive(false);
-                this.boss.setVisible(false);
                 this.boss.destroy();
             }
             this.victory();
