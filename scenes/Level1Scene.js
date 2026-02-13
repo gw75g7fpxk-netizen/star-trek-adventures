@@ -40,6 +40,9 @@ class Level1Scene extends Phaser.Scene {
         this.podRescueTracking = new Map(); // Map of pod -> { startTime, indicator }
         this.rescueDistance = 80; // Distance to hover near pod
         this.rescueTime = 5000; // 5 seconds to rescue
+        
+        // Mobile UI safe area offset (accounts for browser chrome)
+        this.safeAreaOffset = 120; // pixels from bottom edge
     }
     
     // Haptic feedback stub - works on supported devices
@@ -130,9 +133,8 @@ class Level1Scene extends Phaser.Scene {
     }
     
     getSafeAreaOffset() {
-        // Calculate safe area offset for mobile devices with browser chrome
-        // Use a larger offset (120px) to ensure controls are visible above browser controls
-        return 120;
+        // Return the safe area offset for mobile devices with browser chrome
+        return this.safeAreaOffset;
     }
     
     handleResize(gameSize) {
@@ -503,7 +505,12 @@ class Level1Scene extends Phaser.Scene {
         // Web Audio API requires user interaction to start
         // Listen for any user input to initialize the audio context
         const initAudio = () => {
-            if (!this.sounds.initialized && this.sound && this.sound.context) {
+            // Guard clause to prevent errors if sound manager is not available
+            if (!this.sound || !this.sound.context) {
+                return;
+            }
+            
+            if (!this.sounds.initialized) {
                 // Resume the audio context if it's suspended
                 if (this.sound.context.state === 'suspended') {
                     this.sound.context.resume().then(() => {
@@ -1226,7 +1233,9 @@ class Level1Scene extends Phaser.Scene {
                 // Draw filled arc showing progress
                 if (progress > 0) {
                     tracking.indicator.fillStyle(0x00FF00, 0.3);
+                    tracking.indicator.beginPath();
                     tracking.indicator.slice(pod.x, pod.y, 30, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2, false);
+                    tracking.indicator.closePath();
                     tracking.indicator.fillPath();
                 }
                 
