@@ -17,6 +17,15 @@ const INVINCIBILITY_DURATION = {
     enemy: 100    // Enemies get 100ms after taking damage
 };
 
+// Rendering depth constants
+const RENDER_DEPTH = {
+    BOSS: 0,        // Boss main body renders behind components
+    COMPONENT: 1    // Boss components (generators, turrets) render in front
+};
+
+// Enemy spawn and visibility constants
+const ENEMY_VISIBLE_THRESHOLD = 10; // Y position where enemy is considered visibly on screen
+
 // Sound interval for charging sound during pod rescue (in milliseconds)
 const CHARGING_SOUND_INTERVAL = 500;
 
@@ -759,8 +768,8 @@ class Level1Scene extends Phaser.Scene {
         const bullet = this.bullets.get(this.player.x, this.player.y - 20, 'bullet');
         
         if (bullet) {
-            bullet.setActive(true);
-            bullet.setVisible(true);
+            // Enable bullet physics using helper (handles active, visible, and body.enable)
+            this.enableBulletPhysics(bullet);
             bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
             
             // Play phaser fire sound
@@ -768,6 +777,24 @@ class Level1Scene extends Phaser.Scene {
             
             // Haptic feedback on fire
             this.triggerHaptic('light');
+        }
+    }
+
+    // Helper function to enable bullet physics body
+    enableBulletPhysics(bullet) {
+        bullet.setActive(true);
+        bullet.setVisible(true);
+        if (bullet.body) {
+            bullet.body.enable = true;
+        }
+    }
+
+    // Helper function to disable bullet physics body
+    disableBulletPhysics(bullet) {
+        bullet.setActive(false);
+        bullet.setVisible(false);
+        if (bullet.body) {
+            bullet.body.enable = false;
         }
     }
 
@@ -841,8 +868,8 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
-        bullet.setActive(false);
-        bullet.setVisible(false);
+        // Disable bullet using helper function
+        this.disableBulletPhysics(bullet);
         
         enemy.health -= 10; // Bullet damage
         
@@ -1136,9 +1163,11 @@ class Level1Scene extends Phaser.Scene {
             enemy.invincibleUntil = 0; // Initialize invincibility timer
             enemy.movementPattern = config.movementPattern;
             enemy.patternOffset = Math.random() * Math.PI * 2; // Random phase for patterns
+            enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
+            enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
-            // Set velocity
-            enemy.body.setVelocity(0, config.speed);
+            // Disable collision detection initially - will be enabled when enemy enters screen
+            enemy.body.checkCollision.none = true;
         }
     }
     
@@ -1190,6 +1219,17 @@ class Level1Scene extends Phaser.Scene {
     updateEnemies(time) {
         this.enemies.children.each((enemy) => {
             if (!enemy.active) return;
+            
+            // Enable collision once enemy is visibly on screen
+            // Enemies spawn at y=-50, threshold ensures sprite is clearly visible
+            if (!enemy.hasEnteredScreen && enemy.y >= ENEMY_VISIBLE_THRESHOLD) {
+                enemy.hasEnteredScreen = true;
+                enemy.body.checkCollision.none = false;
+                // Set velocity after enabling collision
+                if (enemy.initialSpeed) {
+                    enemy.body.setVelocity(0, enemy.initialSpeed);
+                }
+            }
             
             // Update movement pattern
             this.updateEnemyMovement(enemy);
@@ -1512,6 +1552,8 @@ class Level1Scene extends Phaser.Scene {
         this.boss = this.physics.add.sprite(x, y, 'boss');
         this.boss.setActive(true);
         this.boss.setVisible(true);
+        // Ensure boss is rendered behind its components (generators/turrets)
+        this.boss.setDepth(RENDER_DEPTH.BOSS);
         
         // Initialize boss stats
         this.boss.phase = 0;
@@ -1562,6 +1604,7 @@ class Level1Scene extends Phaser.Scene {
                 'enemy-cruiser'
             );
             generator.setScale(0.5);
+            generator.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
             generator.health = EnemyConfig.boss.phases[0].generatorHealth;
             generator.invincibleUntil = 0; // Initialize invincibility timer
             generator.isBossComponent = true;
@@ -1588,6 +1631,7 @@ class Level1Scene extends Phaser.Scene {
                 'enemy-fighter'
             );
             turret.setScale(0.7);
+            turret.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
             turret.health = EnemyConfig.boss.phases[1].turretHealth;
             turret.invincibleUntil = 0; // Initialize invincibility timer
             turret.isBossComponent = true;
@@ -1698,8 +1742,8 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
-        bullet.setActive(false);
-        bullet.setVisible(false);
+        // Disable bullet using helper function
+        this.disableBulletPhysics(bullet);
         
         // Only damage in phase 3 (core exposed)
         if (boss.phase === 3) {
@@ -1721,8 +1765,8 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
-        bullet.setActive(false);
-        bullet.setVisible(false);
+        // Disable bullet using helper function
+        this.disableBulletPhysics(bullet);
         
         generator.health -= 10;
         
@@ -1754,8 +1798,8 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
-        bullet.setActive(false);
-        bullet.setVisible(false);
+        // Disable bullet using helper function
+        this.disableBulletPhysics(bullet);
         
         turret.health -= 10;
         
@@ -1788,14 +1832,32 @@ class Level1Scene extends Phaser.Scene {
     defeatBoss() {
         console.log('Boss defeated!');
         
+        // Defensive check - should always exist but guard anyway
+        if (!this.boss) {
+            console.warn('defeatBoss called but boss does not exist');
+            return;
+        }
+        
         // Mark boss as defeated to stop updates
         this.isBossFight = false;
         
-        // Massive explosion
+        // Capture boss position for explosion effects
+        const bossX = this.boss.x;
+        const bossY = this.boss.y;
+        
+        // Disable physics body immediately to prevent post-defeat collisions
+        if (this.boss.body) {
+            this.boss.body.checkCollision.none = true;
+        }
+        
+        // Hide boss immediately but don't destroy yet (for proper cleanup)
+        this.boss.setVisible(false);
+        
+        // Massive explosion using captured position
         for (let i = 0; i < 10; i++) {
             this.time.delayedCall(i * 200, () => {
-                const x = this.boss.x + Phaser.Math.Between(-100, 100);
-                const y = this.boss.y + Phaser.Math.Between(-100, 100);
+                const x = bossX + Phaser.Math.Between(-100, 100);
+                const y = bossY + Phaser.Math.Between(-100, 100);
                 this.createExplosion(x, y);
             });
         }
@@ -1803,11 +1865,9 @@ class Level1Scene extends Phaser.Scene {
         // Award points
         this.addScore(EnemyConfig.boss.points);
         
-        // Remove boss
+        // Destroy boss and transition to victory after explosions
         this.time.delayedCall(2000, () => {
             if (this.boss) {
-                this.boss.setActive(false);
-                this.boss.setVisible(false);
                 this.boss.destroy();
             }
             this.victory();
