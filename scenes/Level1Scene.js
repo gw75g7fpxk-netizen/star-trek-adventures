@@ -1,4 +1,14 @@
 // Level 1 Scene - Main gameplay scene
+
+// Sound effect frequency constants for Web Audio API
+const SOUND_CONFIG = {
+    phaser: { startFreq: 800, endFreq: 200, duration: 0.1, gain: 0.1 },
+    explosion: { startFreq: 100, endFreq: 50, duration: 0.3, gain: 0.2 },
+    rescue: { startFreq: 400, endFreq: 800, duration: 0.2, gain: 0.15 },
+    boss: { freq: 80, duration: 0.5, gain: 0.2 },
+    powerup: { startFreq: 600, endFreq: 1200, duration: 0.15, gain: 0.15 }
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -485,53 +495,53 @@ class Level1Scene extends Phaser.Scene {
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
         
+        const config = SOUND_CONFIG[type];
+        if (!config) return;
+        
+        const time = audioContext.currentTime;
+        
         // Configure sound based on type
         switch (type) {
             case 'phaser':
-                // Phaser fire sound - high frequency sweep
-                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
-                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(config.startFreq, time);
+                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
                 break;
             case 'explosion':
-                // Explosion sound - noise burst
                 oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(100, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.3);
-                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.3);
+                oscillator.frequency.setValueAtTime(config.startFreq, time);
+                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
                 break;
             case 'rescue':
-                // Rescue success - ascending tones
-                oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
-                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.2);
+                oscillator.frequency.setValueAtTime(config.startFreq, time);
+                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
                 break;
             case 'boss':
-                // Boss alert - low ominous tone
                 oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(80, audioContext.currentTime);
-                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
+                oscillator.frequency.setValueAtTime(config.freq, time);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
                 break;
             case 'powerup':
-                // Power-up collection - bright chirp
-                oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.15);
-                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.15);
+                oscillator.frequency.setValueAtTime(config.startFreq, time);
+                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
                 break;
         }
     }
