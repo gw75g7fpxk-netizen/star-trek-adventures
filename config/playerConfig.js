@@ -3,10 +3,10 @@
 
 const PlayerConfig = {
     // USS Defiant Stats
-    health: 30, // 3 hits at 10 damage each
-    maxHealth: 30,
-    shields: 50, // 5 hits at 10 damage each
-    maxShields: 50,
+    health: 3, // 3 hits at 1 damage each
+    maxHealth: 3,
+    shields: 3, // 3 hits at 1 damage each
+    maxShields: 3,
     speed: 200,
     fireRate: 200, // milliseconds between shots
     

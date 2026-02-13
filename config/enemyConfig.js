@@ -4,11 +4,11 @@
 const EnemyConfig = {
     // Dominion Fighter - Small, fast attack ship
     fighter: {
-        health: 20,
+        health: 10,
         speed: 150,
         fireRate: 2000, // milliseconds between shots
         bulletSpeed: 300,
-        damage: 10,
+        damage: 1,
         points: 100,
         movementPattern: 'weaving', // 'straight', 'weaving', 'zigzag'
         size: { width: 30, height: 30 }
@@ -20,7 +20,7 @@ const EnemyConfig = {
         speed: 80,
         fireRate: 1500,
         bulletSpeed: 250,
-        damage: 20,
+        damage: 1,
         points: 250,
         movementPattern: 'straight',
         size: { width: 50, height: 50 }
@@ -32,7 +32,7 @@ const EnemyConfig = {
         speed: 40,
         fireRate: 1000,
         bulletSpeed: 200,
-        damage: 30,
+        damage: 1,
         points: 500,
         movementPattern: 'horizontal',
         size: { width: 80, height: 80 }
@@ -47,20 +47,20 @@ const EnemyConfig = {
                 name: 'shields',
                 health: 300,
                 generators: 4,
-                generatorHealth: 50,
+                generatorHealth: 200,
                 attacks: ['beam', 'missiles']
             },
             {
                 name: 'turrets',
                 health: 400,
                 turrets: 6,
-                turretHealth: 30,
+                turretHealth: 200,
                 attacks: ['rapid_fire', 'minions'],
                 minionSpawnChance: 0.3 // 30% chance per attack cycle
             },
             {
                 name: 'core',
-                health: 300,
+                health: 200,
                 attacks: ['beam', 'missiles', 'rapid_fire']
             }
         ],
