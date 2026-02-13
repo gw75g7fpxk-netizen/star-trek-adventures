@@ -9,6 +9,12 @@ const SOUND_CONFIG = {
     powerup: { startFreq: 600, endFreq: 1200, duration: 0.15, gain: 0.15 }
 };
 
+// Invincibility durations (in milliseconds)
+const INVINCIBILITY_DURATION = {
+    player: 500,  // Player gets 500ms after taking damage
+    enemy: 100    // Enemies get 100ms after taking damage
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -750,8 +756,8 @@ class Level1Scene extends Phaser.Scene {
             this.playerStats.health -= amount;
         }
         
-        // Set invincibility for 500ms after taking damage
-        this.invincibleUntil = this.time.now + 500;
+        // Set invincibility after taking damage
+        this.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.player;
         
         if (this.playerStats.health <= 0) {
             this.playerStats.health = 0;
@@ -785,7 +791,7 @@ class Level1Scene extends Phaser.Scene {
     
     hitEnemy(bullet, enemy) {
         // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < enemy.invincibleUntil) {
+        if (this.time.now < (enemy.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
         }
         
@@ -794,8 +800,8 @@ class Level1Scene extends Phaser.Scene {
         
         enemy.health -= 10; // Bullet damage
         
-        // Set invincibility for 100ms after taking damage
-        enemy.invincibleUntil = this.time.now + 100;
+        // Set invincibility after taking damage
+        enemy.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (enemy.health <= 0) {
             this.destroyEnemy(enemy);
@@ -1629,7 +1635,7 @@ class Level1Scene extends Phaser.Scene {
     
     hitBoss(bullet, boss) {
         // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < boss.invincibleUntil) {
+        if (this.time.now < (boss.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
         }
         
@@ -1641,8 +1647,8 @@ class Level1Scene extends Phaser.Scene {
             boss.health -= 10;
             boss.phaseHealth -= 10;
             
-            // Set invincibility for 100ms after taking damage
-            boss.invincibleUntil = this.time.now + 100;
+            // Set invincibility after taking damage
+            boss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
             
             if (boss.phaseHealth <= 0 || boss.health <= 0) {
                 this.defeatBoss();
@@ -1652,7 +1658,7 @@ class Level1Scene extends Phaser.Scene {
     
     hitBossGenerator(bullet, generator) {
         // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < generator.invincibleUntil) {
+        if (this.time.now < (generator.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
         }
         
@@ -1661,8 +1667,8 @@ class Level1Scene extends Phaser.Scene {
         
         generator.health -= 10;
         
-        // Set invincibility for 100ms after taking damage
-        generator.invincibleUntil = this.time.now + 100;
+        // Set invincibility after taking damage
+        generator.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (generator.health <= 0) {
             this.createExplosion(generator.x, generator.y);
@@ -1685,7 +1691,7 @@ class Level1Scene extends Phaser.Scene {
     
     hitBossTurret(bullet, turret) {
         // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < turret.invincibleUntil) {
+        if (this.time.now < (turret.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
         }
         
@@ -1694,8 +1700,8 @@ class Level1Scene extends Phaser.Scene {
         
         turret.health -= 10;
         
-        // Set invincibility for 100ms after taking damage
-        turret.invincibleUntil = this.time.now + 100;
+        // Set invincibility after taking damage
+        turret.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (turret.health <= 0) {
             this.createExplosion(turret.x, turret.y);
