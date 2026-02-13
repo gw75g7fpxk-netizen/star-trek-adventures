@@ -181,5 +181,6 @@ class PreloadScene extends Phaser.Scene {
         explosionGraphics.destroy();
         
         console.log('PreloadScene: Placeholder assets created');
+        // Note: Sound effects are generated at runtime in Level1Scene using Web Audio API
     }
 }

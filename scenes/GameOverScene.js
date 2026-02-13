@@ -15,42 +15,56 @@ class GameOverScene extends Phaser.Scene {
         const height = this.cameras.main.height;
         
         // Background
-        this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8);
+        this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
         
-        // Game Over title
-        const title = this.add.text(width / 2, height / 3, 'GAME OVER', {
+        // LCARS-style title
+        const title = this.add.text(width / 2, height / 3, 'MISSION FAILED', {
             fontSize: '64px',
             color: '#FF0000',
-            fontFamily: 'Arial',
+            fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
         });
         title.setOrigin(0.5);
         
-        // Stats
+        // Get high score
+        const highScore = this.getHighScore();
+        
+        // Stats with LCARS border
         const statsY = height / 2;
-        this.add.text(width / 2, statsY, `Final Score: ${this.finalScore}`, {
+        const statsPanel = this.add.graphics();
+        statsPanel.lineStyle(3, 0xFF0000, 1);
+        statsPanel.strokeRect(width / 2 - 220, statsY - 20, 440, 180);
+        
+        this.add.text(width / 2, statsY, `FINAL SCORE: ${this.finalScore}`, {
             fontSize: '24px',
-            color: '#FFFFFF',
-            fontFamily: 'Arial'
+            color: '#FFFF00',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        this.add.text(width / 2, statsY + 40, `Wave Reached: ${this.wave}`, {
-            fontSize: '24px',
-            color: '#FFFFFF',
-            fontFamily: 'Arial'
+        this.add.text(width / 2, statsY + 40, `HIGH SCORE: ${highScore}`, {
+            fontSize: '20px',
+            color: '#FFD700',
+            fontFamily: 'Courier New, monospace'
         }).setOrigin(0.5);
         
-        this.add.text(width / 2, statsY + 80, `Pods Rescued: ${this.podsRescued}`, {
-            fontSize: '24px',
+        this.add.text(width / 2, statsY + 80, `WAVE REACHED: ${this.wave}`, {
+            fontSize: '20px',
+            color: '#FFFFFF',
+            fontFamily: 'Courier New, monospace'
+        }).setOrigin(0.5);
+        
+        this.add.text(width / 2, statsY + 120, `PODS RESCUED: ${this.podsRescued}`, {
+            fontSize: '20px',
             color: '#00FFFF',
-            fontFamily: 'Arial'
+            fontFamily: 'Courier New, monospace'
         }).setOrigin(0.5);
         
-        // Restart button
-        const restartButton = this.add.text(width / 2, height * 0.75, 'RESTART', {
+        // Restart button with LCARS styling
+        const restartButton = this.add.text(width / 2, height * 0.8, '[ RESTART MISSION ]', {
             fontSize: '32px',
             color: '#00FF00',
-            fontFamily: 'Arial',
+            fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
         });
         restartButton.setOrigin(0.5);
@@ -62,15 +76,26 @@ class GameOverScene extends Phaser.Scene {
         
         restartButton.on('pointerover', () => {
             restartButton.setColor('#00FFFF');
+            restartButton.setScale(1.1);
         });
         
         restartButton.on('pointerout', () => {
             restartButton.setColor('#00FF00');
+            restartButton.setScale(1.0);
         });
         
         // Keyboard restart
         this.input.keyboard.once('keydown-SPACE', () => {
             this.scene.start('Level1Scene');
         });
+    }
+    
+    getHighScore() {
+        try {
+            const saved = localStorage.getItem('starTrekAdventuresHighScore');
+            return saved ? parseInt(saved, 10) : 0;
+        } catch (e) {
+            return 0;
+        }
     }
 }
