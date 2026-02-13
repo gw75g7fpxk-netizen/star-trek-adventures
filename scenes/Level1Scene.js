@@ -3,14 +3,14 @@ class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
         
-        // Player stats
+        // Player stats - loaded from PlayerConfig for easy balancing
         this.playerStats = {
-            health: 100,
-            maxHealth: 100,
-            shields: 100,
-            maxShields: 100,
-            speed: 200,
-            fireRate: 200 // milliseconds between shots
+            health: PlayerConfig.health,
+            maxHealth: PlayerConfig.maxHealth,
+            shields: PlayerConfig.shields,
+            maxShields: PlayerConfig.maxShields,
+            speed: PlayerConfig.speed,
+            fireRate: PlayerConfig.fireRate
         };
         
         // Wave configuration
@@ -205,6 +205,14 @@ class Level1Scene extends Phaser.Scene {
         
         // Update HUD
         this.updateHUD();
+        
+        // Clean up off-screen bullets
+        this.bullets.children.each((bullet) => {
+            if (bullet.active && bullet.y < -20) {
+                bullet.setActive(false);
+                bullet.setVisible(false);
+            }
+        });
     }
 
     handlePlayerMovement() {
@@ -248,14 +256,6 @@ class Level1Scene extends Phaser.Scene {
             bullet.setActive(true);
             bullet.setVisible(true);
             bullet.body.setVelocity(0, -400);
-            
-            // Remove bullet when it goes off screen
-            this.time.delayedCall(2000, () => {
-                if (bullet.active) {
-                    bullet.setActive(false);
-                    bullet.setVisible(false);
-                }
-            });
         }
     }
 
