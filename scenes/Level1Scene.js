@@ -767,10 +767,8 @@ class Level1Scene extends Phaser.Scene {
         if (bullet) {
             bullet.setActive(true);
             bullet.setVisible(true);
-            // Re-enable physics body in case it was disabled after collision
-            if (bullet.body) {
-                bullet.body.enable = true;
-            }
+            // Re-enable bullet physics using helper
+            this.enableBulletPhysics(bullet);
             bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
             
             // Play phaser fire sound
@@ -778,6 +776,22 @@ class Level1Scene extends Phaser.Scene {
             
             // Haptic feedback on fire
             this.triggerHaptic('light');
+        }
+    }
+
+    // Helper function to enable bullet physics body
+    enableBulletPhysics(bullet) {
+        if (bullet.body) {
+            bullet.body.enable = true;
+        }
+    }
+
+    // Helper function to disable bullet physics body
+    disableBulletPhysics(bullet) {
+        bullet.setActive(false);
+        bullet.setVisible(false);
+        if (bullet.body) {
+            bullet.body.enable = false;
         }
     }
 
@@ -851,12 +865,8 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
-        // Disable bullet immediately to prevent multiple hits
-        bullet.setActive(false);
-        bullet.setVisible(false);
-        if (bullet.body) {
-            bullet.body.enable = false;
-        }
+        // Disable bullet using helper function
+        this.disableBulletPhysics(bullet);
         
         enemy.health -= 10; // Bullet damage
         
@@ -1153,8 +1163,8 @@ class Level1Scene extends Phaser.Scene {
             enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
-            // Disable physics body initially - will be enabled when enemy enters screen
-            enemy.body.enable = false;
+            // Disable collision detection initially - will be enabled when enemy enters screen
+            enemy.body.checkCollision.none = true;
         }
     }
     
@@ -1210,7 +1220,7 @@ class Level1Scene extends Phaser.Scene {
             // Enable physics body once enemy enters screen (y >= 0)
             if (!enemy.hasEnteredScreen && enemy.y >= 0) {
                 enemy.hasEnteredScreen = true;
-                enemy.body.enable = true;
+                enemy.body.checkCollision.none = false;
                 // Set velocity after enabling physics body
                 if (enemy.initialSpeed) {
                     enemy.body.setVelocity(0, enemy.initialSpeed);
@@ -1728,12 +1738,8 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
-        // Disable bullet immediately to prevent multiple hits
-        bullet.setActive(false);
-        bullet.setVisible(false);
-        if (bullet.body) {
-            bullet.body.enable = false;
-        }
+        // Disable bullet using helper function
+        this.disableBulletPhysics(bullet);
         
         // Only damage in phase 3 (core exposed)
         if (boss.phase === 3) {
@@ -1755,12 +1761,8 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
-        // Disable bullet immediately to prevent multiple hits
-        bullet.setActive(false);
-        bullet.setVisible(false);
-        if (bullet.body) {
-            bullet.body.enable = false;
-        }
+        // Disable bullet using helper function
+        this.disableBulletPhysics(bullet);
         
         generator.health -= 10;
         
@@ -1792,12 +1794,8 @@ class Level1Scene extends Phaser.Scene {
             return; // Still invincible, ignore damage
         }
         
-        // Disable bullet immediately to prevent multiple hits
-        bullet.setActive(false);
-        bullet.setVisible(false);
-        if (bullet.body) {
-            bullet.body.enable = false;
-        }
+        // Disable bullet using helper function
+        this.disableBulletPhysics(bullet);
         
         turret.health -= 10;
         
@@ -1833,18 +1831,18 @@ class Level1Scene extends Phaser.Scene {
         // Mark boss as defeated to stop updates
         this.isBossFight = false;
         
-        // Capture boss position before disabling it
+        // Capture boss position for explosion effects
         const bossX = this.boss ? this.boss.x : this.cameraWidth / 2;
         const bossY = this.boss ? this.boss.y : 150;
         
-        // Immediately disable boss to prevent post-defeat collisions
+        // Disable physics body immediately to prevent post-defeat collisions
+        if (this.boss && this.boss.body) {
+            this.boss.body.checkCollision.none = true;
+        }
+        
+        // Hide boss immediately but don't destroy yet (for explosion positioning)
         if (this.boss) {
-            this.boss.setActive(false);
             this.boss.setVisible(false);
-            // Disable physics body immediately to prevent collisions
-            if (this.boss.body) {
-                this.boss.body.enable = false;
-            }
         }
         
         // Massive explosion using captured position
