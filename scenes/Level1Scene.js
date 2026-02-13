@@ -23,6 +23,9 @@ const RENDER_DEPTH = {
     COMPONENT: 1    // Boss components (generators, turrets) render in front
 };
 
+// Enemy spawn and visibility constants
+const ENEMY_VISIBLE_THRESHOLD = 10; // Y position where enemy is considered visibly on screen
+
 // Sound interval for charging sound during pod rescue (in milliseconds)
 const CHARGING_SOUND_INTERVAL = 500;
 
@@ -1217,9 +1220,9 @@ class Level1Scene extends Phaser.Scene {
         this.enemies.children.each((enemy) => {
             if (!enemy.active) return;
             
-            // Enable collision once enemy is visibly on screen (y >= 10 ensures sprite is visible)
-            // Enemies spawn at y=-50, largest enemy is 80px, so y>=10 means they're clearly visible
-            if (!enemy.hasEnteredScreen && enemy.y >= 10) {
+            // Enable collision once enemy is visibly on screen
+            // Enemies spawn at y=-50, threshold ensures sprite is clearly visible
+            if (!enemy.hasEnteredScreen && enemy.y >= ENEMY_VISIBLE_THRESHOLD) {
                 enemy.hasEnteredScreen = true;
                 enemy.body.checkCollision.none = false;
                 // Set velocity after enabling collision
@@ -1832,19 +1835,17 @@ class Level1Scene extends Phaser.Scene {
         // Mark boss as defeated to stop updates
         this.isBossFight = false;
         
-        // Capture boss position for explosion effects
-        const bossX = this.boss ? this.boss.x : this.cameraWidth / 2;
-        const bossY = this.boss ? this.boss.y : 150;
+        // Capture boss position for explosion effects (assumes boss exists)
+        const bossX = this.boss.x;
+        const bossY = this.boss.y;
         
         // Disable physics body immediately to prevent post-defeat collisions
-        if (this.boss && this.boss.body) {
+        if (this.boss.body) {
             this.boss.body.checkCollision.none = true;
         }
         
-        // Hide boss immediately but don't destroy yet (for explosion positioning)
-        if (this.boss) {
-            this.boss.setVisible(false);
-        }
+        // Hide boss immediately but don't destroy yet (for proper cleanup)
+        this.boss.setVisible(false);
         
         // Massive explosion using captured position
         for (let i = 0; i < 10; i++) {
