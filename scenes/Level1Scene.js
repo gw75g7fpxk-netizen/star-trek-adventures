@@ -609,6 +609,13 @@ class Level1Scene extends Phaser.Scene {
     podHitByEnemy(enemy, pod) {
         pod.health--;
         
+        // Damage the enemy on collision
+        enemy.health -= 10;
+        
+        if (enemy.health <= 0) {
+            this.destroyEnemy(enemy);
+        }
+        
         if (pod.health <= 0) {
             this.destroyPod(pod);
         }
@@ -683,9 +690,19 @@ class Level1Scene extends Phaser.Scene {
                 this.activePowerUps.push({
                     type: type,
                     effect: config.effect,
-                    endTime: this.time.now + config.duration
+                    endTime: this.time.now + config.duration,
+                    multiplierAmount: config.amount
                 });
                 this.scoreMultiplier *= config.amount;
+                break;
+            case 'magnet':
+                this.activePowerUps.push({
+                    type: type,
+                    effect: config.effect,
+                    endTime: this.time.now + config.duration,
+                    radius: config.amount
+                });
+                // Tractor beam effect - attract power-ups and pods
                 break;
         }
         
@@ -854,15 +871,18 @@ class Level1Scene extends Phaser.Scene {
             // Target escape pods
             const nearestPod = this.findNearestPod(enemy);
             if (nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
-                // Shoot at pod
-                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y);
-                const bullet = this.enemyBullets.get(enemy.x, enemy.y, 'enemy-bullet');
-                
-                if (bullet) {
-                    bullet.setActive(true);
-                    bullet.setVisible(true);
-                    const speed = EnemyConfig[enemy.enemyType].bulletSpeed;
-                    bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                // Shoot at pod only if fire rate allows
+                if (time > enemy.lastFired + enemy.fireRate) {
+                    const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y);
+                    const bullet = this.enemyBullets.get(enemy.x, enemy.y, 'enemy-bullet');
+                    
+                    if (bullet) {
+                        bullet.setActive(true);
+                        bullet.setVisible(true);
+                        const speed = EnemyConfig[enemy.enemyType].bulletSpeed;
+                        bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                        enemy.lastFired = time;
+                    }
                 }
             }
         });
@@ -878,7 +898,8 @@ class Level1Scene extends Phaser.Scene {
             case 'weaving':
                 // Sine wave pattern
                 const weavingOffset = Math.sin(this.time.now / 500 + enemy.patternOffset) * 100;
-                enemy.x = enemy.x + (weavingOffset - enemy.lastWeavingOffset || 0);
+                const lastOffset = enemy.lastWeavingOffset ?? 0;
+                enemy.x = enemy.x + (weavingOffset - lastOffset);
                 enemy.lastWeavingOffset = weavingOffset;
                 break;
             case 'zigzag':
@@ -959,7 +980,7 @@ class Level1Scene extends Phaser.Scene {
                         this.playerStats.speed = powerUp.originalValue;
                         break;
                     case 'score_multiplier':
-                        this.scoreMultiplier /= PowerUpConfig.types.dilithium.amount;
+                        this.scoreMultiplier /= powerUp.multiplierAmount;
                         break;
                 }
                 return false;
@@ -1196,8 +1217,9 @@ class Level1Scene extends Phaser.Scene {
         }
         
         if (this.boss.phase === 2) {
-            // Spawn minions
-            if (Math.random() < 0.3) {
+            // Spawn minions based on config chance
+            const phase2Config = EnemyConfig.boss.phases[1];
+            if (Math.random() < phase2Config.minionSpawnChance) {
                 this.spawnEnemy({
                     enemyTypes: ['fighter'],
                     difficulty: 2

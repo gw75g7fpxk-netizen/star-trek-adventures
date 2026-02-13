@@ -55,7 +55,8 @@ const EnemyConfig = {
                 health: 400,
                 turrets: 6,
                 turretHealth: 30,
-                attacks: ['rapid_fire', 'minions']
+                attacks: ['rapid_fire', 'minions'],
+                minionSpawnChance: 0.3 // 30% chance per attack cycle
             },
             {
                 name: 'core',
