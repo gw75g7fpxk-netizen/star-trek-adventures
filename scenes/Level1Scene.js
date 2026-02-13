@@ -1689,9 +1689,14 @@ class Level1Scene extends Phaser.Scene {
             ease: 'Power2'
         });
         
-        // Add collision
+        // Add collision - but boss should only be hittable in phase 3
         this.physics.add.overlap(this.bullets, this.boss, this.hitBoss, null, this);
         this.physics.add.overlap(this.player, this.boss, this.playerHitByBoss, null, this);
+        
+        // Disable boss collision body initially - it will be enabled in phase 3
+        if (this.boss.body) {
+            this.boss.body.checkCollision.none = true;
+        }
         
         // Start Phase 1: Shield Generators
         this.time.delayedCall(3000, () => {
@@ -1781,6 +1786,11 @@ class Level1Scene extends Phaser.Scene {
         console.log('Boss Phase 3: Core Exposed');
         this.boss.phase = 3;
         this.boss.phaseHealth = EnemyConfig.boss.phases[2].health;
+        
+        // Enable boss collision in phase 3 (core is now vulnerable)
+        if (this.boss.body) {
+            this.boss.body.checkCollision.none = false;
+        }
         
         // Boss becomes more aggressive
         this.boss.attackRate = 1000;
@@ -1912,9 +1922,6 @@ class Level1Scene extends Phaser.Scene {
             if (boss.phaseHealth <= 0 || boss.health <= 0) {
                 this.defeatBoss();
             }
-        } else {
-            // Disable bullet even if not in phase 3 (bullet should not pass through boss)
-            this.disableBulletPhysics(bullet);
         }
     }
     
@@ -1933,6 +1940,8 @@ class Level1Scene extends Phaser.Scene {
         this.disableBulletPhysics(bullet);
         
         generator.health -= 10;
+
+
         
         // Set invincibility after taking damage
         generator.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
@@ -1978,6 +1987,8 @@ class Level1Scene extends Phaser.Scene {
         this.disableBulletPhysics(bullet);
         
         turret.health -= 10;
+
+
         
         // Set invincibility after taking damage
         turret.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
