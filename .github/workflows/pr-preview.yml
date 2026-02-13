@@ -87,12 +87,16 @@ jobs:
       
       - name: Remove preview directory
         run: |
-          rm -rf pr-${{ github.event.pull_request.number }}
-          git config user.name github-actions[bot]
-          git config user.email github-actions[bot]@users.noreply.github.com
-          git add .
-          git diff --staged --quiet || git commit -m "Remove preview for PR #${{ github.event.pull_request.number }}"
-          git push
+          if [ -d "pr-${{ github.event.pull_request.number }}" ]; then
+            rm -rf pr-${{ github.event.pull_request.number }}
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git add .
+            git commit -m "Remove preview for PR #${{ github.event.pull_request.number }}" || echo "No changes to commit"
+            git push origin gh-pages || echo "Push failed, possibly no changes"
+          else
+            echo "Preview directory pr-${{ github.event.pull_request.number }} does not exist, skipping cleanup"
+          fi
       
       - name: Comment on PR
         uses: actions/github-script@v7
