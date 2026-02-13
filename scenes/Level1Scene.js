@@ -35,6 +35,14 @@ class Level1Scene extends Phaser.Scene {
         
         // Power-up effects
         this.activePowerUps = [];
+        
+        // Escape pod rescue tracking
+        this.podRescueTracking = new Map(); // Map of pod -> { startTime, indicator }
+        this.rescueDistance = 80; // Distance to hover near pod
+        this.rescueTime = 5000; // 5 seconds to rescue
+        
+        // Mobile UI safe area offset (accounts for browser chrome)
+        this.safeAreaOffset = 120; // pixels from bottom edge
     }
     
     // Haptic feedback stub - works on supported devices
@@ -124,6 +132,11 @@ class Level1Scene extends Phaser.Scene {
         }
     }
     
+    getSafeAreaOffset() {
+        // Return the safe area offset for mobile devices with browser chrome
+        return this.safeAreaOffset;
+    }
+    
     handleResize(gameSize) {
         this.updateCameraDimensions();
         
@@ -142,20 +155,21 @@ class Level1Scene extends Phaser.Scene {
             this.physics.world.setBounds(0, 0, this.cameraWidth, this.cameraHeight);
         }
         
-        // Update mobile controls position
+        // Update mobile controls position with safe area offset
+        const safeAreaOffset = this.getSafeAreaOffset();
         if (this.joystickBase) {
-            this.joystickBase.y = this.cameraHeight - 80;
+            this.joystickBase.y = this.cameraHeight - safeAreaOffset;
         }
         if (this.joystickStick) {
-            this.joystickStick.y = this.cameraHeight - 80;
+            this.joystickStick.y = this.cameraHeight - safeAreaOffset;
         }
         if (this.fireButton) {
             this.fireButton.x = this.cameraWidth - 80;
-            this.fireButton.y = this.cameraHeight - 80;
+            this.fireButton.y = this.cameraHeight - safeAreaOffset;
         }
         if (this.fireIcon) {
             this.fireIcon.x = this.cameraWidth - 80;
-            this.fireIcon.y = this.cameraHeight - 80;
+            this.fireIcon.y = this.cameraHeight - safeAreaOffset;
         }
         
         // Update joystick zone size
@@ -286,7 +300,8 @@ class Level1Scene extends Phaser.Scene {
     createVirtualJoystick() {
         const joystickRadius = 60;
         const joystickX = 80;
-        const joystickY = this.cameraHeight - 80;
+        const safeAreaOffset = this.getSafeAreaOffset();
+        const joystickY = this.cameraHeight - safeAreaOffset;
         
         // Joystick base (semi-transparent)
         this.joystickBase = this.add.circle(joystickX, joystickY, joystickRadius, 0x333333, 0.3);
@@ -341,7 +356,8 @@ class Level1Scene extends Phaser.Scene {
     createFireButton() {
         const buttonRadius = 50;
         const buttonX = this.cameraWidth - 80;
-        const buttonY = this.cameraHeight - 80;
+        const safeAreaOffset = this.getSafeAreaOffset();
+        const buttonY = this.cameraHeight - safeAreaOffset;
         
         // Fire button
         this.fireButton = this.add.circle(buttonX, buttonY, buttonRadius, 0xFF0000, 0.4);
@@ -475,19 +491,54 @@ class Level1Scene extends Phaser.Scene {
         // These are lightweight and don't require external audio files
         
         this.sounds = {
-            enabled: true // Can be toggled by user
+            enabled: true, // Can be toggled by user
+            initialized: false
         };
+        
+        // Initialize audio context on first user interaction
+        this.initializeAudioContext();
         
         console.log('Level1Scene: Sound system initialized');
     }
+    
+    initializeAudioContext() {
+        // Web Audio API requires user interaction to start
+        // Listen for any user input to initialize the audio context
+        const initAudio = () => {
+            // Guard clause to prevent errors if sound manager is not available
+            if (!this.sound || !this.sound.context) {
+                return;
+            }
+            
+            if (!this.sounds.initialized) {
+                // Resume the audio context if it's suspended
+                if (this.sound.context.state === 'suspended') {
+                    this.sound.context.resume().then(() => {
+                        console.log('Level1Scene: Audio context resumed');
+                        this.sounds.initialized = true;
+                    });
+                } else {
+                    this.sounds.initialized = true;
+                }
+                
+                // Remove the event listeners once initialized
+                this.input.off('pointerdown', initAudio);
+                this.input.keyboard.off('keydown', initAudio);
+            }
+        };
+        
+        // Listen for first user interaction
+        this.input.on('pointerdown', initAudio);
+        this.input.keyboard.on('keydown', initAudio);
+    }
 
     playSound(type) {
-        if (!this.sounds.enabled) return;
+        if (!this.sounds.enabled || !this.sounds.initialized) return;
         
         // Generate and play simple beep sounds using Web Audio API
         // This is a lightweight approach that works cross-platform
         const audioContext = this.sound.context;
-        if (!audioContext) return;
+        if (!audioContext || audioContext.state === 'suspended') return;
         
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
@@ -784,24 +835,8 @@ class Level1Scene extends Phaser.Scene {
     }
     
     rescuePod(player, pod) {
-        // Check if pod reached safe zone
-        if (pod.y >= this.cameraHeight * PodConfig.safeZoneY) {
-            this.podsRescued++;
-            this.addScore(PodConfig.points);
-            this.scoreMultiplier = Math.min(5.0, this.scoreMultiplier + 0.2);
-            
-            // Play rescue success sound
-            this.playSound('rescue');
-            
-            // Haptic feedback on rescue
-            this.triggerHaptic('medium');
-            
-            pod.setActive(false);
-            pod.setVisible(false);
-            pod.destroy();
-            
-            console.log('Pod rescued!');
-        }
+        // New hover-based rescue mechanic - removed instant rescue
+        // The update() method will handle the hover timer and rescue logic
     }
     
     collectPowerUp(player, powerUp) {
@@ -1154,11 +1189,103 @@ class Level1Scene extends Phaser.Scene {
         this.escapePods.children.each((pod) => {
             if (!pod.active) return;
             
-            // Check if reached safe zone
+            // Check if pod is off screen (don't count as rescue)
+            if (pod.y < -50 || pod.y > this.cameraHeight + 50 || pod.x < -50 || pod.x > this.cameraWidth + 50) {
+                // Pod went off screen - cancel any rescue in progress
+                if (this.podRescueTracking.has(pod)) {
+                    const tracking = this.podRescueTracking.get(pod);
+                    if (tracking.indicator) {
+                        tracking.indicator.destroy();
+                    }
+                    this.podRescueTracking.delete(pod);
+                }
+                return;
+            }
+            
+            // Calculate distance to player
+            const distance = Phaser.Math.Distance.Between(
+                this.player.x, this.player.y,
+                pod.x, pod.y
+            );
+            
+            // Check if player is hovering near the pod
+            if (distance <= this.rescueDistance) {
+                // Start or continue rescue timer
+                if (!this.podRescueTracking.has(pod)) {
+                    // Start new rescue attempt
+                    const indicator = this.add.graphics();
+                    indicator.setDepth(500);
+                    this.podRescueTracking.set(pod, {
+                        startTime: this.time.now,
+                        indicator: indicator
+                    });
+                }
+                
+                const tracking = this.podRescueTracking.get(pod);
+                const elapsed = this.time.now - tracking.startTime;
+                const progress = Math.min(elapsed / this.rescueTime, 1.0);
+                
+                // Draw progress indicator (green circle that fills up)
+                tracking.indicator.clear();
+                tracking.indicator.lineStyle(4, 0x00FF00, 1);
+                tracking.indicator.strokeCircle(pod.x, pod.y, 30);
+                
+                // Draw filled arc showing progress
+                if (progress > 0) {
+                    tracking.indicator.fillStyle(0x00FF00, 0.3);
+                    tracking.indicator.beginPath();
+                    tracking.indicator.slice(pod.x, pod.y, 30, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2, false);
+                    tracking.indicator.closePath();
+                    tracking.indicator.fillPath();
+                }
+                
+                // Check if rescue is complete
+                if (progress >= 1.0) {
+                    this.completePodRescue(pod);
+                }
+            } else {
+                // Player moved too far away - reset rescue timer
+                if (this.podRescueTracking.has(pod)) {
+                    const tracking = this.podRescueTracking.get(pod);
+                    if (tracking.indicator) {
+                        tracking.indicator.destroy();
+                    }
+                    this.podRescueTracking.delete(pod);
+                }
+            }
+            
+            // Check if reached safe zone (stop moving but don't auto-rescue)
             if (pod.y >= this.cameraHeight * PodConfig.safeZoneY) {
                 pod.body.setVelocity(0, 0); // Stop moving
             }
         });
+    }
+    
+    completePodRescue(pod) {
+        // Complete the rescue
+        this.podsRescued++;
+        this.addScore(PodConfig.points);
+        this.scoreMultiplier = Math.min(5.0, this.scoreMultiplier + 0.2);
+        
+        // Play rescue success sound
+        this.playSound('rescue');
+        
+        // Haptic feedback on rescue
+        this.triggerHaptic('medium');
+        
+        // Clean up tracking
+        const tracking = this.podRescueTracking.get(pod);
+        if (tracking && tracking.indicator) {
+            tracking.indicator.destroy();
+        }
+        this.podRescueTracking.delete(pod);
+        
+        // Remove the pod
+        pod.setActive(false);
+        pod.setVisible(false);
+        pod.destroy();
+        
+        console.log('Pod rescued!');
     }
     
     updatePowerUps(time) {
