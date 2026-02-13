@@ -1668,6 +1668,9 @@ class Level1Scene extends Phaser.Scene {
     defeatBoss() {
         console.log('Boss defeated!');
         
+        // Mark boss as defeated to stop updates
+        this.isBossFight = false;
+        
         // Massive explosion
         for (let i = 0; i < 10; i++) {
             this.time.delayedCall(i * 200, () => {
@@ -1682,9 +1685,11 @@ class Level1Scene extends Phaser.Scene {
         
         // Remove boss
         this.time.delayedCall(2000, () => {
-            this.boss.setActive(false);
-            this.boss.setVisible(false);
-            this.boss.destroy();
+            if (this.boss) {
+                this.boss.setActive(false);
+                this.boss.setVisible(false);
+                this.boss.destroy();
+            }
             this.victory();
         });
     }
