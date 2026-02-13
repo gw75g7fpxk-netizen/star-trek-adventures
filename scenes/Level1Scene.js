@@ -765,9 +765,7 @@ class Level1Scene extends Phaser.Scene {
         const bullet = this.bullets.get(this.player.x, this.player.y - 20, 'bullet');
         
         if (bullet) {
-            bullet.setActive(true);
-            bullet.setVisible(true);
-            // Re-enable bullet physics using helper
+            // Enable bullet physics using helper (handles active, visible, and body.enable)
             this.enableBulletPhysics(bullet);
             bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
             
@@ -781,6 +779,8 @@ class Level1Scene extends Phaser.Scene {
 
     // Helper function to enable bullet physics body
     enableBulletPhysics(bullet) {
+        bullet.setActive(true);
+        bullet.setVisible(true);
         if (bullet.body) {
             bullet.body.enable = true;
         }
@@ -1217,11 +1217,12 @@ class Level1Scene extends Phaser.Scene {
         this.enemies.children.each((enemy) => {
             if (!enemy.active) return;
             
-            // Enable physics body once enemy enters screen (y >= 0)
-            if (!enemy.hasEnteredScreen && enemy.y >= 0) {
+            // Enable collision once enemy is visibly on screen (y >= 10 ensures sprite is visible)
+            // Enemies spawn at y=-50, largest enemy is 80px, so y>=10 means they're clearly visible
+            if (!enemy.hasEnteredScreen && enemy.y >= 10) {
                 enemy.hasEnteredScreen = true;
                 enemy.body.checkCollision.none = false;
-                // Set velocity after enabling physics body
+                // Set velocity after enabling collision
                 if (enemy.initialSpeed) {
                     enemy.body.setVelocity(0, enemy.initialSpeed);
                 }
