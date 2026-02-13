@@ -17,6 +17,9 @@ const INVINCIBILITY_DURATION = {
     enemy: 100    // Enemies get 100ms after taking damage
 };
 
+// Sound interval for charging sound during pod rescue (in milliseconds)
+const CHARGING_SOUND_INTERVAL = 500;
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -149,6 +152,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Setup collisions
         this.setupCollisions();
+        
+        // Initialize shield recharge timer to current time
+        this.lastShieldRecharge = this.time.now;
         
         // Start first wave
         this.startNextWave();
@@ -1322,8 +1328,8 @@ class Level1Scene extends Phaser.Scene {
                 
                 // Play charging sound periodically while rescuing
                 if (progress > 0 && progress < 1.0) {
-                    // Play charging sound every 500ms
-                    if (this.time.now - tracking.lastChargingSound > 500) {
+                    // Play charging sound at regular intervals
+                    if (this.time.now - tracking.lastChargingSound > CHARGING_SOUND_INTERVAL) {
                         this.playSound('charging');
                         tracking.lastChargingSound = this.time.now;
                     }
