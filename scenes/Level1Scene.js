@@ -275,6 +275,7 @@ class Level1Scene extends Phaser.Scene {
         
         this.nebulaLayer = this.add.tileSprite(this.cameraWidth / 2, this.cameraHeight / 2, this.cameraWidth, this.cameraHeight, 'nebula-layer');
         this.nebulaLayer.setAlpha(0.5);
+        this.nebulaLayer.setDepth(-1); // Render behind game objects
         
         console.log('Level1Scene: Scrolling background created with parallax layers');
     }
@@ -1165,6 +1166,9 @@ class Level1Scene extends Phaser.Scene {
             enemy.patternOffset = Math.random() * Math.PI * 2; // Random phase for patterns
             enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
+            
+            // Set initial velocity so enemy moves onto screen
+            enemy.body.setVelocity(0, config.speed);
             
             // Disable collision detection initially - will be enabled when enemy enters screen
             enemy.body.checkCollision.none = true;
