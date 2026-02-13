@@ -17,6 +17,12 @@ const INVINCIBILITY_DURATION = {
     enemy: 100    // Enemies get 100ms after taking damage
 };
 
+// Rendering depth constants
+const RENDER_DEPTH = {
+    BOSS: 0,        // Boss main body renders behind components
+    COMPONENT: 1    // Boss components (generators, turrets) render in front
+};
+
 // Sound interval for charging sound during pod rescue (in milliseconds)
 const CHARGING_SOUND_INTERVAL = 500;
 
@@ -1145,9 +1151,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.movementPattern = config.movementPattern;
             enemy.patternOffset = Math.random() * Math.PI * 2; // Random phase for patterns
             enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
-            
-            // Set velocity first
-            enemy.body.setVelocity(0, config.speed);
+            enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Disable physics body initially - will be enabled when enemy enters screen
             enemy.body.enable = false;
@@ -1207,6 +1211,10 @@ class Level1Scene extends Phaser.Scene {
             if (!enemy.hasEnteredScreen && enemy.y >= 0) {
                 enemy.hasEnteredScreen = true;
                 enemy.body.enable = true;
+                // Set velocity after enabling physics body
+                if (enemy.initialSpeed) {
+                    enemy.body.setVelocity(0, enemy.initialSpeed);
+                }
             }
             
             // Update movement pattern
@@ -1531,7 +1539,7 @@ class Level1Scene extends Phaser.Scene {
         this.boss.setActive(true);
         this.boss.setVisible(true);
         // Ensure boss is rendered behind its components (generators/turrets)
-        this.boss.setDepth(0);
+        this.boss.setDepth(RENDER_DEPTH.BOSS);
         
         // Initialize boss stats
         this.boss.phase = 0;
@@ -1582,7 +1590,7 @@ class Level1Scene extends Phaser.Scene {
                 'enemy-cruiser'
             );
             generator.setScale(0.5);
-            generator.setDepth(1); // Render above boss
+            generator.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
             generator.health = EnemyConfig.boss.phases[0].generatorHealth;
             generator.invincibleUntil = 0; // Initialize invincibility timer
             generator.isBossComponent = true;
@@ -1609,7 +1617,7 @@ class Level1Scene extends Phaser.Scene {
                 'enemy-fighter'
             );
             turret.setScale(0.7);
-            turret.setDepth(1); // Render above boss
+            turret.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
             turret.health = EnemyConfig.boss.phases[1].turretHealth;
             turret.invincibleUntil = 0; // Initialize invincibility timer
             turret.isBossComponent = true;
