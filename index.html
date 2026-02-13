@@ -1,5 +1,37 @@
-<html>
-    <body>
-        <p>Hello World</p>
-    </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Trek Adventures</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Phaser 3.80.1 (local) -->
+    <script src="phaser.min.js"></script>
+    
+    <!-- Game Configuration -->
+    <script src="config/gameConfig.js"></script>
+    <script src="config/playerConfig.js"></script>
+    <script src="config/waveConfig.js"></script>
+    
+    <!-- Game Scenes -->
+    <script src="scenes/BootScene.js"></script>
+    <script src="scenes/PreloadScene.js"></script>
+    <script src="scenes/Level1Scene.js"></script>
+    
+    <!-- Main Game Entry Point -->
+    <script src="main.js"></script>
+</body>
 </html>
