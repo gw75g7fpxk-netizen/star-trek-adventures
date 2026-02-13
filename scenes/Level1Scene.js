@@ -1146,11 +1146,11 @@ class Level1Scene extends Phaser.Scene {
             enemy.patternOffset = Math.random() * Math.PI * 2; // Random phase for patterns
             enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
             
+            // Set velocity first
+            enemy.body.setVelocity(0, config.speed);
+            
             // Disable physics body initially - will be enabled when enemy enters screen
             enemy.body.enable = false;
-            
-            // Set velocity
-            enemy.body.setVelocity(0, config.speed);
         }
     }
     
@@ -1825,6 +1825,10 @@ class Level1Scene extends Phaser.Scene {
         // Mark boss as defeated to stop updates
         this.isBossFight = false;
         
+        // Capture boss position before disabling it
+        const bossX = this.boss ? this.boss.x : this.cameraWidth / 2;
+        const bossY = this.boss ? this.boss.y : 150;
+        
         // Immediately disable boss to prevent post-defeat collisions
         if (this.boss) {
             this.boss.setActive(false);
@@ -1835,12 +1839,9 @@ class Level1Scene extends Phaser.Scene {
             }
         }
         
-        // Massive explosion
+        // Massive explosion using captured position
         for (let i = 0; i < 10; i++) {
             this.time.delayedCall(i * 200, () => {
-                // Store boss position before it's destroyed
-                const bossX = this.boss ? this.boss.x : this.cameraWidth / 2;
-                const bossY = this.boss ? this.boss.y : 150;
                 const x = bossX + Phaser.Math.Between(-100, 100);
                 const y = bossY + Phaser.Math.Between(-100, 100);
                 this.createExplosion(x, y);
