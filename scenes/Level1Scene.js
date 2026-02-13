@@ -60,6 +60,26 @@ class Level1Scene extends Phaser.Scene {
     create() {
         console.log('Level1Scene: Starting Level 1...');
         
+        // Reset game state on scene restart
+        this.playerStats = {
+            health: PlayerConfig.health,
+            maxHealth: PlayerConfig.maxHealth,
+            shields: PlayerConfig.shields,
+            maxShields: PlayerConfig.maxShields,
+            speed: PlayerConfig.speed,
+            fireRate: PlayerConfig.fireRate
+        };
+        this.currentWave = 0;
+        this.score = 0;
+        this.scoreMultiplier = 1.0;
+        this.enemiesSpawned = 0;
+        this.enemiesKilled = 0;
+        this.podsRescued = 0;
+        this.isWaveActive = false;
+        this.isBossFight = false;
+        this.activePowerUps = [];
+        this.podRescueTracking = new Map();
+        
         // Store camera dimensions for responsive layout
         this.updateCameraDimensions();
         
@@ -790,11 +810,11 @@ class Level1Scene extends Phaser.Scene {
         bullet.setActive(false);
         bullet.setVisible(false);
         
-        this.takeDamage(10);
+        this.takeDamage(1);
     }
     
     playerHitByEnemy(player, enemy) {
-        this.takeDamage(20);
+        this.takeDamage(1);
         this.destroyEnemy(enemy);
     }
     
@@ -1091,15 +1111,15 @@ class Level1Scene extends Phaser.Scene {
             // Update movement pattern
             this.updateEnemyMovement(enemy);
             
-            // Enemy shooting
-            if (time > enemy.lastFired + enemy.fireRate) {
+            // Enemy shooting - only if on screen
+            if (enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
                 this.enemyFire(enemy);
                 enemy.lastFired = time;
             }
             
-            // Target escape pods
+            // Target escape pods - only if on screen
             const nearestPod = this.findNearestPod(enemy);
-            if (nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
+            if (enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
                 // Shoot at pod only if fire rate allows
                 if (time > enemy.lastFired + enemy.fireRate) {
                     const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y);
@@ -1448,7 +1468,7 @@ class Level1Scene extends Phaser.Scene {
                 'enemy-cruiser'
             );
             generator.setScale(0.5);
-            generator.health = 50;
+            generator.health = EnemyConfig.boss.phases[0].generatorHealth;
             generator.isBossComponent = true;
             this.boss.generators.push(generator);
             
@@ -1473,7 +1493,7 @@ class Level1Scene extends Phaser.Scene {
                 'enemy-fighter'
             );
             turret.setScale(0.7);
-            turret.health = 30;
+            turret.health = EnemyConfig.boss.phases[1].turretHealth;
             turret.isBossComponent = true;
             turret.angle = angle;
             this.boss.turrets.push(turret);
@@ -1642,11 +1662,14 @@ class Level1Scene extends Phaser.Scene {
     }
     
     playerHitByBoss(player, boss) {
-        this.takeDamage(50);
+        this.takeDamage(1);
     }
     
     defeatBoss() {
         console.log('Boss defeated!');
+        
+        // Mark boss as defeated to stop updates
+        this.isBossFight = false;
         
         // Massive explosion
         for (let i = 0; i < 10; i++) {
@@ -1662,9 +1685,11 @@ class Level1Scene extends Phaser.Scene {
         
         // Remove boss
         this.time.delayedCall(2000, () => {
-            this.boss.setActive(false);
-            this.boss.setVisible(false);
-            this.boss.destroy();
+            if (this.boss) {
+                this.boss.setActive(false);
+                this.boss.setVisible(false);
+                this.boss.destroy();
+            }
             this.victory();
         });
     }
