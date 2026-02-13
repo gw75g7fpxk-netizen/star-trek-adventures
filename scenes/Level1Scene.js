@@ -1575,9 +1575,9 @@ class Level1Scene extends Phaser.Scene {
         this.playerStats.health = this.playerStats.maxHealth;
         this.playerStats.shields = this.playerStats.maxShields;
         
-        // Give player temporary invincibility for boss fight testing (10 seconds)
-        this.invincibleUntil = this.time.now + 10000;
-        console.log('Player has 10 seconds of invincibility for testing');
+        // Give player temporary invincibility for boss fight testing (60 seconds) and rapid fire
+        this.invincibleUntil = this.time.now + 60000;
+        this.playerStats.fireRate = 100; // Super fast fire rate for testing
         
         this.updateHUD();
         
@@ -1589,12 +1589,10 @@ class Level1Scene extends Phaser.Scene {
     startBossFight() {
         // Prevent duplicate boss spawns
         if (this.isBossFight && this.boss) {
-            console.log('Boss fight already in progress, ignoring duplicate call');
             return;
         }
         
         this.isBossFight = true;
-        console.log('Boss fight starting!');
         
         // Play boss alert sound
         this.playSound('boss');
@@ -1675,8 +1673,6 @@ class Level1Scene extends Phaser.Scene {
                 }
                 
                 this.boss.generators.push(generator);
-                
-                console.log(`Generator created at (${generator.x}, ${generator.y}) with health ${generator.health}, physics body enabled: ${generator.body && generator.body.enable}`);
             }
         });
     }
@@ -1715,8 +1711,6 @@ class Level1Scene extends Phaser.Scene {
                 }
                 
                 this.boss.turrets.push(turret);
-                
-                console.log(`Turret ${i} created at angle ${angle} with health ${turret.health}`);
             }
         }
     }
@@ -1856,13 +1850,11 @@ class Level1Scene extends Phaser.Scene {
         this.disableBulletPhysics(bullet);
         
         generator.health -= 10;
-        console.log(`Generator hit! Health: ${generator.health}/200`);
         
         // Set invincibility after taking damage
         generator.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (generator.health <= 0) {
-            console.log('Generator destroyed!');
             this.createExplosion(generator.x, generator.y);
             generator.setActive(false);
             generator.setVisible(false);
@@ -1891,13 +1883,11 @@ class Level1Scene extends Phaser.Scene {
         this.disableBulletPhysics(bullet);
         
         turret.health -= 10;
-        console.log(`Turret hit! Health: ${turret.health}/200`);
         
         // Set invincibility after taking damage
         turret.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (turret.health <= 0) {
-            console.log('Turret destroyed!');
             this.createExplosion(turret.x, turret.y);
             turret.setActive(false);
             turret.setVisible(false);
