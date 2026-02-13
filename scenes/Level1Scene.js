@@ -144,6 +144,28 @@ class Level1Scene extends Phaser.Scene {
             this.fireIcon.x = this.cameraWidth - 80;
             this.fireIcon.y = this.cameraHeight - 80;
         }
+        
+        // Update joystick zone size
+        if (this.joystickZone) {
+            this.joystickZone.setSize(this.cameraWidth / 2, this.cameraHeight);
+        }
+        
+        // Update HUD text positions (right-aligned elements)
+        if (this.scoreText) {
+            this.scoreText.x = this.cameraWidth - 10;
+        }
+        if (this.waveText) {
+            this.waveText.x = this.cameraWidth - 10;
+        }
+        if (this.multiplierText) {
+            this.multiplierText.x = this.cameraWidth - 10;
+        }
+        if (this.podsText) {
+            this.podsText.x = this.cameraWidth - 10;
+        }
+        if (this.highScoreText) {
+            this.highScoreText.x = this.cameraWidth - 10;
+        }
     }
 
     createScrollingBackground() {
@@ -182,15 +204,17 @@ class Level1Scene extends Phaser.Scene {
     }
 
     createPlayer() {
-        // Create player ship (USS Defiant)
-        this.player = this.physics.add.sprite(this.cameraWidth / 2, this.cameraHeight - 100, 'player-ship');
+        // Create player ship (USS Defiant) - use percentage-based positioning for mobile compatibility
+        const startX = this.cameraWidth * PlayerConfig.startX;
+        const startY = this.cameraHeight * PlayerConfig.startY;
+        this.player = this.physics.add.sprite(startX, startY, 'player-ship');
         this.player.setCollideWorldBounds(true);
         
         // Set player velocity limits
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement
         
-        console.log('Level1Scene: USS Defiant created');
+        console.log(`Level1Scene: USS Defiant created at (${startX}, ${startY})`);
     }
 
     setupControls() {
