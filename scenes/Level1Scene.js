@@ -26,6 +26,18 @@ class Level1Scene extends Phaser.Scene {
         // Power-up effects
         this.activePowerUps = [];
     }
+    
+    // Haptic feedback stub - works on supported devices
+    triggerHaptic(intensity = 'medium') {
+        if (navigator.vibrate) {
+            const patterns = {
+                light: 10,
+                medium: 20,
+                heavy: 50
+            };
+            navigator.vibrate(patterns[intensity] || 20);
+        }
+    }
 
     create() {
         console.log('Level1Scene: Starting Level 1...');
@@ -93,8 +105,10 @@ class Level1Scene extends Phaser.Scene {
     }
     
     updateCameraDimensions() {
-        this.cameraWidth = this.cameras.main.width;
-        this.cameraHeight = this.cameras.main.height;
+        if (this.cameras && this.cameras.main) {
+            this.cameraWidth = this.cameras.main.width;
+            this.cameraHeight = this.cameras.main.height;
+        }
     }
     
     handleResize(gameSize) {
@@ -111,7 +125,25 @@ class Level1Scene extends Phaser.Scene {
         }
         
         // Update world bounds
-        this.physics.world.setBounds(0, 0, this.cameraWidth, this.cameraHeight);
+        if (this.physics && this.physics.world) {
+            this.physics.world.setBounds(0, 0, this.cameraWidth, this.cameraHeight);
+        }
+        
+        // Update mobile controls position
+        if (this.joystickBase) {
+            this.joystickBase.y = this.cameraHeight - 80;
+        }
+        if (this.joystickStick) {
+            this.joystickStick.y = this.cameraHeight - 80;
+        }
+        if (this.fireButton) {
+            this.fireButton.x = this.cameraWidth - 80;
+            this.fireButton.y = this.cameraHeight - 80;
+        }
+        if (this.fireIcon) {
+            this.fireIcon.x = this.cameraWidth - 80;
+            this.fireIcon.y = this.cameraHeight - 80;
+        }
     }
 
     createScrollingBackground() {
@@ -460,6 +492,9 @@ class Level1Scene extends Phaser.Scene {
             bullet.setActive(true);
             bullet.setVisible(true);
             bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
+            
+            // Haptic feedback on fire
+            this.triggerHaptic('light');
         }
     }
 
@@ -475,6 +510,9 @@ class Level1Scene extends Phaser.Scene {
 
     // Method for taking damage (to be used when enemies are implemented)
     takeDamage(amount) {
+        // Haptic feedback on damage
+        this.triggerHaptic('medium');
+        
         if (this.playerStats.shields > 0) {
             this.playerStats.shields -= amount;
             if (this.playerStats.shields < 0) {
@@ -488,6 +526,7 @@ class Level1Scene extends Phaser.Scene {
         
         if (this.playerStats.health <= 0) {
             this.playerStats.health = 0;
+            this.triggerHaptic('heavy');
             this.gameOver();
         }
     }
@@ -591,6 +630,9 @@ class Level1Scene extends Phaser.Scene {
             this.podsRescued++;
             this.addScore(PodConfig.points);
             this.scoreMultiplier = Math.min(5.0, this.scoreMultiplier + 0.2);
+            
+            // Haptic feedback on rescue
+            this.triggerHaptic('medium');
             
             pod.setActive(false);
             pod.setVisible(false);
