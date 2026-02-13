@@ -1888,16 +1888,21 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitBoss(bullet, boss) {
+        // Check if bullet is already inactive (hit a component first)
+        if (!bullet.active) {
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (boss.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
         }
         
-        // Disable bullet using helper function
-        this.disableBulletPhysics(bullet);
-        
         // Only damage in phase 3 (core exposed)
         if (boss.phase === 3) {
+            // Disable bullet using helper function
+            this.disableBulletPhysics(bullet);
+            
             boss.health -= 10;
             boss.phaseHealth -= 10;
             
@@ -1907,10 +1912,18 @@ class Level1Scene extends Phaser.Scene {
             if (boss.phaseHealth <= 0 || boss.health <= 0) {
                 this.defeatBoss();
             }
+        } else {
+            // Disable bullet even if not in phase 3 (bullet should not pass through boss)
+            this.disableBulletPhysics(bullet);
         }
     }
     
     hitBossGenerator(bullet, generator) {
+        // Check if bullet is already inactive (already hit something)
+        if (!bullet.active) {
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (generator.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
@@ -1944,9 +1957,21 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitBossTurret(bullet, turret) {
+        // Check if bullet is already inactive (already hit something)
+        if (!bullet.active) {
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (turret.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
+        }
+        
+        // Only allow damage to turrets if in phase 2 or later (generators must be destroyed first)
+        if (this.boss.phase < 2) {
+            // Disable bullet but don't damage turret
+            this.disableBulletPhysics(bullet);
+            return;
         }
         
         // Disable bullet using helper function
