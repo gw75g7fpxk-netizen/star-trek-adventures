@@ -1832,10 +1832,16 @@ class Level1Scene extends Phaser.Scene {
     defeatBoss() {
         console.log('Boss defeated!');
         
+        // Defensive check - should always exist but guard anyway
+        if (!this.boss) {
+            console.warn('defeatBoss called but boss does not exist');
+            return;
+        }
+        
         // Mark boss as defeated to stop updates
         this.isBossFight = false;
         
-        // Capture boss position for explosion effects (assumes boss exists)
+        // Capture boss position for explosion effects
         const bossX = this.boss.x;
         const bossY = this.boss.y;
         
