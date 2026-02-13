@@ -76,19 +76,109 @@ class PreloadScene extends Phaser.Scene {
         playerGraphics.generateTexture('player-ship', 40, 40);
         playerGraphics.destroy();
         
-        // Enemy ship placeholder (red triangle)
-        const enemyGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        enemyGraphics.fillStyle(0xFF0000, 1);
-        enemyGraphics.fillTriangle(20, 40, 0, 0, 40, 0);
-        enemyGraphics.generateTexture('enemy-ship', 40, 40);
-        enemyGraphics.destroy();
+        // Enemy fighter placeholder (red triangle)
+        const fighterGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        fighterGraphics.fillStyle(0xFF0000, 1);
+        fighterGraphics.fillTriangle(15, 30, 0, 0, 30, 0);
+        fighterGraphics.generateTexture('enemy-fighter', 30, 30);
+        fighterGraphics.destroy();
         
-        // Bullet placeholder (small yellow rectangle)
+        // Enemy cruiser placeholder (red pentagon)
+        const cruiserGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        cruiserGraphics.fillStyle(0xFF4444, 1);
+        cruiserGraphics.fillRect(5, 0, 40, 35);
+        cruiserGraphics.fillTriangle(25, 35, 5, 50, 45, 50);
+        cruiserGraphics.generateTexture('enemy-cruiser', 50, 50);
+        cruiserGraphics.destroy();
+        
+        // Enemy battleship placeholder (large red hexagon)
+        const battleshipGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        battleshipGraphics.fillStyle(0xFF8800, 1);
+        battleshipGraphics.fillRect(10, 0, 60, 50);
+        battleshipGraphics.fillRect(0, 20, 80, 30);
+        battleshipGraphics.fillTriangle(40, 50, 10, 80, 70, 80);
+        battleshipGraphics.generateTexture('enemy-battleship', 80, 80);
+        battleshipGraphics.destroy();
+        
+        // Boss placeholder (massive red structure)
+        const bossGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        bossGraphics.fillStyle(0x880000, 1);
+        bossGraphics.fillRect(25, 0, 150, 100);
+        bossGraphics.fillRect(0, 40, 200, 80);
+        bossGraphics.fillTriangle(100, 120, 40, 200, 160, 200);
+        bossGraphics.generateTexture('boss', 200, 200);
+        bossGraphics.destroy();
+        
+        // Player bullet placeholder (yellow rectangle)
         const bulletGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         bulletGraphics.fillStyle(0xFFFF00, 1);
         bulletGraphics.fillRect(0, 0, 4, 12);
         bulletGraphics.generateTexture('bullet', 4, 12);
         bulletGraphics.destroy();
+        
+        // Enemy bullet placeholder (red rectangle)
+        const enemyBulletGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        enemyBulletGraphics.fillStyle(0xFF0000, 1);
+        enemyBulletGraphics.fillRect(0, 0, 6, 10);
+        enemyBulletGraphics.generateTexture('enemy-bullet', 6, 10);
+        enemyBulletGraphics.destroy();
+        
+        // Escape pod placeholder (white/cyan circle)
+        const podGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        podGraphics.fillStyle(0xFFFFFF, 1);
+        podGraphics.fillCircle(10, 10, 10);
+        podGraphics.fillStyle(0x00FFFF, 1);
+        podGraphics.fillCircle(10, 10, 6);
+        podGraphics.generateTexture('escape-pod', 20, 20);
+        podGraphics.destroy();
+        
+        // Power-up placeholders (various colors)
+        const powerUpGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        
+        // Shield restore (cyan diamond)
+        powerUpGraphics.fillStyle(0x00FFFF, 1);
+        powerUpGraphics.fillRect(10, 0, 4, 24);
+        powerUpGraphics.fillRect(0, 10, 24, 4);
+        powerUpGraphics.generateTexture('powerup-shield', 24, 24);
+        powerUpGraphics.clear();
+        
+        // Fire upgrade (yellow star)
+        powerUpGraphics.fillStyle(0xFFFF00, 1);
+        powerUpGraphics.fillCircle(12, 12, 12);
+        powerUpGraphics.fillStyle(0xFF8800, 1);
+        powerUpGraphics.fillCircle(12, 12, 6);
+        powerUpGraphics.generateTexture('powerup-fire', 24, 24);
+        powerUpGraphics.clear();
+        
+        // Speed boost (green arrow)
+        powerUpGraphics.fillStyle(0x00FF00, 1);
+        powerUpGraphics.fillTriangle(12, 0, 0, 24, 24, 24);
+        powerUpGraphics.generateTexture('powerup-speed', 24, 24);
+        powerUpGraphics.clear();
+        
+        // Dilithium (magenta crystal)
+        powerUpGraphics.fillStyle(0xFF00FF, 1);
+        powerUpGraphics.fillRect(8, 0, 8, 24);
+        powerUpGraphics.fillRect(0, 8, 24, 8);
+        powerUpGraphics.generateTexture('powerup-dilithium', 24, 24);
+        powerUpGraphics.clear();
+        
+        // Tractor beam (blue circle)
+        powerUpGraphics.fillStyle(0x0088FF, 1);
+        powerUpGraphics.fillCircle(12, 12, 12);
+        powerUpGraphics.fillStyle(0x004488, 1);
+        powerUpGraphics.fillCircle(12, 12, 8);
+        powerUpGraphics.generateTexture('powerup-tractor', 24, 24);
+        powerUpGraphics.destroy();
+        
+        // Explosion placeholder (orange/red circles)
+        const explosionGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        explosionGraphics.fillStyle(0xFF8800, 0.8);
+        explosionGraphics.fillCircle(20, 20, 20);
+        explosionGraphics.fillStyle(0xFF0000, 0.6);
+        explosionGraphics.fillCircle(20, 20, 12);
+        explosionGraphics.generateTexture('explosion', 40, 40);
+        explosionGraphics.destroy();
         
         console.log('PreloadScene: Placeholder assets created');
     }

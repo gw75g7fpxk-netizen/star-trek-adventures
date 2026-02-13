@@ -7,11 +7,20 @@ const GameConfig = {
     backgroundColor: '#000000',
     
     // Auto-scaling configuration for all resolutions (desktop/mobile)
+    // Uses RESIZE mode to fill the screen on mobile devices
     scale: {
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: 800,
-        height: 600
+        height: 600,
+        min: {
+            width: 320,
+            height: 480
+        },
+        max: {
+            width: 2048,
+            height: 2732
+        }
     },
     
     // Arcade Physics
