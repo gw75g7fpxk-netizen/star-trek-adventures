@@ -17,4 +17,3 @@ const PlayerConfig = {
     startX: 0.5, // 50% of screen width
     startY: 0.85  // 85% of screen height (near bottom)
 };
-
