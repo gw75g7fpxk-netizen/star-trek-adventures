@@ -22,3 +22,6 @@ temp/
 # Build artifacts
 dist/
 build/
+
+# Backup files
+*.backup

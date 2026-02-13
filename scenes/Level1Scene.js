@@ -174,6 +174,7 @@ class Level1Scene extends Phaser.Scene {
         
         // Mobile controls
         this.isFiring = false;
+        this.autoFire = false;
         this.joystickActive = false;
         this.joystickVector = { x: 0, y: 0 };
         
@@ -253,29 +254,42 @@ class Level1Scene extends Phaser.Scene {
         this.fireButton.setInteractive();
         
         // Fire button icon
-        const fireIcon = this.add.text(buttonX, buttonY, 'FIRE', {
+        this.fireIcon = this.add.text(buttonX, buttonY, 'FIRE', {
             fontSize: '16px',
             color: '#FFFFFF',
             fontFamily: 'Arial',
             fontStyle: 'bold'
         });
-        fireIcon.setOrigin(0.5);
-        fireIcon.setScrollFactor(0);
-        fireIcon.setDepth(1001);
+        this.fireIcon.setOrigin(0.5);
+        this.fireIcon.setScrollFactor(0);
+        this.fireIcon.setDepth(1001);
         
         this.fireButton.on('pointerdown', () => {
+            // Double tap for auto-fire toggle
+            const now = Date.now();
+            if (this.lastFireTap && now - this.lastFireTap < 300) {
+                this.autoFire = !this.autoFire;
+                this.fireIcon.setText(this.autoFire ? 'AUTO' : 'FIRE');
+                this.fireButton.setFillStyle(this.autoFire ? 0x00FF00 : 0xFF0000, 0.4);
+            }
+            this.lastFireTap = now;
+            
             this.isFiring = true;
             this.fireButton.setAlpha(0.8);
         });
         
         this.fireButton.on('pointerup', () => {
-            this.isFiring = false;
-            this.fireButton.setAlpha(0.4);
+            if (!this.autoFire) {
+                this.isFiring = false;
+                this.fireButton.setAlpha(0.4);
+            }
         });
         
         this.fireButton.on('pointerout', () => {
-            this.isFiring = false;
-            this.fireButton.setAlpha(0.4);
+            if (!this.autoFire) {
+                this.isFiring = false;
+                this.fireButton.setAlpha(0.4);
+            }
         });
     }
 
@@ -383,6 +397,11 @@ class Level1Scene extends Phaser.Scene {
         // Update enemies
         this.updateEnemies(time);
         
+        // Update boss
+        if (this.isBossFight) {
+            this.updateBoss(time);
+        }
+        
         // Update escape pods
         this.updateEscapePods();
         
@@ -427,7 +446,7 @@ class Level1Scene extends Phaser.Scene {
     handleShooting(time) {
         const canFire = time > this.lastFired + this.playerStats.fireRate;
         
-        if ((this.spaceKey.isDown || this.isFiring) && canFire) {
+        if ((this.spaceKey.isDown || this.isFiring || this.autoFire) && canFire) {
             this.fireBullet();
             this.lastFired = time;
         }
@@ -961,18 +980,311 @@ class Level1Scene extends Phaser.Scene {
     startBossFight() {
         this.isBossFight = true;
         console.log('Boss fight starting!');
-        // Boss fight implementation would go here
-        // For now, just show victory
-        this.victory();
+        
+        // Spawn boss
+        const x = this.cameraWidth / 2;
+        const y = -100;
+        
+        this.boss = this.physics.add.sprite(x, y, 'boss');
+        this.boss.setActive(true);
+        this.boss.setVisible(true);
+        
+        // Initialize boss stats
+        this.boss.phase = 0;
+        this.boss.maxHealth = EnemyConfig.boss.health;
+        this.boss.health = EnemyConfig.boss.health;
+        this.boss.phaseHealth = EnemyConfig.boss.phases[0].health;
+        this.boss.generators = [];
+        this.boss.turrets = [];
+        this.boss.lastAttack = 0;
+        this.boss.attackRate = 2000;
+        this.boss.moveDirection = 1;
+        
+        // Move boss into position
+        this.tweens.add({
+            targets: this.boss,
+            y: 150,
+            duration: 3000,
+            ease: 'Power2'
+        });
+        
+        // Add collision
+        this.physics.add.overlap(this.bullets, this.boss, this.hitBoss, null, this);
+        this.physics.add.overlap(this.player, this.boss, this.playerHitByBoss, null, this);
+        
+        // Start Phase 1: Shield Generators
+        this.time.delayedCall(3000, () => {
+            this.startBossPhase1();
+        });
+    }
+    
+    startBossPhase1() {
+        console.log('Boss Phase 1: Shield Generators');
+        this.boss.phase = 1;
+        
+        // Spawn shield generators around boss
+        const positions = [
+            { x: -60, y: -60 },
+            { x: 60, y: -60 },
+            { x: -60, y: 60 },
+            { x: 60, y: 60 }
+        ];
+        
+        positions.forEach((pos) => {
+            const generator = this.physics.add.sprite(
+                this.boss.x + pos.x,
+                this.boss.y + pos.y,
+                'enemy-cruiser'
+            );
+            generator.setScale(0.5);
+            generator.health = 50;
+            generator.isBossComponent = true;
+            this.boss.generators.push(generator);
+            
+            // Add collision
+            this.physics.add.overlap(this.bullets, generator, this.hitBossGenerator, null, this);
+        });
+    }
+    
+    startBossPhase2() {
+        console.log('Boss Phase 2: Turrets');
+        this.boss.phase = 2;
+        this.boss.phaseHealth = EnemyConfig.boss.phases[1].health;
+        
+        // Spawn turrets
+        const turretCount = 6;
+        for (let i = 0; i < turretCount; i++) {
+            const angle = (i / turretCount) * Math.PI * 2;
+            const radius = 100;
+            const turret = this.physics.add.sprite(
+                this.boss.x + Math.cos(angle) * radius,
+                this.boss.y + Math.sin(angle) * radius,
+                'enemy-fighter'
+            );
+            turret.setScale(0.7);
+            turret.health = 30;
+            turret.isBossComponent = true;
+            turret.angle = angle;
+            this.boss.turrets.push(turret);
+            
+            // Add collision
+            this.physics.add.overlap(this.bullets, turret, this.hitBossTurret, null, this);
+        }
+    }
+    
+    startBossPhase3() {
+        console.log('Boss Phase 3: Core Exposed');
+        this.boss.phase = 3;
+        this.boss.phaseHealth = EnemyConfig.boss.phases[2].health;
+        
+        // Boss becomes more aggressive
+        this.boss.attackRate = 1000;
+    }
+    
+    updateBoss(time) {
+        if (!this.boss || !this.boss.active) return;
+        
+        // Boss horizontal movement
+        this.boss.x += this.boss.moveDirection * 2;
+        if (this.boss.x < 150 || this.boss.x > this.cameraWidth - 150) {
+            this.boss.moveDirection *= -1;
+        }
+        
+        // Update generators positions
+        if (this.boss.generators.length > 0) {
+            const positions = [
+                { x: -60, y: -60 },
+                { x: 60, y: -60 },
+                { x: -60, y: 60 },
+                { x: 60, y: 60 }
+            ];
+            this.boss.generators.forEach((gen, i) => {
+                if (gen && gen.active) {
+                    gen.x = this.boss.x + positions[i].x;
+                    gen.y = this.boss.y + positions[i].y;
+                }
+            });
+        }
+        
+        // Update turrets positions
+        if (this.boss.turrets.length > 0) {
+            this.boss.turrets.forEach((turret, i) => {
+                if (turret && turret.active) {
+                    const radius = 100;
+                    turret.x = this.boss.x + Math.cos(turret.angle) * radius;
+                    turret.y = this.boss.y + Math.sin(turret.angle) * radius;
+                }
+            });
+        }
+        
+        // Boss attacks
+        if (time > this.boss.lastAttack + this.boss.attackRate) {
+            this.bossAttack();
+            this.boss.lastAttack = time;
+        }
+    }
+    
+    bossAttack() {
+        if (this.boss.phase === 1 || this.boss.phase === 3) {
+            // Beam attack - spread of bullets
+            for (let i = -2; i <= 2; i++) {
+                const angle = Math.PI / 2 + (i * 0.2);
+                const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
+                if (bullet) {
+                    bullet.setActive(true);
+                    bullet.setVisible(true);
+                    bullet.body.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
+                }
+            }
+        }
+        
+        if (this.boss.phase === 2 || this.boss.phase === 3) {
+            // Rapid fire from turrets
+            this.boss.turrets.forEach((turret) => {
+                if (turret && turret.active) {
+                    const angle = Phaser.Math.Angle.Between(turret.x, turret.y, this.player.x, this.player.y);
+                    const bullet = this.enemyBullets.get(turret.x, turret.y, 'enemy-bullet');
+                    if (bullet) {
+                        bullet.setActive(true);
+                        bullet.setVisible(true);
+                        bullet.body.setVelocity(Math.cos(angle) * 250, Math.sin(angle) * 250);
+                    }
+                }
+            });
+        }
+        
+        if (this.boss.phase === 2) {
+            // Spawn minions
+            if (Math.random() < 0.3) {
+                this.spawnEnemy({
+                    enemyTypes: ['fighter'],
+                    difficulty: 2
+                });
+            }
+        }
+    }
+    
+    hitBoss(bullet, boss) {
+        bullet.setActive(false);
+        bullet.setVisible(false);
+        
+        // Only damage in phase 3 (core exposed)
+        if (boss.phase === 3) {
+            boss.health -= 10;
+            boss.phaseHealth -= 10;
+            
+            if (boss.phaseHealth <= 0 || boss.health <= 0) {
+                this.defeatBoss();
+            }
+        }
+    }
+    
+    hitBossGenerator(bullet, generator) {
+        bullet.setActive(false);
+        bullet.setVisible(false);
+        
+        generator.health -= 10;
+        
+        if (generator.health <= 0) {
+            this.createExplosion(generator.x, generator.y);
+            generator.setActive(false);
+            generator.setVisible(false);
+            generator.destroy();
+            
+            // Remove from array
+            const index = this.boss.generators.indexOf(generator);
+            if (index > -1) {
+                this.boss.generators.splice(index, 1);
+            }
+            
+            // Check if all generators destroyed
+            if (this.boss.generators.length === 0) {
+                this.startBossPhase2();
+            }
+        }
+    }
+    
+    hitBossTurret(bullet, turret) {
+        bullet.setActive(false);
+        bullet.setVisible(false);
+        
+        turret.health -= 10;
+        
+        if (turret.health <= 0) {
+            this.createExplosion(turret.x, turret.y);
+            turret.setActive(false);
+            turret.setVisible(false);
+            turret.destroy();
+            
+            // Remove from array
+            const index = this.boss.turrets.indexOf(turret);
+            if (index > -1) {
+                this.boss.turrets.splice(index, 1);
+            }
+            
+            // Check if all turrets destroyed
+            if (this.boss.turrets.length === 0) {
+                this.startBossPhase3();
+            }
+        }
+    }
+    
+    playerHitByBoss(player, boss) {
+        this.takeDamage(50);
+    }
+    
+    defeatBoss() {
+        console.log('Boss defeated!');
+        
+        // Massive explosion
+        for (let i = 0; i < 10; i++) {
+            this.time.delayedCall(i * 200, () => {
+                const x = this.boss.x + Phaser.Math.Between(-100, 100);
+                const y = this.boss.y + Phaser.Math.Between(-100, 100);
+                this.createExplosion(x, y);
+            });
+        }
+        
+        // Award points
+        this.addScore(EnemyConfig.boss.points);
+        
+        // Remove boss
+        this.time.delayedCall(2000, () => {
+            this.boss.setActive(false);
+            this.boss.setVisible(false);
+            this.boss.destroy();
+            this.victory();
+        });
     }
     
     victory() {
         console.log('Level1Scene: Victory!');
-        // Victory screen logic here
+        
+        // Stop all timers
+        if (this.waveTimer) this.waveTimer.remove();
+        if (this.podTimer) this.podTimer.remove();
+        
+        // Transition to victory scene
+        this.scene.start('VictoryScene', {
+            score: this.score,
+            wave: this.currentWave,
+            podsRescued: this.podsRescued,
+            enemiesKilled: this.enemiesKilled
+        });
     }
 
     gameOver() {
         console.log('Level1Scene: Game Over!');
-        // Game over logic here
+        
+        // Stop all timers
+        if (this.waveTimer) this.waveTimer.remove();
+        if (this.podTimer) this.podTimer.remove();
+        
+        // Transition to game over scene
+        this.scene.start('GameOverScene', {
+            score: this.score,
+            wave: this.currentWave,
+            podsRescued: this.podsRescued
+        });
     }
 }
