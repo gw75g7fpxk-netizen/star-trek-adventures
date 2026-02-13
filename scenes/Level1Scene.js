@@ -162,6 +162,13 @@ class Level1Scene extends Phaser.Scene {
             runChildUpdate: true
         });
         
+        // Setup boss components group (generators and turrets)
+        this.bossComponents = this.physics.add.group({
+            classType: Phaser.Physics.Arcade.Sprite,
+            maxSize: 20,
+            runChildUpdate: true
+        });
+        
         // Setup collisions
         this.setupCollisions();
         
@@ -852,6 +859,9 @@ class Level1Scene extends Phaser.Scene {
     setupCollisions() {
         // Player bullets vs enemies
         this.physics.add.overlap(this.bullets, this.enemies, this.hitEnemy, null, this);
+        
+        // Player bullets vs boss components (generators and turrets)
+        this.physics.add.overlap(this.bullets, this.bossComponents, this.hitBossComponent, null, this);
         
         // Enemy bullets vs player
         this.physics.add.overlap(this.player, this.enemyBullets, this.playerHit, null, this);
@@ -1564,6 +1574,11 @@ class Level1Scene extends Phaser.Scene {
         // Reset player to full health
         this.playerStats.health = this.playerStats.maxHealth;
         this.playerStats.shields = this.playerStats.maxShields;
+        
+        // Give player temporary invincibility for boss fight testing (10 seconds)
+        this.invincibleUntil = this.time.now + 10000;
+        console.log('Player has 10 seconds of invincibility for testing');
+        
         this.updateHUD();
         
         // Jump to boss fight
@@ -1572,6 +1587,12 @@ class Level1Scene extends Phaser.Scene {
     }
     
     startBossFight() {
+        // Prevent duplicate boss spawns
+        if (this.isBossFight && this.boss) {
+            console.log('Boss fight already in progress, ignoring duplicate call');
+            return;
+        }
+        
         this.isBossFight = true;
         console.log('Boss fight starting!');
         
@@ -1631,20 +1652,32 @@ class Level1Scene extends Phaser.Scene {
         ];
         
         positions.forEach((pos) => {
-            const generator = this.physics.add.sprite(
+            const generator = this.bossComponents.get(
                 this.boss.x + pos.x,
                 this.boss.y + pos.y,
                 'enemy-cruiser'
             );
-            generator.setScale(0.5);
-            generator.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
-            generator.health = EnemyConfig.boss.phases[0].generatorHealth;
-            generator.invincibleUntil = 0; // Initialize invincibility timer
-            generator.isBossComponent = true;
-            this.boss.generators.push(generator);
             
-            // Add collision
-            this.physics.add.overlap(this.bullets, generator, this.hitBossGenerator, null, this);
+            if (generator) {
+                generator.setActive(true);
+                generator.setVisible(true);
+                generator.setScale(0.5);
+                generator.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
+                generator.health = EnemyConfig.boss.phases[0].generatorHealth;
+                generator.invincibleUntil = 0; // Initialize invincibility timer
+                generator.isBossComponent = true;
+                generator.isGenerator = true; // Mark as generator for collision routing
+                
+                // Ensure physics body is properly configured
+                if (generator.body) {
+                    generator.body.enable = true;
+                    generator.body.checkCollision.none = false;
+                }
+                
+                this.boss.generators.push(generator);
+                
+                console.log(`Generator created at (${generator.x}, ${generator.y}) with health ${generator.health}, physics body enabled: ${generator.body && generator.body.enable}`);
+            }
         });
     }
     
@@ -1658,21 +1691,33 @@ class Level1Scene extends Phaser.Scene {
         for (let i = 0; i < turretCount; i++) {
             const angle = (i / turretCount) * Math.PI * 2;
             const radius = 100;
-            const turret = this.physics.add.sprite(
+            const turret = this.bossComponents.get(
                 this.boss.x + Math.cos(angle) * radius,
                 this.boss.y + Math.sin(angle) * radius,
                 'enemy-fighter'
             );
-            turret.setScale(0.7);
-            turret.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
-            turret.health = EnemyConfig.boss.phases[1].turretHealth;
-            turret.invincibleUntil = 0; // Initialize invincibility timer
-            turret.isBossComponent = true;
-            turret.angle = angle;
-            this.boss.turrets.push(turret);
             
-            // Add collision
-            this.physics.add.overlap(this.bullets, turret, this.hitBossTurret, null, this);
+            if (turret) {
+                turret.setActive(true);
+                turret.setVisible(true);
+                turret.setScale(0.7);
+                turret.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
+                turret.health = EnemyConfig.boss.phases[1].turretHealth;
+                turret.invincibleUntil = 0; // Initialize invincibility timer
+                turret.isBossComponent = true;
+                turret.isTurret = true; // Mark as turret for collision routing
+                turret.angle = angle;
+                
+                // Ensure physics body is properly configured
+                if (turret.body) {
+                    turret.body.enable = true;
+                    turret.body.checkCollision.none = false;
+                }
+                
+                this.boss.turrets.push(turret);
+                
+                console.log(`Turret ${i} created at angle ${angle} with health ${turret.health}`);
+            }
         }
     }
     
@@ -1769,6 +1814,15 @@ class Level1Scene extends Phaser.Scene {
         }
     }
     
+    hitBossComponent(bullet, component) {
+        // Route to appropriate handler based on component type
+        if (component.isGenerator) {
+            this.hitBossGenerator(bullet, component);
+        } else if (component.isTurret) {
+            this.hitBossTurret(bullet, component);
+        }
+    }
+    
     hitBoss(bullet, boss) {
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (boss.invincibleUntil || 0)) {
@@ -1802,11 +1856,13 @@ class Level1Scene extends Phaser.Scene {
         this.disableBulletPhysics(bullet);
         
         generator.health -= 10;
+        console.log(`Generator hit! Health: ${generator.health}/200`);
         
         // Set invincibility after taking damage
         generator.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (generator.health <= 0) {
+            console.log('Generator destroyed!');
             this.createExplosion(generator.x, generator.y);
             generator.setActive(false);
             generator.setVisible(false);
@@ -1835,11 +1891,13 @@ class Level1Scene extends Phaser.Scene {
         this.disableBulletPhysics(bullet);
         
         turret.health -= 10;
+        console.log(`Turret hit! Health: ${turret.health}/200`);
         
         // Set invincibility after taking damage
         turret.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (turret.health <= 0) {
+            console.log('Turret destroyed!');
             this.createExplosion(turret.x, turret.y);
             turret.setActive(false);
             turret.setVisible(false);
