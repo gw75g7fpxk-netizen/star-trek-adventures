@@ -358,13 +358,34 @@ class Level1Scene extends Phaser.Scene {
         this.joystickActive = false;
         this.joystickVector = { x: 0, y: 0 };
         
-        // Create virtual joystick (left side of screen)
+        // Detect if device is mobile (has touch and no keyboard/mouse as primary input)
+        this.isMobileDevice = this.detectMobileDevice();
+        
+        // Create virtual joystick (left side of screen) - only visible on mobile
         this.createVirtualJoystick();
         
-        // Create fire button (right side of screen)
+        // Create fire button (right side of screen) - only visible on mobile
         this.createFireButton();
         
-        console.log('Level1Scene: Controls configured (keyboard + touch)');
+        console.log('Level1Scene: Controls configured (keyboard + touch)', 'Mobile device:', this.isMobileDevice);
+    }
+    
+    detectMobileDevice() {
+        // Check if device has touch capability AND is likely mobile
+        // We check for touch support but also screen size to differentiate from touch-enabled desktops
+        const hasTouchScreen = ('ontouchstart' in window) || 
+                               (navigator.maxTouchPoints > 0) || 
+                               (navigator.msMaxTouchPoints > 0);
+        
+        // Check if it's a mobile user agent (more reliable than just touch)
+        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // For touch-enabled desktops with keyboard, we want to hide mobile controls
+        // Mobile devices typically have smaller screens
+        const isSmallScreen = window.innerWidth <= 1024 || window.innerHeight <= 768;
+        
+        // Device is considered mobile if it has touch AND (is mobile UA OR has small screen)
+        return hasTouchScreen && (isMobileUA || isSmallScreen);
     }
     
     createVirtualJoystick() {
@@ -377,11 +398,13 @@ class Level1Scene extends Phaser.Scene {
         this.joystickBase = this.add.circle(joystickX, joystickY, joystickRadius, 0x333333, 0.3);
         this.joystickBase.setScrollFactor(0);
         this.joystickBase.setDepth(1000);
+        this.joystickBase.setVisible(this.isMobileDevice); // Hide on desktop
         
         // Joystick stick
         this.joystickStick = this.add.circle(joystickX, joystickY, joystickRadius / 2, 0x00FFFF, 0.6);
         this.joystickStick.setScrollFactor(0);
         this.joystickStick.setDepth(1001);
+        this.joystickStick.setVisible(this.isMobileDevice); // Hide on desktop
         
         // Touch zone for joystick (left side of screen)
         this.joystickZone = this.add.zone(0, 0, this.cameraWidth / 2, this.cameraHeight).setOrigin(0);
@@ -392,6 +415,11 @@ class Level1Scene extends Phaser.Scene {
             this.joystickActive = true;
             this.joystickBase.setPosition(pointer.x, pointer.y);
             this.joystickStick.setPosition(pointer.x, pointer.y);
+            // Show joystick when touched (for hybrid devices)
+            if (this.isMobileDevice) {
+                this.joystickBase.setVisible(true);
+                this.joystickStick.setVisible(true);
+            }
         });
         
         this.joystickZone.on('pointermove', (pointer) => {
@@ -434,6 +462,7 @@ class Level1Scene extends Phaser.Scene {
         this.fireButton.setScrollFactor(0);
         this.fireButton.setDepth(1000);
         this.fireButton.setInteractive();
+        this.fireButton.setVisible(this.isMobileDevice); // Hide on desktop
         
         // Fire button icon
         this.fireIcon = this.add.text(buttonX, buttonY, 'FIRE', {
@@ -445,6 +474,7 @@ class Level1Scene extends Phaser.Scene {
         this.fireIcon.setOrigin(0.5);
         this.fireIcon.setScrollFactor(0);
         this.fireIcon.setDepth(1001);
+        this.fireIcon.setVisible(this.isMobileDevice); // Hide on desktop
         
         this.fireButton.on('pointerdown', () => {
             // Double tap for auto-fire toggle
@@ -706,6 +736,9 @@ class Level1Scene extends Phaser.Scene {
         this.starsLayer.tilePositionY -= 0.5; // Slow movement
         this.nebulaLayer.tilePositionY -= 1.5; // Faster movement for parallax
         
+        // Handle invulnerability visual feedback
+        this.handleInvulnerabilityVisuals();
+        
         // Handle shield regeneration
         this.handleShieldRegeneration(time);
         
@@ -774,6 +807,17 @@ class Level1Scene extends Phaser.Scene {
             }
         }
     }
+    
+    handleInvulnerabilityVisuals() {
+        // Fade out player ship slightly during invulnerability period
+        if (this.time.now < this.invincibleUntil) {
+            // Invulnerable - set to semi-transparent
+            this.player.setAlpha(0.5);
+        } else {
+            // Not invulnerable - restore full opacity
+            this.player.setAlpha(1.0);
+        }
+    }
 
     handleShooting(time) {
         const canFire = time > this.lastFired + this.playerStats.fireRate;
@@ -838,6 +882,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Haptic feedback on damage
         this.triggerHaptic('medium');
+        
+        // Play hit sound when player takes damage
+        this.playSound('hit');
         
         if (this.playerStats.shields > 0) {
             this.playerStats.shields -= amount;
@@ -1278,6 +1325,10 @@ class Level1Scene extends Phaser.Scene {
                     if (bullet) {
                         bullet.setActive(true);
                         bullet.setVisible(true);
+                        // Re-enable physics body if it was disabled
+                        if (bullet.body) {
+                            bullet.body.enable = true;
+                        }
                         const speed = EnemyConfig[enemy.enemyType].bulletSpeed;
                         bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
                         enemy.lastFired = time;
@@ -1330,6 +1381,11 @@ class Level1Scene extends Phaser.Scene {
         if (bullet) {
             bullet.setActive(true);
             bullet.setVisible(true);
+            
+            // Re-enable physics body if it was disabled
+            if (bullet.body) {
+                bullet.body.enable = true;
+            }
             
             // Aim at player
             const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
@@ -1782,6 +1838,10 @@ class Level1Scene extends Phaser.Scene {
                 if (bullet) {
                     bullet.setActive(true);
                     bullet.setVisible(true);
+                    // Re-enable physics body if it was disabled
+                    if (bullet.body) {
+                        bullet.body.enable = true;
+                    }
                     bullet.body.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
                 }
             }
@@ -1796,6 +1856,10 @@ class Level1Scene extends Phaser.Scene {
                     if (bullet) {
                         bullet.setActive(true);
                         bullet.setVisible(true);
+                        // Re-enable physics body if it was disabled
+                        if (bullet.body) {
+                            bullet.body.enable = true;
+                        }
                         bullet.body.setVelocity(Math.cos(angle) * 250, Math.sin(angle) * 250);
                     }
                 }
@@ -1937,12 +2001,51 @@ class Level1Scene extends Phaser.Scene {
             this.boss.body.checkCollision.none = true;
         }
         
+        // First, destroy any remaining components (turrets and generators) with staggered timing
+        let componentDelay = 0;
+        const componentExplosionInterval = 150;
+        
+        // Destroy remaining generators first
+        if (this.boss.generators && this.boss.generators.length > 0) {
+            this.boss.generators.forEach((generator) => {
+                if (generator && generator.active) {
+                    this.time.delayedCall(componentDelay, () => {
+                        this.createExplosion(generator.x, generator.y);
+                        generator.setActive(false);
+                        generator.setVisible(false);
+                        generator.destroy();
+                    });
+                    componentDelay += componentExplosionInterval;
+                }
+            });
+            this.boss.generators = [];
+        }
+        
+        // Then destroy remaining turrets
+        if (this.boss.turrets && this.boss.turrets.length > 0) {
+            this.boss.turrets.forEach((turret) => {
+                if (turret && turret.active) {
+                    this.time.delayedCall(componentDelay, () => {
+                        this.createExplosion(turret.x, turret.y);
+                        turret.setActive(false);
+                        turret.setVisible(false);
+                        turret.destroy();
+                    });
+                    componentDelay += componentExplosionInterval;
+                }
+            });
+            this.boss.turrets = [];
+        }
+        
+        // Finally, destroy boss body with massive explosions AFTER components
+        const bossExplosionStart = componentDelay + 200; // Small delay after last component
+        
         // Hide boss immediately but don't destroy yet (for proper cleanup)
         this.boss.setVisible(false);
         
-        // Massive explosion using captured position
+        // Massive explosion using captured position - starts after components are destroyed
         for (let i = 0; i < 10; i++) {
-            this.time.delayedCall(i * 200, () => {
+            this.time.delayedCall(bossExplosionStart + (i * 200), () => {
                 const x = bossX + Phaser.Math.Between(-100, 100);
                 const y = bossY + Phaser.Math.Between(-100, 100);
                 this.createExplosion(x, y);
@@ -1952,8 +2055,9 @@ class Level1Scene extends Phaser.Scene {
         // Award points
         this.addScore(EnemyConfig.boss.points);
         
-        // Destroy boss and transition to victory after explosions
-        this.time.delayedCall(2000, () => {
+        // Destroy boss and transition to victory after all explosions
+        const totalExplosionTime = bossExplosionStart + 2000;
+        this.time.delayedCall(totalExplosionTime, () => {
             if (this.boss) {
                 this.boss.destroy();
             }
