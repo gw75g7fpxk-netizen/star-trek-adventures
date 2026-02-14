@@ -119,33 +119,6 @@ const ProgressConfig = {
         }
     },
 
-    // Purchase an upgrade
-    purchaseUpgrade(upgradeKey, saveData) {
-        const currentLevel = saveData.upgrades[upgradeKey] || 0
-        
-        // Check if upgrade exists and can be upgraded
-        if (currentLevel >= 5) {
-            console.warn(`${upgradeKey} is already at max level`)
-            return false
-        }
-
-        // Calculate cost (will need UpgradesConfig)
-        const cost = 10 // Placeholder - actual cost depends on upgrade type
-        
-        if (saveData.upgradePoints < cost) {
-            console.warn('Not enough upgrade points')
-            return false
-        }
-
-        // Purchase upgrade
-        saveData.upgrades[upgradeKey] = currentLevel + 1
-        saveData.upgradePoints -= cost
-        
-        this.saveProgress(saveData)
-        console.log(`Purchased ${upgradeKey} level ${currentLevel + 1}`)
-        return true
-    },
-
     // Get current level of an upgrade
     getUpgradeLevel(upgradeKey, saveData) {
         return saveData.upgrades[upgradeKey] || 0

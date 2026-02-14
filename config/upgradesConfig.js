@@ -57,8 +57,8 @@ const UpgradesConfig = {
         },
 
         quantumTorpedos: {
-            name: 'Quantum Torpedos',
-            description: 'Heavy guided torpedos targeting strongest enemy',
+            name: 'Quantum Torpedoes',
+            description: 'Heavy guided torpedoes targeting strongest enemy',
             category: 'offensive',
             maxLevel: 5,
             costPerLevel: 20,
@@ -91,7 +91,7 @@ const UpgradesConfig = {
 
         pointDefense: {
             name: 'Point Defense Phasers',
-            description: 'Destroys incoming enemy torpedos',
+            description: 'Destroys incoming enemy torpedoes',
             category: 'defensive',
             maxLevel: 5,
             costPerLevel: 12,

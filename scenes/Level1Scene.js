@@ -860,7 +860,7 @@ class Level1Scene extends Phaser.Scene {
     }
     
     handlePointDefense(time) {
-        // Point defense system - destroys incoming enemy torpedos
+        // Point defense system - destroys incoming enemy torpedoes
         if (!this.pointDefenseStats || !this.pointDefenseStats.enabled) return
         
         // Check if point defense is ready
@@ -1025,8 +1025,8 @@ class Level1Scene extends Phaser.Scene {
         const torpedo = this.bullets.get(this.player.x, this.player.y - 20, 'bullet')
         if (torpedo) {
             this.enableBulletPhysics(torpedo)
-            torpedo.setTint(0x00FFFF) // Cyan tint for quantum torpedos
-            torpedo.setScale(1.5) // Make torpedos larger
+            torpedo.setTint(0x00FFFF) // Cyan tint for quantum torpedoes
+            torpedo.setScale(1.5) // Make torpedoes larger
             
             // Store torpedo data
             torpedo.damage = this.quantumTorpedosStats.damage
@@ -1178,10 +1178,10 @@ class Level1Scene extends Phaser.Scene {
         // Disable bullet using helper function
         this.disableBulletPhysics(bullet);
         
-        // Calculate damage - quantum torpedos do more damage
+        // Calculate damage - quantum torpedoes do more damage
         let damage = 10 // Default bullet damage
         if (bullet.isQuantumTorpedo) {
-            damage = bullet.damage * 10 // Torpedos do 5x10 = 50 damage by default
+            damage = bullet.damage * 10 // Torpedoes do 5x10 = 50 damage by default
         }
         
         enemy.health -= damage;
