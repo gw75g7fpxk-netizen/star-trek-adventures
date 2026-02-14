@@ -601,7 +601,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Skip wave button click handler
         this.skipWaveButton.on('pointerdown', () => {
-            this.skipToNextWave();
+            if (!this.isBossFight) {
+                this.skipToNextWave();
+            }
         });
         
         // Add hover effect for skip button
@@ -1503,8 +1505,8 @@ class Level1Scene extends Phaser.Scene {
                 break;
             case 'horizontal':
                 // Move horizontally at top of screen
+                // Once battleship reaches or passes y=100, stop vertical movement and start horizontal pattern
                 if (enemy.y >= 100) {
-                    // Once battleship reaches y=100, stop vertical movement and start horizontal
                     enemy.body.setVelocityY(0);
                     if (enemy.x < 100 || enemy.x > this.cameraWidth - 100) {
                         enemy.body.setVelocityX(-enemy.body.velocity.x);
