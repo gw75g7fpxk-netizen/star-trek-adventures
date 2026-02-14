@@ -14,33 +14,17 @@ jobs:
     if: github.event.action != 'closed'
     
     steps:
-      - name: Checkout main branch for production
+      - name: Checkout PR branch
         uses: actions/checkout@v4
-        with:
-          ref: main
-          path: main
-      
-      - name: Checkout PR branch for preview
-        uses: actions/checkout@v4
-        with:
-          path: preview
-      
-      - name: Deploy production to GitHub Pages root
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./main
-          keep_files: true
-          exclude_assets: '.github,.git'
       
       - name: Deploy PR preview to subdirectory
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./preview
+          publish_dir: .
           destination_dir: pr-${{ github.event.pull_request.number }}
           keep_files: true
-          exclude_assets: '.github,.git'
+          exclude_assets: '.github'
       
       - name: Comment PR with preview link
         uses: actions/github-script@v7
