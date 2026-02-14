@@ -11,7 +11,7 @@ const EnemyConfig = {
         damage: 1,
         points: 100,
         movementPattern: 'weaving', // 'straight', 'weaving', 'zigzag'
-        size: { width: 30, height: 30 }
+        size: { width: 25, height: 25 }
     },
     
     // Dominion Cruiser - Medium warship
@@ -23,7 +23,7 @@ const EnemyConfig = {
         damage: 1,
         points: 250,
         movementPattern: 'straight',
-        size: { width: 50, height: 50 }
+        size: { width: 60, height: 60 }
     },
     
     // Dominion Battleship (Mini-boss)
@@ -35,7 +35,7 @@ const EnemyConfig = {
         damage: 1,
         points: 500,
         movementPattern: 'horizontal',
-        size: { width: 80, height: 80 }
+        size: { width: 120, height: 120 }
     },
     
     // Boss - Massive Dominion Battleship

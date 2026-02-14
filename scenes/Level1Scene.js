@@ -1180,6 +1180,22 @@ class Level1Scene extends Phaser.Scene {
         this.isWaveActive = true;
         this.enemiesSpawned = 0;
         
+        // Initialize wave spawn pool based on shipCounts
+        this.waveSpawnPool = [];
+        if (waveConfig.shipCounts) {
+            // Build spawn pool from shipCounts specification
+            for (const [shipType, count] of Object.entries(waveConfig.shipCounts)) {
+                for (let i = 0; i < count; i++) {
+                    this.waveSpawnPool.push(shipType);
+                }
+            }
+            // Shuffle the spawn pool for variety
+            Phaser.Utils.Array.Shuffle(this.waveSpawnPool);
+        } else {
+            // Fallback to old behavior if shipCounts not specified
+            this.waveSpawnPool = null;
+        }
+        
         console.log(`Starting Wave ${this.currentWave}`);
         
         // Spawn enemies for this wave
@@ -1228,8 +1244,14 @@ class Level1Scene extends Phaser.Scene {
     }
     
     spawnEnemy(waveConfig) {
-        // Pick random enemy type from wave config
-        const enemyType = Phaser.Utils.Array.GetRandom(waveConfig.enemyTypes);
+        // Pick enemy type from spawn pool if available, otherwise random from enemyTypes
+        let enemyType;
+        if (this.waveSpawnPool && this.waveSpawnPool.length > 0) {
+            enemyType = this.waveSpawnPool.pop();
+        } else {
+            enemyType = Phaser.Utils.Array.GetRandom(waveConfig.enemyTypes);
+        }
+        
         const config = EnemyConfig[enemyType];
         
         // Random spawn position at top
@@ -1259,7 +1281,7 @@ class Level1Scene extends Phaser.Scene {
             // Scale enemy sprites to correct size while maintaining aspect ratio
             if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship') && enemy.width > 0) {
                 // Scale enemy sprites to their configured target width
-                // Fighter: 651x1076px → 30px, Cruiser: 811x790px → 50px, Battleship: large PNG → 80px
+                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);

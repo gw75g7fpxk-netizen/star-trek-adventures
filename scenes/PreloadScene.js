@@ -118,12 +118,11 @@ class PreloadScene extends Phaser.Scene {
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
         
-        // Boss placeholder (massive red structure)
+        // Boss placeholder texture removed - waiting for proper boss sprite
+        // The boss sprite reference 'boss' needs to be created but without visible texture
         const bossGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        bossGraphics.fillStyle(0x880000, 1);
-        bossGraphics.fillRect(25, 0, 150, 100);
-        bossGraphics.fillRect(0, 40, 200, 80);
-        bossGraphics.fillTriangle(100, 120, 40, 200, 160, 200);
+        bossGraphics.fillStyle(0x000000, 0); // Transparent
+        bossGraphics.fillRect(0, 0, 200, 200);
         bossGraphics.generateTexture('boss', 200, 200);
         bossGraphics.destroy();
         
