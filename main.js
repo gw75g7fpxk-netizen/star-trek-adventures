@@ -16,6 +16,9 @@ GameConfig.scene = [
 // Create Phaser game instance
 const game = new Phaser.Game(GameConfig);
 
+// Expose game to window for debugging and testing
+window.game = game;
+
 console.log('Star Trek Adventures - Game created');
 console.log('Configuration:', {
     width: GameConfig.width,
