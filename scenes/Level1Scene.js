@@ -1893,8 +1893,12 @@ class Level1Scene extends Phaser.Scene {
             return;
         }
         
+        // FIX: Use this.boss instead of the boss parameter
+        // The collision callback parameter may not preserve custom properties reliably
+        const actualBoss = this.boss;
+        
         // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < (boss.invincibleUntil || 0)) {
+        if (this.time.now < (actualBoss.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
         }
         
@@ -1902,14 +1906,14 @@ class Level1Scene extends Phaser.Scene {
         this.disableBulletPhysics(bullet);
         
         // Only damage in phase 3 (core exposed)
-        if (boss.phase === 3) {
-            boss.health -= 10;
-            boss.phaseHealth -= 10;
+        if (actualBoss.phase === 3) {
+            actualBoss.health -= 10;
+            actualBoss.phaseHealth -= 10;
             
             // Set invincibility after taking damage
-            boss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
+            actualBoss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
             
-            if (boss.phaseHealth <= 0 || boss.health <= 0) {
+            if (actualBoss.phaseHealth <= 0 || actualBoss.health <= 0) {
                 this.defeatBoss();
             }
         }
