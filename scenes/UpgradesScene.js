@@ -284,12 +284,18 @@ class UpgradesScene extends Phaser.Scene {
         const width = this.cameras.main.width
         const height = this.cameras.main.height
         
-        // Panel dimensions - leave space around edges for stars to be visible
-        const panelPadding = isMobile ? 10 : 30
-        const panelX = panelPadding
-        const panelY = panelPadding
-        const panelWidth = width - (panelPadding * 2)
-        const panelHeight = height - (panelPadding * 2)
+        // Calculate content area bounds
+        const titleY = isMobile ? 30 : 40
+        const backButtonY = isMobile ? height - 90 : height - 50
+        
+        // Panel dimensions - only cover the text content area
+        const contentPadding = isMobile ? 20 : 40
+        const sidePadding = isMobile ? 30 : 80
+        
+        const panelX = sidePadding
+        const panelY = titleY - contentPadding
+        const panelWidth = width - (sidePadding * 2)
+        const panelHeight = backButtonY - titleY + contentPadding * 2
         
         // Background rectangle with dark semi-transparent fill
         const background = this.add.rectangle(
