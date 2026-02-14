@@ -63,8 +63,9 @@ class UpgradesScene extends Phaser.Scene {
         const startY = height / 2 + 60
         const spacing = isMobile ? 28 : 35
         const categorySize = isMobile ? '14px' : '16px'
+        const categoryHeaderOffset = isMobile ? -30 : -35
         
-        this.add.text(width / 2, startY - 35, 'Planned Upgrade Categories:', {
+        this.add.text(width / 2, startY + categoryHeaderOffset, 'Planned Upgrade Categories:', {
             fontSize: isMobile ? '16px' : '18px',
             color: '#FFFFFF',
             fontFamily: 'Courier New, monospace'

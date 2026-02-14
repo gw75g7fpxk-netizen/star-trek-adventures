@@ -269,6 +269,8 @@ class LevelSelectScene extends Phaser.Scene {
         const height = this.cameras.main.height
         
         // Position back button based on screen size
+        // Mobile: Button at bottom for thumb accessibility
+        // Desktop: Button at top to avoid overlap with level map
         const backSize = isMobile ? '14px' : '18px'
         const backX = width / 2
         const backY = isMobile ? height - 25 : 30
