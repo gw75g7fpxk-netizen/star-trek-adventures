@@ -278,7 +278,7 @@ class LevelSelectScene extends Phaser.Scene {
             color: '#888888',
             fontFamily: 'Courier New, monospace'
         })
-        backButton.setOrigin(0.5, isMobile ? 0.5 : 0)
+        backButton.setOrigin(0.5)
         backButton.setInteractive()
         
         backButton.on('pointerdown', () => {
