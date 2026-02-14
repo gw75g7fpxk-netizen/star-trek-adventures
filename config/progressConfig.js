@@ -11,8 +11,14 @@ const ProgressConfig = {
         },
         upgradePoints: 0, // Points earned from missions for upgrades
         upgrades: {
-            // Placeholder for future upgrade system
-            // Example: maxHealth: 0, fireRate: 0, shieldCapacity: 0
+            // Upgrade levels (0 = not purchased, 1-5 = level)
+            primaryPhasers: 0,
+            pulseCannons: 0,
+            quantumTorpedos: 0,
+            primaryShields: 0,
+            pointDefense: 0,
+            ablativeArmor: 0,
+            impulseEngines: 0
         }
     },
 
@@ -111,5 +117,10 @@ const ProgressConfig = {
             console.warn('Failed to reset progress:', e)
             return false
         }
+    },
+
+    // Get current level of an upgrade
+    getUpgradeLevel(upgradeKey, saveData) {
+        return saveData.upgrades[upgradeKey] || 0
     }
 }
