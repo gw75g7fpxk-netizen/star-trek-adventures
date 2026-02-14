@@ -94,7 +94,8 @@ class VictoryScene extends Phaser.Scene {
         }).setOrigin(0.5);
         
         // Display credits earned
-        this.add.text(width / 2, statsY + 170, `CREDITS EARNED: +${this.pointsEarned}`, {
+        const creditsY = statsY + 170; // Positioned below pods rescued
+        this.add.text(width / 2, creditsY, `CREDITS EARNED: +${this.pointsEarned}`, {
             fontSize: '20px',
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
