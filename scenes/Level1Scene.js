@@ -315,34 +315,7 @@ class Level1Scene extends Phaser.Scene {
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement
         
-        // Add thrust particle emitter to player ship
-        this.createThrustParticles();
-        
         console.log(`Level1Scene: USS Defiant created at (${startX}, ${startY})`);
-    }
-    
-    createThrustParticles() {
-        // Create a small texture for thrust particles
-        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
-        graphics.fillStyle(0x00FFFF, 1);
-        graphics.fillCircle(2, 2, 2);
-        graphics.generateTexture('thrust-particle', 4, 4);
-        graphics.destroy();
-        
-        // Create thrust particle emitter
-        this.thrustEmitter = this.add.particles(0, 0, 'thrust-particle', {
-            speed: 50,
-            angle: { min: 80, max: 100 },
-            scale: { start: 0.8, end: 0 },
-            alpha: { start: 0.8, end: 0 },
-            lifespan: 200,
-            blendMode: 'ADD',
-            frequency: 30,
-            follow: this.player,
-            followOffset: { x: 0, y: 20 }
-        });
-        
-        this.thrustEmitter.start();
     }
 
     setupControls() {
@@ -1284,9 +1257,9 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            if ((enemyType === 'fighter' || enemyType === 'cruiser') && enemy.width > 0) {
+            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship') && enemy.width > 0) {
                 // Scale enemy sprites to their configured target width
-                // Fighter: 651x1076px → 30px, Cruiser: 811x790px → 50px
+                // Fighter: 651x1076px → 30px, Cruiser: 811x790px → 50px, Battleship: large PNG → 80px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
