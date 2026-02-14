@@ -18,6 +18,9 @@ class UpgradesScene extends Phaser.Scene {
         // Background
         this.createStarfield()
         
+        // Add content panel with border and background
+        this.createContentPanel(isMobile)
+        
         // Title
         const titleSize = isMobile ? '24px' : '32px'
         const titleY = isMobile ? 30 : 40
@@ -275,5 +278,32 @@ class UpgradesScene extends Phaser.Scene {
             
             this.add.circle(x, y, size, 0xFFFFFF, alpha)
         }
+    }
+    
+    createContentPanel(isMobile) {
+        const width = this.cameras.main.width
+        const height = this.cameras.main.height
+        
+        // Panel dimensions - leave space around edges for stars to be visible
+        const panelPadding = isMobile ? 10 : 30
+        const panelX = panelPadding
+        const panelY = panelPadding
+        const panelWidth = width - (panelPadding * 2)
+        const panelHeight = height - (panelPadding * 2)
+        
+        // Background rectangle with dark semi-transparent fill
+        const background = this.add.rectangle(
+            panelX + panelWidth / 2,
+            panelY + panelHeight / 2,
+            panelWidth,
+            panelHeight,
+            0x0a0a0a,
+            0.85
+        )
+        
+        // Border graphics
+        const border = this.add.graphics()
+        border.lineStyle(2, 0x00aaff, 1)
+        border.strokeRect(panelX, panelY, panelWidth, panelHeight)
     }
 }
