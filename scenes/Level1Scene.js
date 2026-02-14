@@ -107,6 +107,9 @@ class Level1Scene extends Phaser.Scene {
     create() {
         console.log(`Level1Scene: Starting Level ${this.levelNumber}...`);
         
+        // Load save data for upgrades
+        this.saveData = ProgressConfig.loadProgress()
+        
         // Reset game state on scene restart
         this.playerStats = {
             health: PlayerConfig.health,
@@ -116,6 +119,10 @@ class Level1Scene extends Phaser.Scene {
             speed: PlayerConfig.speed,
             fireRate: PlayerConfig.fireRate
         };
+        
+        // Apply upgrades to player stats
+        this.applyUpgrades()
+        
         this.currentWave = 0;
         this.score = 0;
         this.scoreMultiplier = 1.0;
@@ -783,6 +790,9 @@ class Level1Scene extends Phaser.Scene {
         // Handle shield regeneration
         this.handleShieldRegeneration(time);
         
+        // Handle point defense system
+        this.handlePointDefense(time);
+        
         // Handle player movement
         this.handlePlayerMovement();
         
@@ -849,6 +859,62 @@ class Level1Scene extends Phaser.Scene {
         }
     }
     
+    handlePointDefense(time) {
+        // Point defense system - destroys incoming enemy torpedos
+        if (!this.pointDefenseStats || !this.pointDefenseStats.enabled) return
+        
+        // Check if point defense is ready
+        if (time < this.pointDefenseLastFired + this.pointDefenseStats.cooldown) return
+        
+        // Find closest enemy bullet
+        let closestBullet = null
+        let closestDistance = Infinity
+        const detectionRange = 200 // Detection range for point defense
+        
+        this.enemyBullets.children.entries.forEach(bullet => {
+            if (bullet.active && bullet.visible) {
+                const distance = Phaser.Math.Distance.Between(
+                    this.player.x, this.player.y,
+                    bullet.x, bullet.y
+                )
+                
+                if (distance < detectionRange && distance < closestDistance) {
+                    closestDistance = distance
+                    closestBullet = bullet
+                }
+            }
+        })
+        
+        // Destroy closest bullet if found
+        if (closestBullet) {
+            // Create visual effect (beam from player to bullet)
+            const beam = this.add.line(
+                0, 0,
+                this.player.x, this.player.y,
+                closestBullet.x, closestBullet.y,
+                0x00FFFF, 0.8
+            )
+            beam.setLineWidth(2)
+            
+            // Remove beam after short delay
+            this.time.delayedCall(100, () => {
+                beam.destroy()
+            })
+            
+            // Destroy the bullet
+            closestBullet.setActive(false)
+            closestBullet.setVisible(false)
+            
+            // Create small explosion at bullet location
+            this.createExplosion(closestBullet.x, closestBullet.y, 0.3)
+            
+            this.playSound('hit')
+            this.pointDefenseLastFired = time
+            
+            console.log('Point defense activated!')
+        }
+    }
+    
     handleInvulnerabilityVisuals() {
         // Fade out player ship slightly during invulnerability period
         if (this.time.now < this.invincibleUntil) {
@@ -866,6 +932,22 @@ class Level1Scene extends Phaser.Scene {
         if ((this.spaceKey.isDown || this.isFiring || this.autoFire) && canFire) {
             this.fireBullet();
             this.lastFired = time;
+            
+            // Fire pulse cannons if unlocked and ready
+            if (this.pulseCannonsStats && this.pulseCannonsStats.enabled) {
+                if (time > this.pulseCannonsLastFired + this.pulseCannonsStats.cooldown) {
+                    this.firePulseCannons()
+                    this.pulseCannonsLastFired = time
+                }
+            }
+            
+            // Fire quantum torpedos if unlocked and ready
+            if (this.quantumTorpedosStats && this.quantumTorpedosStats.enabled) {
+                if (time > this.quantumTorpedosLastFired + this.quantumTorpedosStats.cooldown) {
+                    this.fireQuantumTorpedo()
+                    this.quantumTorpedosLastFired = time
+                }
+            }
         }
     }
 
@@ -883,6 +965,86 @@ class Level1Scene extends Phaser.Scene {
             
             // Haptic feedback on fire
             this.triggerHaptic('light');
+        }
+    }
+    
+    firePulseCannons() {
+        // Fire bursts from two cannons offset from player position
+        const leftCannonX = this.player.x - 25
+        const rightCannonX = this.player.x + 25
+        const cannonY = this.player.y
+        const burstsPerCannon = this.pulseCannonsStats.burstsPerCannon
+        
+        // Fire bursts from left cannon
+        for (let i = 0; i < burstsPerCannon; i++) {
+            this.time.delayedCall(i * 100, () => {
+                const bullet = this.bullets.get(leftCannonX, cannonY, 'bullet')
+                if (bullet) {
+                    this.enableBulletPhysics(bullet)
+                    bullet.setTint(0xFF6600) // Orange tint for pulse cannons
+                    bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed)
+                }
+            })
+        }
+        
+        // Fire bursts from right cannon
+        for (let i = 0; i < burstsPerCannon; i++) {
+            this.time.delayedCall(i * 100, () => {
+                const bullet = this.bullets.get(rightCannonX, cannonY, 'bullet')
+                if (bullet) {
+                    this.enableBulletPhysics(bullet)
+                    bullet.setTint(0xFF6600) // Orange tint for pulse cannons
+                    bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed)
+                }
+            })
+        }
+        
+        this.playSound('phaser')
+    }
+    
+    fireQuantumTorpedo() {
+        // Find the most powerful enemy (highest health)
+        let target = null
+        let maxHealth = 0
+        
+        this.enemies.children.entries.forEach(enemy => {
+            if (enemy.active && enemy.visible && enemy.health > maxHealth) {
+                maxHealth = enemy.health
+                target = enemy
+            }
+        })
+        
+        // Also check boss if active
+        if (this.boss && this.boss.active && this.boss.visible && this.boss.health > maxHealth) {
+            target = this.boss
+        }
+        
+        if (!target) return // No enemies to target
+        
+        // Create torpedo
+        const torpedo = this.bullets.get(this.player.x, this.player.y - 20, 'bullet')
+        if (torpedo) {
+            this.enableBulletPhysics(torpedo)
+            torpedo.setTint(0x00FFFF) // Cyan tint for quantum torpedos
+            torpedo.setScale(1.5) // Make torpedos larger
+            
+            // Store torpedo data
+            torpedo.damage = this.quantumTorpedosStats.damage
+            torpedo.isQuantumTorpedo = true
+            torpedo.target = target
+            
+            // Calculate velocity towards target
+            const dx = target.x - torpedo.x
+            const dy = target.y - torpedo.y
+            const distance = Math.sqrt(dx * dx + dy * dy)
+            const speed = PlayerConfig.bulletSpeed * 0.8 // Slightly slower than regular bullets
+            
+            torpedo.body.setVelocity(
+                (dx / distance) * speed,
+                (dy / distance) * speed
+            )
+            
+            this.playSound('phaser')
         }
     }
 
@@ -1016,7 +1178,13 @@ class Level1Scene extends Phaser.Scene {
         // Disable bullet using helper function
         this.disableBulletPhysics(bullet);
         
-        enemy.health -= 10; // Bullet damage
+        // Calculate damage - quantum torpedos do more damage
+        let damage = 10 // Default bullet damage
+        if (bullet.isQuantumTorpedo) {
+            damage = bullet.damage * 10 // Torpedos do 5x10 = 50 damage by default
+        }
+        
+        enemy.health -= damage;
         
         // Set invincibility after taking damage
         enemy.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
@@ -2317,6 +2485,64 @@ class Level1Scene extends Phaser.Scene {
             levelNumber: this.levelNumber
         });
     }
+
+    applyUpgrades() {
+        console.log('Applying upgrades...', this.saveData.upgrades)
+        
+        // Apply Primary Phasers upgrade (fire rate)
+        const phasersLevel = this.saveData.upgrades.primaryPhasers || 0
+        if (phasersLevel > 0) {
+            const phasersStats = UpgradesConfig.getUpgradeStats('primaryPhasers', phasersLevel)
+            this.playerStats.fireRate = phasersStats.fireRate
+        }
+        
+        // Apply Primary Shields upgrade
+        const shieldsLevel = this.saveData.upgrades.primaryShields || 0
+        if (shieldsLevel > 0) {
+            const shieldsStats = UpgradesConfig.getUpgradeStats('primaryShields', shieldsLevel)
+            this.playerStats.shields = shieldsStats.shields
+            this.playerStats.maxShields = shieldsStats.shields
+        }
+        
+        // Apply Ablative Armor upgrade
+        const armorLevel = this.saveData.upgrades.ablativeArmor || 0
+        if (armorLevel > 0) {
+            const armorStats = UpgradesConfig.getUpgradeStats('ablativeArmor', armorLevel)
+            this.playerStats.health = armorStats.health
+            this.playerStats.maxHealth = armorStats.health
+        }
+        
+        // Apply Impulse Engines upgrade
+        const enginesLevel = this.saveData.upgrades.impulseEngines || 0
+        if (enginesLevel > 0) {
+            const enginesStats = UpgradesConfig.getUpgradeStats('impulseEngines', enginesLevel)
+            this.playerStats.speed = enginesStats.speed
+        }
+        
+        // Initialize weapon systems
+        this.initializeWeaponSystems()
+    }
+    
+    initializeWeaponSystems() {
+        // Pulse Cannons
+        const pulseCannonsLevel = this.saveData.upgrades.pulseCannons || 0
+        this.pulseCannonsStats = UpgradesConfig.getUpgradeStats('pulseCannons', pulseCannonsLevel)
+        this.pulseCannonsReady = true
+        this.pulseCannonsLastFired = 0
+        
+        // Quantum Torpedos
+        const torpedosLevel = this.saveData.upgrades.quantumTorpedos || 0
+        this.quantumTorpedosStats = UpgradesConfig.getUpgradeStats('quantumTorpedos', torpedosLevel)
+        this.quantumTorpedosReady = true
+        this.quantumTorpedosLastFired = 0
+        
+        // Point Defense
+        const pointDefenseLevel = this.saveData.upgrades.pointDefense || 0
+        this.pointDefenseStats = UpgradesConfig.getUpgradeStats('pointDefense', pointDefenseLevel)
+        this.pointDefenseReady = true
+        this.pointDefenseLastFired = 0
+    }
+
 
     gameOver() {
         console.log('Level1Scene: Game Over!');
