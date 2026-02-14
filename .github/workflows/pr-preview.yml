@@ -24,7 +24,7 @@ jobs:
           publish_dir: .
           destination_dir: pr-${{ github.event.pull_request.number }}
           keep_files: true
-          exclude_assets: '.github'
+          exclude_assets: '.github,.git'
       
       - name: Comment PR with preview link
         uses: actions/github-script@v7
