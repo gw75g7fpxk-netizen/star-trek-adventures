@@ -36,6 +36,16 @@ const CHEAT_FIRE_RATE = 100; // Milliseconds between shots
 // Escape pod spawn position (above screen top)
 const ESCAPE_POD_SPAWN_Y = -20;
 
+// Shield impact effect constants
+const SHIELD_IMPACT = {
+    radius: 40,           // Initial radius of shield bubble
+    color: 0x00FFFF,      // Cyan color for shield effect
+    strokeWidth: 3,       // Stroke thickness
+    strokeAlpha: 0.8,     // Stroke opacity
+    scale: 1.5,           // Expansion scale
+    duration: 300         // Animation duration in milliseconds
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -915,18 +925,28 @@ class Level1Scene extends Phaser.Scene {
     
     showShieldImpact() {
         // Create a shield impact bubble around the player ship
-        const shieldBubble = this.add.circle(this.player.x, this.player.y, 40, 0x00FFFF, 0);
-        shieldBubble.setStrokeStyle(3, 0x00FFFF, 0.8);
+        const shieldBubble = this.add.circle(
+            this.player.x, 
+            this.player.y, 
+            SHIELD_IMPACT.radius, 
+            SHIELD_IMPACT.color, 
+            0
+        );
+        shieldBubble.setStrokeStyle(
+            SHIELD_IMPACT.strokeWidth, 
+            SHIELD_IMPACT.color, 
+            SHIELD_IMPACT.strokeAlpha
+        );
         shieldBubble.setDepth(10); // Render above player
         
         // Animate the shield bubble expanding and fading out
         this.tweens.add({
             targets: shieldBubble,
-            scaleX: 1.5,
-            scaleY: 1.5,
+            scaleX: SHIELD_IMPACT.scale,
+            scaleY: SHIELD_IMPACT.scale,
             alpha: 0,
-            duration: 300,
-            ease: 'Power2',
+            duration: SHIELD_IMPACT.duration,
+            ease: 'Power2.easeOut',
             onComplete: () => {
                 shieldBubble.destroy();
             }
