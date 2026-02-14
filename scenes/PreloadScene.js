@@ -103,15 +103,11 @@ class PreloadScene extends Phaser.Scene {
     }
 
     loadPlaceholderAssets() {
-        // Create placeholder graphics as textures
-        // These will be replaced with actual sprites later
+        // Load actual player ship image
+        this.load.image('player-ship', 'assets/images/player-ship.jpeg');
         
-        // Player ship placeholder (blue triangle)
-        const playerGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        playerGraphics.fillStyle(0x0088FF, 1);
-        playerGraphics.fillTriangle(20, 0, 0, 40, 40, 40);
-        playerGraphics.generateTexture('player-ship', 40, 40);
-        playerGraphics.destroy();
+        // Create placeholder graphics as textures for other game objects
+        // These will be replaced with actual sprites later
         
         // Enemy fighter placeholder (red triangle)
         const fighterGraphics = this.make.graphics({ x: 0, y: 0, add: false });
