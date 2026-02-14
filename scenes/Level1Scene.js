@@ -1967,6 +1967,10 @@ class Level1Scene extends Phaser.Scene {
         this.boss.phase = 3;
         this.boss.phaseHealth = EnemyConfig.boss.phases[2].health;
         
+        // Make boss core visible by changing texture to red core
+        this.boss.setTexture('boss-core');
+        this.boss.setVisible(true);
+        
         // Boss becomes more aggressive
         this.boss.attackRate = 1000;
     }
