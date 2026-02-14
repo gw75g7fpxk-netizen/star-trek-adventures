@@ -41,7 +41,7 @@ const EnemyConfig = {
     // Weapon Platform - Stationary turret with scattershot
     weaponPlatform: {
         health: 5,
-        speed: 0, // Stationary (only moves with screen scroll)
+        speed: 0, // Stationary horizontally (moves vertically with screen scroll)
         fireRate: 3000, // Fires slowly (every 3 seconds)
         bulletSpeed: 200,
         damage: 1,
