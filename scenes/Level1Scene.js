@@ -1285,8 +1285,8 @@ class Level1Scene extends Phaser.Scene {
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
             if ((enemyType === 'fighter' || enemyType === 'cruiser') && enemy.width > 0) {
-                // Enemy fighter PNG is 651x1076px, scale to 30px width
-                // Enemy cruiser PNG needs similar scaling to target width
+                // Scale enemy sprites to their configured target width
+                // Fighter: 651x1076px → 30px, Cruiser: 811x790px → 50px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
