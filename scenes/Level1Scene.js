@@ -25,6 +25,7 @@ const RENDER_DEPTH = {
 
 // Enemy spawn and visibility constants
 const ENEMY_VISIBLE_THRESHOLD = 10; // Y position where enemy is considered visibly on screen
+const DEFAULT_VERTICAL_SCROLL_SPEED = 50; // Default downward velocity for stationary enemies (px/s)
 
 // Sound interval for charging sound during pod rescue (in milliseconds)
 const CHARGING_SOUND_INTERVAL = 500;
@@ -1259,7 +1260,7 @@ class Level1Scene extends Phaser.Scene {
             this.waveSpawnPool = null;
         }
         
-        console.log(`Starting Wave ${this.currentWave}`);
+        console.log(`Starting Wave ${this.currentWave}`, waveConfig.shipCounts || waveConfig.enemyTypes);
         
         // Spawn enemies for this wave
         this.waveTimer = this.time.addEvent({
@@ -1400,7 +1401,9 @@ class Level1Scene extends Phaser.Scene {
             }
             
             // Set initial velocity so enemy moves onto screen
-            enemy.body.setVelocity(0, config.speed);
+            // For stationary enemies (speed=0), use a default scroll speed so they enter the screen
+            const verticalSpeed = config.speed > 0 ? config.speed : DEFAULT_VERTICAL_SCROLL_SPEED;
+            enemy.body.setVelocity(0, verticalSpeed);
             
             // Disable collision detection initially - will be enabled when enemy enters screen
             enemy.body.checkCollision.none = true;
@@ -1865,7 +1868,7 @@ class Level1Scene extends Phaser.Scene {
         
         this.boss = this.physics.add.sprite(x, y, 'boss');
         this.boss.setActive(true);
-        this.boss.setVisible(true);
+        this.boss.setVisible(false); // Boss sprite should be invisible - boss is rendered via components only
         // Ensure boss is rendered behind its components (generators/turrets)
         this.boss.setDepth(RENDER_DEPTH.BOSS);
         
@@ -1915,7 +1918,7 @@ class Level1Scene extends Phaser.Scene {
             const generator = this.bossComponents.get(
                 this.boss.x + pos.x,
                 this.boss.y + pos.y,
-                'enemy-cruiser'
+                'boss-generator'
             );
             
             if (generator) {
@@ -1952,7 +1955,7 @@ class Level1Scene extends Phaser.Scene {
             const turret = this.bossComponents.get(
                 this.boss.x + Math.cos(angle) * radius,
                 this.boss.y + Math.sin(angle) * radius,
-                'enemy-fighter'
+                'boss-turret'
             );
             
             if (turret) {
@@ -1981,6 +1984,10 @@ class Level1Scene extends Phaser.Scene {
         console.log('Boss Phase 3: Core Exposed');
         this.boss.phase = 3;
         this.boss.phaseHealth = EnemyConfig.boss.phases[2].health;
+        
+        // Make boss core visible by changing texture to red core
+        this.boss.setTexture('boss-core');
+        this.boss.setVisible(true);
         
         // Boss becomes more aggressive
         this.boss.attackRate = 1000;

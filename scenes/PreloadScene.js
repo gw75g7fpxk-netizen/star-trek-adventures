@@ -129,6 +129,26 @@ class PreloadScene extends Phaser.Scene {
         bossGraphics.generateTexture('boss', 200, 200);
         bossGraphics.destroy();
         
+        // Boss core (Phase 3) - large red circle
+        const bossCoreGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        bossCoreGraphics.fillStyle(0xFF0000, 1); // Red
+        bossCoreGraphics.fillCircle(100, 100, 100); // Large red circle, 200px diameter
+        bossCoreGraphics.generateTexture('boss-core', 200, 200);
+        bossCoreGraphics.destroy();
+        
+        // Boss components (generators and turrets) - red shapes
+        const generatorGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        generatorGraphics.fillStyle(0xFF0000, 1); // Red
+        generatorGraphics.fillRect(0, 0, 30, 30);
+        generatorGraphics.generateTexture('boss-generator', 30, 30);
+        generatorGraphics.destroy();
+        
+        const turretGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        turretGraphics.fillStyle(0xFF0000, 1); // Red
+        turretGraphics.fillCircle(15, 15, 15);
+        turretGraphics.generateTexture('boss-turret', 30, 30);
+        turretGraphics.destroy();
+        
         // Player bullet placeholder (yellow rectangle)
         const bulletGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         bulletGraphics.fillStyle(0xFFFF00, 1);
