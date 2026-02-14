@@ -1237,6 +1237,14 @@ class Level1Scene extends Phaser.Scene {
             enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
+            // Scale enemy fighter to correct size while maintaining aspect ratio
+            if (enemyType === 'fighter') {
+                // Enemy fighter PNG is 651x1076px, scale to 30px width
+                const targetWidth = config.size.width;
+                const scale = targetWidth / enemy.width;
+                enemy.setScale(scale);
+            }
+            
             // Set initial velocity so enemy moves onto screen
             enemy.body.setVelocity(0, config.speed);
             
