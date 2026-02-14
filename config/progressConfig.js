@@ -80,6 +80,7 @@ const ProgressConfig = {
     },
 
     // Save level completion stats
+    // Note: Points are awarded during gameplay via addSessionPoints(), not here
     saveLevelStats(levelNumber, stats, saveData) {
         saveData.levelStats[`level${levelNumber}`] = {
             completed: true,
@@ -94,12 +95,9 @@ const ProgressConfig = {
             this.unlockLevel(levelNumber + 1, saveData)
         }
         
-        // Award upgrade points based on performance
-        const pointsEarned = Math.floor(stats.score / 100)
-        saveData.upgradePoints += pointsEarned
-        
+        // Save progress (points already awarded during gameplay)
         this.saveProgress(saveData)
-        console.log(`Level ${levelNumber} stats saved. Points earned: ${pointsEarned}`)
+        console.log(`Level ${levelNumber} stats saved.`)
     },
 
     // Get level stats if completed
@@ -122,5 +120,22 @@ const ProgressConfig = {
     // Get current level of an upgrade
     getUpgradeLevel(upgradeKey, saveData) {
         return saveData.upgrades[upgradeKey] || 0
+    },
+
+    // Add points from current play session (roguelite style - even on death)
+    // Points awarded: 1 point per 50 score, 5 points per pod rescued, 2 points per wave completed
+    addSessionPoints(score, podsRescued, wave, saveData) {
+        // Calculate points earned this session
+        const scorePoints = Math.floor(score / 50)
+        const podPoints = podsRescued * 5
+        const wavePoints = wave * 2
+        const totalPoints = scorePoints + podPoints + wavePoints
+        
+        // Add to total and save
+        saveData.upgradePoints += totalPoints
+        this.saveProgress(saveData)
+        
+        console.log(`Session points earned: ${totalPoints} (Score: ${scorePoints}, Pods: ${podPoints}, Waves: ${wavePoints})`)
+        return totalPoints
     }
 }
