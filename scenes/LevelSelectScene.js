@@ -184,11 +184,11 @@ class LevelSelectScene extends Phaser.Scene {
         let panelX, panelY, panelWidth, panelHeight
         
         if (isMobile) {
-            // Mobile: Smaller panel on left side
+            // Mobile: Smaller panel on left side with reduced height to avoid hiding back button
             panelX = width * 0.03
             panelY = height * 0.12
             panelWidth = width * 0.44
-            panelHeight = height * 0.75
+            panelHeight = height * 0.60
         } else {
             // Desktop: Original size
             panelX = width * 0.05
@@ -269,11 +269,11 @@ class LevelSelectScene extends Phaser.Scene {
         const height = this.cameras.main.height
         
         // Position back button based on screen size
-        // Mobile: Button at bottom for thumb accessibility
+        // Mobile: Button near bottom but clear of OS touch areas and info panel
         // Desktop: Button at top to avoid overlap with level map
-        const backSize = isMobile ? '14px' : '18px'
+        const backSize = isMobile ? '16px' : '18px'
         const backX = width / 2
-        const backY = isMobile ? height - 25 : 30
+        const backY = isMobile ? height - 85 : 30
         
         const backButton = this.add.text(backX, backY, '[ BACK TO MENU ]', {
             fontSize: backSize,

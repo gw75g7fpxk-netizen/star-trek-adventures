@@ -81,7 +81,8 @@ class UpgradesScene extends Phaser.Scene {
         })
         
         // Back button - ensure it's visible on mobile
-        const backButtonY = isMobile ? height - 60 : height - 50
+        // Move higher on mobile to avoid iPhone home indicator and safe areas
+        const backButtonY = isMobile ? height - 110 : height - 50
         const backButtonSize = isMobile ? '20px' : '24px'
         const backButton = this.add.text(width / 2, backButtonY, '[ BACK TO MENU ]', {
             fontSize: backButtonSize,
