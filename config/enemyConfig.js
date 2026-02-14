@@ -38,6 +38,20 @@ const EnemyConfig = {
         size: { width: 120, height: 120 }
     },
     
+    // Weapon Platform - Stationary turret with scattershot
+    weaponPlatform: {
+        health: 5,
+        speed: 0, // Stationary (only moves with screen scroll)
+        fireRate: 3000, // Fires slowly (every 3 seconds)
+        bulletSpeed: 200,
+        damage: 1,
+        points: 150,
+        movementPattern: 'stationary',
+        scattershot: true, // Fires in all directions
+        scattershotCount: 6, // Number of bullets per shot
+        size: { width: 30, height: 30 }
+    },
+    
     // Boss - Massive Dominion Battleship
     boss: {
         health: 1000,
