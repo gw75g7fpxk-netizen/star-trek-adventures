@@ -1841,29 +1841,6 @@ class Level1Scene extends Phaser.Scene {
         
         this.isBossFight = true;
         
-        // Clear all enemies and enemy bullets before boss fight
-        this.enemies.clear(true, true);
-        this.enemyBullets.clear(true, true);
-        
-        // Clear escape pods
-        this.escapePods.clear(true, true);
-        
-        // Clear power-ups
-        this.powerUps.clear(true, true);
-        
-        // Stop wave timers
-        if (this.waveTimer) {
-            this.waveTimer.remove();
-            this.waveTimer = null;
-        }
-        if (this.podTimer) {
-            this.podTimer.remove();
-            this.podTimer = null;
-        }
-        
-        // End wave state
-        this.isWaveActive = false;
-        
         // Play boss alert sound
         this.playSound('boss');
         
@@ -1873,7 +1850,7 @@ class Level1Scene extends Phaser.Scene {
         
         this.boss = this.physics.add.sprite(x, y, 'boss');
         this.boss.setActive(true);
-        this.boss.setVisible(true);
+        this.boss.setVisible(false); // Boss sprite should be invisible - boss is rendered via components only
         // Ensure boss is rendered behind its components (generators/turrets)
         this.boss.setDepth(RENDER_DEPTH.BOSS);
         
@@ -1923,7 +1900,7 @@ class Level1Scene extends Phaser.Scene {
             const generator = this.bossComponents.get(
                 this.boss.x + pos.x,
                 this.boss.y + pos.y,
-                'enemy-cruiser'
+                'boss-generator'
             );
             
             if (generator) {
@@ -1960,7 +1937,7 @@ class Level1Scene extends Phaser.Scene {
             const turret = this.bossComponents.get(
                 this.boss.x + Math.cos(angle) * radius,
                 this.boss.y + Math.sin(angle) * radius,
-                'enemy-fighter'
+                'boss-turret'
             );
             
             if (turret) {
