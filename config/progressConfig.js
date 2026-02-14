@@ -123,12 +123,13 @@ const ProgressConfig = {
     },
 
     // Add points from current play session (roguelite style - even on death)
-    // Points awarded: 1 point per 50 score, 5 points per pod rescued, 2 points per wave completed
+    // Points awarded: 1 point per 600 score, plus 1 point per 2 pods, plus 1 point per 3 waves
+    // Tuned so ~5 plays = 10-12 points (enough for one mid-tier upgrade)
     addSessionPoints(score, podsRescued, wave, saveData) {
         // Calculate points earned this session
-        const scorePoints = Math.floor(score / 50)
-        const podPoints = podsRescued * 5
-        const wavePoints = wave * 2
+        const scorePoints = Math.floor(score / 600)
+        const podPoints = Math.floor(podsRescued / 2)
+        const wavePoints = Math.floor(wave / 3)
         const totalPoints = scorePoints + podPoints + wavePoints
         
         // Add to total and save
