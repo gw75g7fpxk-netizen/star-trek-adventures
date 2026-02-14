@@ -1505,9 +1505,6 @@ class Level1Scene extends Phaser.Scene {
                 // Move horizontally at top of screen
                 if (enemy.y >= 100) {
                     // Once battleship reaches y=100, stop vertical movement and start horizontal
-                    if (enemy.body.velocity.y !== 0) {
-                        console.log(`Battleship reached y=${enemy.y}, starting horizontal pattern`);
-                    }
                     enemy.body.setVelocityY(0);
                     if (enemy.x < 100 || enemy.x > this.cameraWidth - 100) {
                         enemy.body.setVelocityX(-enemy.body.velocity.x);
