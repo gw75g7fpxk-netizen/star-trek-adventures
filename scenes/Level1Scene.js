@@ -890,6 +890,9 @@ class Level1Scene extends Phaser.Scene {
         this.playSound('hit');
         
         if (this.playerStats.shields > 0) {
+            // Show shield impact effect before taking damage
+            this.showShieldImpact();
+            
             this.playerStats.shields -= amount;
             if (this.playerStats.shields < 0) {
                 const overflow = Math.abs(this.playerStats.shields);
@@ -908,6 +911,26 @@ class Level1Scene extends Phaser.Scene {
             this.triggerHaptic('heavy');
             this.gameOver();
         }
+    }
+    
+    showShieldImpact() {
+        // Create a shield impact bubble around the player ship
+        const shieldBubble = this.add.circle(this.player.x, this.player.y, 40, 0x00FFFF, 0);
+        shieldBubble.setStrokeStyle(3, 0x00FFFF, 0.8);
+        shieldBubble.setDepth(10); // Render above player
+        
+        // Animate the shield bubble expanding and fading out
+        this.tweens.add({
+            targets: shieldBubble,
+            scaleX: 1.5,
+            scaleY: 1.5,
+            alpha: 0,
+            duration: 300,
+            ease: 'Power2',
+            onComplete: () => {
+                shieldBubble.destroy();
+            }
+        });
     }
     
     setupCollisions() {
@@ -1240,9 +1263,10 @@ class Level1Scene extends Phaser.Scene {
             enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
-            // Scale enemy fighter to correct size while maintaining aspect ratio
-            if (enemyType === 'fighter' && enemy.width > 0) {
+            // Scale enemy sprites to correct size while maintaining aspect ratio
+            if ((enemyType === 'fighter' || enemyType === 'cruiser') && enemy.width > 0) {
                 // Enemy fighter PNG is 651x1076px, scale to 30px width
+                // Enemy cruiser PNG needs similar scaling to target width
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
