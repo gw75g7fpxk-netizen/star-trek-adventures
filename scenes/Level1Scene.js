@@ -1382,7 +1382,9 @@ class Level1Scene extends Phaser.Scene {
             }
             
             // Set initial velocity so enemy moves onto screen
-            enemy.body.setVelocity(0, config.speed);
+            // For stationary enemies (speed=0), use a default scroll speed so they enter the screen
+            const verticalSpeed = config.speed > 0 ? config.speed : 50;
+            enemy.body.setVelocity(0, verticalSpeed);
             
             // Disable collision detection initially - will be enabled when enemy enters screen
             enemy.body.checkCollision.none = true;
