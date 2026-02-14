@@ -2,7 +2,16 @@
 console.log('Star Trek Adventures - Initializing...');
 
 // Configure scenes
-GameConfig.scene = [BootScene, PreloadScene, Level1Scene, GameOverScene, VictoryScene];
+GameConfig.scene = [
+    BootScene, 
+    PreloadScene, 
+    MainMenuScene, 
+    LevelSelectScene, 
+    UpgradesScene, 
+    Level1Scene, 
+    GameOverScene, 
+    VictoryScene
+];
 
 // Create Phaser game instance
 const game = new Phaser.Game(GameConfig);

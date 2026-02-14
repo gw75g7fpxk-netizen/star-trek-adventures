@@ -28,14 +28,14 @@ class PreloadScene extends Phaser.Scene {
     }
 
     create() {
-        console.log('PreloadScene: Assets ready, starting Level 1...');
+        console.log('PreloadScene: Assets ready, starting main menu...');
         
         // Initialize audio context early to reduce sound delay later
         this.initializeAudioContext();
         
         // Small delay for effect
         this.time.delayedCall(this.SCENE_TRANSITION_DELAY, () => {
-            this.scene.start('Level1Scene');
+            this.scene.start('MainMenuScene');
         });
     }
     
