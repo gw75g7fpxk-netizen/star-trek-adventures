@@ -2040,6 +2040,13 @@ class Level1Scene extends Phaser.Scene {
         // Ensure boss is rendered behind its components (generators/turrets)
         this.boss.setDepth(RENDER_DEPTH.BOSS);
         
+        // Configure physics body for boss
+        if (this.boss.body) {
+            this.boss.body.enable = true;
+            // Body size will be set when phase 3 starts and core becomes visible
+            this.boss.body.checkCollision.none = false;
+        }
+        
         // Initialize boss stats
         this.boss.phase = 0;
         this.boss.maxHealth = EnemyConfig.boss.health;
@@ -2156,6 +2163,14 @@ class Level1Scene extends Phaser.Scene {
         // Make boss core visible by changing texture to red core
         this.boss.setTexture('boss-core');
         this.boss.setVisible(true);
+        
+        // Ensure physics body is properly enabled for collisions in phase 3
+        if (this.boss.body) {
+            this.boss.body.enable = true;
+            this.boss.body.checkCollision.none = false;
+            // Set body size to match the visible core texture (200x200)
+            this.boss.body.setSize(200, 200);
+        }
         
         // Boss becomes more aggressive
         this.boss.attackRate = 1000;
@@ -2285,6 +2300,9 @@ class Level1Scene extends Phaser.Scene {
             actualBoss.health -= 10;
             actualBoss.phaseHealth -= 10;
             
+            // Play hit sound effect
+            this.playSound('hit');
+            
             // Set invincibility after taking damage
             actualBoss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
             
@@ -2310,10 +2328,15 @@ class Level1Scene extends Phaser.Scene {
         
         generator.health -= 10;
         
+        // Play hit sound effect
+        this.playSound('hit');
+        
         // Set invincibility after taking damage
         generator.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (generator.health <= 0) {
+            // Play explosion sound effect
+            this.playSound('explosion');
             this.createExplosion(generator.x, generator.y);
             generator.setActive(false);
             generator.setVisible(false);
@@ -2355,10 +2378,15 @@ class Level1Scene extends Phaser.Scene {
         
         turret.health -= 10;
         
+        // Play hit sound effect
+        this.playSound('hit');
+        
         // Set invincibility after taking damage
         turret.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (turret.health <= 0) {
+            // Play explosion sound effect
+            this.playSound('explosion');
             this.createExplosion(turret.x, turret.y);
             turret.setActive(false);
             turret.setVisible(false);
