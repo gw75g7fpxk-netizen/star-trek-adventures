@@ -1241,7 +1241,7 @@ class Level1Scene extends Phaser.Scene {
             this.waveSpawnPool = null;
         }
         
-        console.log(`Starting Wave ${this.currentWave}`);
+        console.log(`Starting Wave ${this.currentWave}`, waveConfig.shipCounts || waveConfig.enemyTypes);
         
         // Spawn enemies for this wave
         this.waveTimer = this.time.addEvent({
