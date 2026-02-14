@@ -1841,6 +1841,29 @@ class Level1Scene extends Phaser.Scene {
         
         this.isBossFight = true;
         
+        // Clear all enemies and enemy bullets before boss fight
+        this.enemies.clear(true, true);
+        this.enemyBullets.clear(true, true);
+        
+        // Clear escape pods
+        this.escapePods.clear(true, true);
+        
+        // Clear power-ups
+        this.powerUps.clear(true, true);
+        
+        // Stop wave timers
+        if (this.waveTimer) {
+            this.waveTimer.remove();
+            this.waveTimer = null;
+        }
+        if (this.podTimer) {
+            this.podTimer.remove();
+            this.podTimer = null;
+        }
+        
+        // End wave state
+        this.isWaveActive = false;
+        
         // Play boss alert sound
         this.playSound('boss');
         
