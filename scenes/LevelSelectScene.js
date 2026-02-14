@@ -8,6 +8,7 @@ class LevelSelectScene extends Phaser.Scene {
     create() {
         const width = this.cameras.main.width
         const height = this.cameras.main.height
+        const isMobile = width < 600 || height < 600
         
         console.log('LevelSelectScene: Loading level selection...')
         
@@ -18,8 +19,10 @@ class LevelSelectScene extends Phaser.Scene {
         this.createStarfield()
         
         // Title
-        const title = this.add.text(width / 2, 30, 'MISSION SELECT', {
-            fontSize: '36px',
+        const titleSize = isMobile ? '28px' : '36px'
+        const titleY = isMobile ? 25 : 30
+        const title = this.add.text(width / 2, titleY, 'MISSION SELECT', {
+            fontSize: titleSize,
             color: '#FF9900',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -27,13 +30,13 @@ class LevelSelectScene extends Phaser.Scene {
         title.setOrigin(0.5)
         
         // Create the level map
-        this.createLevelMap()
+        this.createLevelMap(isMobile)
         
         // Create info panel for selected level
-        this.createInfoPanel()
+        this.createInfoPanel(isMobile)
         
         // Back button
-        this.createBackButton()
+        this.createBackButton(isMobile)
         
         // Update info panel with initial selection
         this.updateInfoPanel()
@@ -54,38 +57,64 @@ class LevelSelectScene extends Phaser.Scene {
         }
     }
     
-    createLevelMap() {
+    createLevelMap(isMobile) {
         const width = this.cameras.main.width
         const height = this.cameras.main.height
         
         // Define positions for 10 levels in a winding space route
-        // Arranged as a path through space
-        const levelPositions = [
-            { x: width * 0.2, y: height * 0.25 },  // Level 1
-            { x: width * 0.35, y: height * 0.3 },  // Level 2
-            { x: width * 0.5, y: height * 0.25 },  // Level 3
-            { x: width * 0.65, y: height * 0.3 },  // Level 4
-            { x: width * 0.75, y: height * 0.4 },  // Level 5
-            { x: width * 0.7, y: height * 0.55 },  // Level 6
-            { x: width * 0.55, y: height * 0.6 },  // Level 7
-            { x: width * 0.4, y: height * 0.55 },  // Level 8
-            { x: width * 0.3, y: height * 0.65 },  // Level 9
-            { x: width * 0.2, y: height * 0.75 }   // Level 10
-        ]
+        // For mobile, use a more compact vertical layout
+        let levelPositions
+        
+        if (isMobile) {
+            // Mobile: Compact grid layout on the right side
+            levelPositions = [
+                { x: width * 0.55, y: height * 0.20 },  // Level 1
+                { x: width * 0.75, y: height * 0.20 },  // Level 2
+                { x: width * 0.55, y: height * 0.32 },  // Level 3
+                { x: width * 0.75, y: height * 0.32 },  // Level 4
+                { x: width * 0.55, y: height * 0.44 },  // Level 5
+                { x: width * 0.75, y: height * 0.44 },  // Level 6
+                { x: width * 0.55, y: height * 0.56 },  // Level 7
+                { x: width * 0.75, y: height * 0.56 },  // Level 8
+                { x: width * 0.55, y: height * 0.68 },  // Level 9
+                { x: width * 0.75, y: height * 0.68 }   // Level 10
+            ]
+        } else {
+            // Desktop: Original winding space route
+            levelPositions = [
+                { x: width * 0.2, y: height * 0.25 },  // Level 1
+                { x: width * 0.35, y: height * 0.3 },  // Level 2
+                { x: width * 0.5, y: height * 0.25 },  // Level 3
+                { x: width * 0.65, y: height * 0.3 },  // Level 4
+                { x: width * 0.75, y: height * 0.4 },  // Level 5
+                { x: width * 0.7, y: height * 0.55 },  // Level 6
+                { x: width * 0.55, y: height * 0.6 },  // Level 7
+                { x: width * 0.4, y: height * 0.55 },  // Level 8
+                { x: width * 0.3, y: height * 0.65 },  // Level 9
+                { x: width * 0.2, y: height * 0.75 }   // Level 10
+            ]
+        }
         
         this.levelNodes = []
         
-        // Draw connecting lines between levels
-        const graphics = this.add.graphics()
-        graphics.lineStyle(2, 0x00FFFF, 0.3)
-        
-        for (let i = 0; i < levelPositions.length - 1; i++) {
-            const start = levelPositions[i]
-            const end = levelPositions[i + 1]
-            graphics.lineBetween(start.x, start.y, end.x, end.y)
+        // Draw connecting lines between levels (skip for mobile to reduce clutter)
+        if (!isMobile) {
+            const graphics = this.add.graphics()
+            graphics.lineStyle(2, 0x00FFFF, 0.3)
+            
+            for (let i = 0; i < levelPositions.length - 1; i++) {
+                const start = levelPositions[i]
+                const end = levelPositions[i + 1]
+                graphics.lineBetween(start.x, start.y, end.x, end.y)
+            }
         }
         
         // Create level nodes
+        const nodeSize = isMobile ? 15 : 20
+        const fontSize = isMobile ? '12px' : '16px'
+        const starOffset = isMobile ? -25 : -35
+        const lockOffset = isMobile ? -25 : -35
+        
         for (let i = 1; i <= 10; i++) {
             const pos = levelPositions[i - 1]
             const isUnlocked = ProgressConfig.isLevelUnlocked(i, this.saveData)
@@ -96,8 +125,8 @@ class LevelSelectScene extends Phaser.Scene {
             const nodeColor = isCompleted ? 0x00FF00 : (isUnlocked ? 0xFFFF00 : 0x666666)
             const nodeAlpha = isUnlocked ? 1.0 : 0.5
             
-            const node = this.add.circle(pos.x, pos.y, 20, nodeColor, nodeAlpha)
-            node.setStrokeStyle(3, 0x00FFFF, nodeAlpha)
+            const node = this.add.circle(pos.x, pos.y, nodeSize, nodeColor, nodeAlpha)
+            node.setStrokeStyle(isMobile ? 2 : 3, 0x00FFFF, nodeAlpha)
             
             if (isUnlocked) {
                 node.setInteractive({ useHandCursor: true })
@@ -119,7 +148,7 @@ class LevelSelectScene extends Phaser.Scene {
             
             // Level number
             const levelText = this.add.text(pos.x, pos.y, i.toString(), {
-                fontSize: '16px',
+                fontSize: fontSize,
                 color: '#000000',
                 fontFamily: 'Courier New, monospace',
                 fontStyle: 'bold'
@@ -128,8 +157,8 @@ class LevelSelectScene extends Phaser.Scene {
             
             // Completion star for completed levels
             if (isCompleted) {
-                const star = this.add.text(pos.x, pos.y - 35, '★', {
-                    fontSize: '20px',
+                const star = this.add.text(pos.x, pos.y + starOffset, '★', {
+                    fontSize: isMobile ? '16px' : '20px',
                     color: '#FFD700'
                 })
                 star.setOrigin(0.5)
@@ -137,8 +166,8 @@ class LevelSelectScene extends Phaser.Scene {
             
             // Lock icon for locked levels
             if (!isUnlocked) {
-                const lock = this.add.text(pos.x, pos.y - 35, '🔒', {
-                    fontSize: '16px'
+                const lock = this.add.text(pos.x, pos.y + lockOffset, '🔒', {
+                    fontSize: isMobile ? '12px' : '16px'
                 })
                 lock.setOrigin(0.5)
             }
@@ -147,54 +176,72 @@ class LevelSelectScene extends Phaser.Scene {
         }
     }
     
-    createInfoPanel() {
+    createInfoPanel(isMobile) {
         const width = this.cameras.main.width
         const height = this.cameras.main.height
         
-        // Info panel background
-        const panelX = width * 0.05
-        const panelY = height * 0.15
-        const panelWidth = width * 0.35
-        const panelHeight = height * 0.7
+        // Info panel background - adjust for mobile
+        let panelX, panelY, panelWidth, panelHeight
+        
+        if (isMobile) {
+            // Mobile: Smaller panel on left side
+            panelX = width * 0.03
+            panelY = height * 0.12
+            panelWidth = width * 0.44
+            panelHeight = height * 0.75
+        } else {
+            // Desktop: Original size
+            panelX = width * 0.05
+            panelY = height * 0.15
+            panelWidth = width * 0.35
+            panelHeight = height * 0.7
+        }
         
         const panel = this.add.graphics()
         panel.fillStyle(0x000000, 0.8)
         panel.fillRect(panelX, panelY, panelWidth, panelHeight)
-        panel.lineStyle(3, 0x00FFFF, 1)
+        panel.lineStyle(isMobile ? 2 : 3, 0x00FFFF, 1)
         panel.strokeRect(panelX, panelY, panelWidth, panelHeight)
         
         // Info panel text (will be updated dynamically)
+        const padding = isMobile ? 10 : 20
+        const nameSize = isMobile ? '18px' : '24px'
+        const descSize = isMobile ? '12px' : '16px'
+        const statsSize = isMobile ? '11px' : '14px'
+        
         this.infoPanelTexts = {
-            levelName: this.add.text(panelX + 20, panelY + 20, '', {
-                fontSize: '24px',
+            levelName: this.add.text(panelX + padding, panelY + padding, '', {
+                fontSize: nameSize,
                 color: '#FF9900',
                 fontFamily: 'Courier New, monospace',
                 fontStyle: 'bold',
-                wordWrap: { width: panelWidth - 40 }
+                wordWrap: { width: panelWidth - padding * 2 }
             }),
-            description: this.add.text(panelX + 20, panelY + 60, '', {
-                fontSize: '16px',
+            description: this.add.text(panelX + padding, panelY + padding + (isMobile ? 40 : 60), '', {
+                fontSize: descSize,
                 color: '#FFFFFF',
                 fontFamily: 'Courier New, monospace',
-                wordWrap: { width: panelWidth - 40 }
+                wordWrap: { width: panelWidth - padding * 2 }
             }),
-            stats: this.add.text(panelX + 20, panelY + 120, '', {
-                fontSize: '14px',
+            stats: this.add.text(panelX + padding, panelY + padding + (isMobile ? 80 : 120), '', {
+                fontSize: statsSize,
                 color: '#00FFFF',
                 fontFamily: 'Courier New, monospace',
-                wordWrap: { width: panelWidth - 40 }
+                wordWrap: { width: panelWidth - padding * 2 }
             }),
-            locked: this.add.text(panelX + 20, panelY + 120, '', {
-                fontSize: '16px',
+            locked: this.add.text(panelX + padding, panelY + padding + (isMobile ? 80 : 120), '', {
+                fontSize: descSize,
                 color: '#FF0000',
                 fontFamily: 'Courier New, monospace',
-                wordWrap: { width: panelWidth - 40 }
+                wordWrap: { width: panelWidth - padding * 2 }
             })
         }
         
         // Play button
-        this.playButton = this.add.text(panelX + panelWidth / 2, panelY + panelHeight - 60, '[ LAUNCH MISSION ]', {
-            fontSize: '24px',
+        const buttonSize = isMobile ? '18px' : '24px'
+        const buttonY = panelY + panelHeight - (isMobile ? 50 : 60)
+        this.playButton = this.add.text(panelX + panelWidth / 2, buttonY, '[ LAUNCH MISSION ]', {
+            fontSize: buttonSize,
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -217,15 +264,21 @@ class LevelSelectScene extends Phaser.Scene {
         })
     }
     
-    createBackButton() {
+    createBackButton(isMobile) {
         const width = this.cameras.main.width
+        const height = this.cameras.main.height
         
-        const backButton = this.add.text(width / 2, 30, '[ BACK TO MENU ]', {
-            fontSize: '18px',
+        // Position back button based on screen size
+        const backSize = isMobile ? '14px' : '18px'
+        const backX = width / 2
+        const backY = isMobile ? height - 25 : 30
+        
+        const backButton = this.add.text(backX, backY, '[ BACK TO MENU ]', {
+            fontSize: backSize,
             color: '#888888',
             fontFamily: 'Courier New, monospace'
         })
-        backButton.setOrigin(0.5, 0)
+        backButton.setOrigin(0.5, isMobile ? 0.5 : 0)
         backButton.setInteractive()
         
         backButton.on('pointerdown', () => {

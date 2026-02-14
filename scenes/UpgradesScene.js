@@ -7,6 +7,7 @@ class UpgradesScene extends Phaser.Scene {
     create() {
         const width = this.cameras.main.width
         const height = this.cameras.main.height
+        const isMobile = width < 600 || height < 600
         
         console.log('UpgradesScene: Opening upgrades...')
         
@@ -17,8 +18,10 @@ class UpgradesScene extends Phaser.Scene {
         this.createStarfield()
         
         // Title
-        const title = this.add.text(width / 2, 50, 'SHIP UPGRADES', {
-            fontSize: '36px',
+        const titleSize = isMobile ? '28px' : '36px'
+        const titleY = isMobile ? 40 : 50
+        const title = this.add.text(width / 2, titleY, 'SHIP UPGRADES', {
+            fontSize: titleSize,
             color: '#FF9900',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -26,8 +29,10 @@ class UpgradesScene extends Phaser.Scene {
         title.setOrigin(0.5)
         
         // Points display
-        const pointsText = this.add.text(width / 2, 100, `Available Points: ${this.saveData.upgradePoints}`, {
-            fontSize: '24px',
+        const pointsSize = isMobile ? '20px' : '24px'
+        const pointsY = isMobile ? 75 : 100
+        const pointsText = this.add.text(width / 2, pointsY, `Available Points: ${this.saveData.upgradePoints}`, {
+            fontSize: pointsSize,
             color: '#FFFF00',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -35,8 +40,9 @@ class UpgradesScene extends Phaser.Scene {
         pointsText.setOrigin(0.5)
         
         // Coming soon message
-        const comingSoon = this.add.text(width / 2, height / 2, 'UPGRADE SYSTEM\n\nComing Soon!', {
-            fontSize: '32px',
+        const comingSoonSize = isMobile ? '24px' : '32px'
+        const comingSoon = this.add.text(width / 2, height / 2 - 40, 'UPGRADE SYSTEM\n\nComing Soon!', {
+            fontSize: comingSoonSize,
             color: '#00FFFF',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold',
@@ -54,27 +60,30 @@ class UpgradesScene extends Phaser.Scene {
             'Sensor Array'
         ]
         
-        const startY = height / 2 + 100
-        const spacing = 35
+        const startY = height / 2 + 60
+        const spacing = isMobile ? 28 : 35
+        const categorySize = isMobile ? '14px' : '16px'
         
-        this.add.text(width / 2, startY - 40, 'Planned Upgrade Categories:', {
-            fontSize: '18px',
+        this.add.text(width / 2, startY - 35, 'Planned Upgrade Categories:', {
+            fontSize: isMobile ? '16px' : '18px',
             color: '#FFFFFF',
             fontFamily: 'Courier New, monospace'
         }).setOrigin(0.5)
         
         upgradeCategories.forEach((category, index) => {
             const categoryText = this.add.text(width / 2, startY + index * spacing, `• ${category}`, {
-                fontSize: '16px',
+                fontSize: categorySize,
                 color: '#00FF00',
                 fontFamily: 'Courier New, monospace'
             })
             categoryText.setOrigin(0.5)
         })
         
-        // Back button
-        const backButton = this.add.text(width / 2, height - 50, '[ BACK TO MENU ]', {
-            fontSize: '24px',
+        // Back button - ensure it's visible on mobile
+        const backButtonY = isMobile ? height - 60 : height - 50
+        const backButtonSize = isMobile ? '20px' : '24px'
+        const backButton = this.add.text(width / 2, backButtonY, '[ BACK TO MENU ]', {
+            fontSize: backButtonSize,
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'

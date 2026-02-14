@@ -7,23 +7,28 @@ class MainMenuScene extends Phaser.Scene {
     create() {
         const width = this.cameras.main.width
         const height = this.cameras.main.height
+        const isMobile = width < 600 || height < 600
         
         console.log('MainMenuScene: Starting main menu...')
         
         // Background - starfield effect
         this.createStarfield()
         
-        // Title with LCARS styling
-        const title = this.add.text(width / 2, height / 4, 'STAR TREK', {
-            fontSize: '72px',
+        // Title with LCARS styling - adjust size for mobile
+        const titleSize = isMobile ? '48px' : '72px'
+        const titleY = isMobile ? 60 : height / 4
+        const title = this.add.text(width / 2, titleY, 'STAR TREK', {
+            fontSize: titleSize,
             color: '#FF9900',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
         })
         title.setOrigin(0.5)
         
-        const subtitle = this.add.text(width / 2, height / 4 + 70, 'ADVENTURES', {
-            fontSize: '48px',
+        const subtitleSize = isMobile ? '32px' : '48px'
+        const subtitleY = isMobile ? 100 : height / 4 + 70
+        const subtitle = this.add.text(width / 2, subtitleY, 'ADVENTURES', {
+            fontSize: subtitleSize,
             color: '#00FFFF',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -35,12 +40,14 @@ class MainMenuScene extends Phaser.Scene {
         const unlockedCount = saveData.unlockedLevels.length
         
         // Menu buttons with LCARS styling
-        const buttonY = height / 2 + 20
-        const buttonSpacing = 80
+        const buttonY = isMobile ? 180 : height / 2 + 20
+        const buttonSpacing = isMobile ? 70 : 80
+        const buttonSize = isMobile ? '24px' : '32px'
+        const infoSize = isMobile ? '14px' : '16px'
         
         // Level Select button
         const levelSelectButton = this.add.text(width / 2, buttonY, '[ MISSION SELECT ]', {
-            fontSize: '32px',
+            fontSize: buttonSize,
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -49,8 +56,8 @@ class MainMenuScene extends Phaser.Scene {
         levelSelectButton.setInteractive()
         
         // Display unlocked levels count
-        const levelProgress = this.add.text(width / 2, buttonY + 35, `${unlockedCount} of 10 missions unlocked`, {
-            fontSize: '16px',
+        const levelProgress = this.add.text(width / 2, buttonY + 30, `${unlockedCount} of 10 missions unlocked`, {
+            fontSize: infoSize,
             color: '#FFFF00',
             fontFamily: 'Courier New, monospace'
         })
@@ -72,7 +79,7 @@ class MainMenuScene extends Phaser.Scene {
         
         // Upgrades button (placeholder for future feature)
         const upgradesButton = this.add.text(width / 2, buttonY + buttonSpacing, '[ SHIP UPGRADES ]', {
-            fontSize: '32px',
+            fontSize: buttonSize,
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -81,8 +88,8 @@ class MainMenuScene extends Phaser.Scene {
         upgradesButton.setInteractive()
         
         // Display upgrade points
-        const upgradePoints = this.add.text(width / 2, buttonY + buttonSpacing + 35, `${saveData.upgradePoints} upgrade points available`, {
-            fontSize: '16px',
+        const upgradePoints = this.add.text(width / 2, buttonY + buttonSpacing + 30, `${saveData.upgradePoints} upgrade points available`, {
+            fontSize: infoSize,
             color: '#FFFF00',
             fontFamily: 'Courier New, monospace'
         })
@@ -102,17 +109,21 @@ class MainMenuScene extends Phaser.Scene {
             upgradesButton.setScale(1.0)
         })
         
-        // High Score display
+        // High Score display - position higher on mobile to prevent cutoff
         const highScore = this.getHighScore()
-        this.add.text(width / 2, height - 60, `High Score: ${highScore}`, {
-            fontSize: '20px',
+        const highScoreY = isMobile ? height - 80 : height - 60
+        const highScoreSize = isMobile ? '16px' : '20px'
+        this.add.text(width / 2, highScoreY, `High Score: ${highScore}`, {
+            fontSize: highScoreSize,
             color: '#FFD700',
             fontFamily: 'Courier New, monospace'
         }).setOrigin(0.5)
         
         // Version info
-        this.add.text(width / 2, height - 30, 'v1.0.0', {
-            fontSize: '14px',
+        const versionY = isMobile ? height - 50 : height - 30
+        const versionSize = isMobile ? '12px' : '14px'
+        this.add.text(width / 2, versionY, 'v1.0.0', {
+            fontSize: versionSize,
             color: '#888888',
             fontFamily: 'Courier New, monospace'
         }).setOrigin(0.5)
