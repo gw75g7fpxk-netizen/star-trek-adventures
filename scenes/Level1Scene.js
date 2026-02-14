@@ -1238,7 +1238,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy fighter to correct size while maintaining aspect ratio
-            if (enemyType === 'fighter') {
+            if (enemyType === 'fighter' && enemy.width > 0) {
                 // Enemy fighter PNG is 651x1076px, scale to 30px width
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
