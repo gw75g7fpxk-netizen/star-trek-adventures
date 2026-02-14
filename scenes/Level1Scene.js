@@ -25,6 +25,7 @@ const RENDER_DEPTH = {
 
 // Enemy spawn and visibility constants
 const ENEMY_VISIBLE_THRESHOLD = 10; // Y position where enemy is considered visibly on screen
+const DEFAULT_VERTICAL_SCROLL_SPEED = 50; // Default downward velocity for stationary enemies (px/s)
 
 // Sound interval for charging sound during pod rescue (in milliseconds)
 const CHARGING_SOUND_INTERVAL = 500;
@@ -1383,7 +1384,7 @@ class Level1Scene extends Phaser.Scene {
             
             // Set initial velocity so enemy moves onto screen
             // For stationary enemies (speed=0), use a default scroll speed so they enter the screen
-            const verticalSpeed = config.speed > 0 ? config.speed : 50;
+            const verticalSpeed = config.speed > 0 ? config.speed : DEFAULT_VERTICAL_SCROLL_SPEED;
             enemy.body.setVelocity(0, verticalSpeed);
             
             // Disable collision detection initially - will be enabled when enemy enters screen
