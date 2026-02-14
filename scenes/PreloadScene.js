@@ -103,8 +103,9 @@ class PreloadScene extends Phaser.Scene {
     }
 
     loadPlaceholderAssets() {
-        // Load actual player ship image (PNG with proper alpha transparency)
-        this.load.image('player-ship', 'assets/images/IMG_8402.png');
+        // Load actual player ship image
+        // TODO: Replace with PNG version (IMG_8402.png) once added to assets
+        this.load.image('player-ship', 'assets/images/player-ship.jpeg');
         
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
