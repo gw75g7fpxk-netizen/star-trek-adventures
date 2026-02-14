@@ -2,6 +2,7 @@
 // This file contains enemy wave configurations for Level 1
 
 const WaveConfig = {
+    betweenWaveDelay: 1500, // Delay between waves in milliseconds (reduced from 3000ms)
     level1: {
         wave1: { 
             enemyCount: 5, 
