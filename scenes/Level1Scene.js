@@ -329,6 +329,15 @@ class Level1Scene extends Phaser.Scene {
         };
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         
+        // Cheat code: N key to skip to next wave (for testing)
+        this.nextWaveKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.N);
+        this.nextWaveKey.on('down', () => {
+            if (!this.isBossFight) {
+                console.log('Cheat code activated: Skipping to next wave!');
+                this.skipToNextWave();
+            }
+        });
+        
         // Cheat code: B key to jump to boss fight (for testing)
         this.bossKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
         this.bossKey.on('down', () => {
@@ -568,6 +577,40 @@ class Level1Scene extends Phaser.Scene {
         this.highScoreText.setOrigin(1, 0);
         this.highScoreText.setScrollFactor(0);
         this.highScoreText.setDepth(999);
+        
+        // Skip Wave button (testing feature)
+        const skipButtonBg = this.add.graphics();
+        skipButtonBg.fillStyle(0x333333, 0.8);
+        skipButtonBg.fillRoundedRect(10, 80, 100, 30, 5);
+        skipButtonBg.lineStyle(2, 0xFF9900, 1);
+        skipButtonBg.strokeRoundedRect(10, 80, 100, 30, 5);
+        skipButtonBg.setScrollFactor(0);
+        skipButtonBg.setDepth(999);
+        
+        const skipButtonStyle = {
+            fontSize: '12px',
+            color: '#FF9900',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        };
+        this.skipWaveButton = this.add.text(60, 95, 'SKIP WAVE', skipButtonStyle);
+        this.skipWaveButton.setOrigin(0.5, 0.5);
+        this.skipWaveButton.setScrollFactor(0);
+        this.skipWaveButton.setDepth(1000);
+        this.skipWaveButton.setInteractive({ useHandCursor: true });
+        
+        // Skip wave button click handler
+        this.skipWaveButton.on('pointerdown', () => {
+            this.skipToNextWave();
+        });
+        
+        // Add hover effect for skip button
+        this.skipWaveButton.on('pointerover', () => {
+            this.skipWaveButton.setColor('#FFCC00');
+        });
+        this.skipWaveButton.on('pointerout', () => {
+            this.skipWaveButton.setColor('#FF9900');
+        });
         
         console.log('Level1Scene: HUD created');
     }
@@ -1243,6 +1286,54 @@ class Level1Scene extends Phaser.Scene {
         });
     }
     
+    skipToNextWave() {
+        console.log('Level1Scene: Skipping to next wave (testing feature)');
+        
+        // Clear all enemies and enemy bullets
+        this.enemies.clear(true, true);
+        this.enemyBullets.clear(true, true);
+        
+        // Clear escape pods
+        this.escapePods.clear(true, true);
+        
+        // Clear power-ups
+        this.powerUps.clear(true, true);
+        
+        // Clear boss components if any
+        if (this.bossComponents) {
+            this.bossComponents.clear(true, true);
+        }
+        
+        // Clear boss if in boss fight
+        if (this.boss) {
+            this.boss.destroy();
+            this.boss = null;
+        }
+        
+        // Clear boss phase text if any
+        if (this.bossPhaseText) {
+            this.bossPhaseText.destroy();
+            this.bossPhaseText = null;
+        }
+        
+        // Clear wave timers
+        if (this.waveTimer) {
+            this.waveTimer.remove();
+            this.waveTimer = null;
+        }
+        if (this.podTimer) {
+            this.podTimer.remove();
+            this.podTimer = null;
+        }
+        
+        // Reset boss fight flag
+        this.isBossFight = false;
+        
+        // End current wave and immediately start next wave
+        this.isWaveActive = false;
+        this.startNextWave();
+    }
+    
     spawnEnemy(waveConfig) {
         // Pick enemy type from spawn pool if available, otherwise random from enemyTypes
         let enemyType;
@@ -1412,7 +1503,11 @@ class Level1Scene extends Phaser.Scene {
                 break;
             case 'horizontal':
                 // Move horizontally at top of screen
-                if (enemy.y < 100) {
+                if (enemy.y >= 100) {
+                    // Once battleship reaches y=100, stop vertical movement and start horizontal
+                    if (enemy.body.velocity.y !== 0) {
+                        console.log(`Battleship reached y=${enemy.y}, starting horizontal pattern`);
+                    }
                     enemy.body.setVelocityY(0);
                     if (enemy.x < 100 || enemy.x > this.cameraWidth - 100) {
                         enemy.body.setVelocityX(-enemy.body.velocity.x);
@@ -1421,6 +1516,7 @@ class Level1Scene extends Phaser.Scene {
                         enemy.body.setVelocityX(config.speed);
                     }
                 }
+                // Otherwise, let it continue moving down (velocity already set in spawn)
                 break;
         }
     }
