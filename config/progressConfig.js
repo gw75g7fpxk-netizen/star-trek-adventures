@@ -11,8 +11,14 @@ const ProgressConfig = {
         },
         upgradePoints: 0, // Points earned from missions for upgrades
         upgrades: {
-            // Placeholder for future upgrade system
-            // Example: maxHealth: 0, fireRate: 0, shieldCapacity: 0
+            // Upgrade levels (0 = not purchased, 1-5 = level)
+            primaryPhasers: 0,
+            pulseCannons: 0,
+            quantumTorpedos: 0,
+            primaryShields: 0,
+            pointDefense: 0,
+            ablativeArmor: 0,
+            impulseEngines: 0
         }
     },
 
@@ -111,5 +117,37 @@ const ProgressConfig = {
             console.warn('Failed to reset progress:', e)
             return false
         }
+    },
+
+    // Purchase an upgrade
+    purchaseUpgrade(upgradeKey, saveData) {
+        const currentLevel = saveData.upgrades[upgradeKey] || 0
+        
+        // Check if upgrade exists and can be upgraded
+        if (currentLevel >= 5) {
+            console.warn(`${upgradeKey} is already at max level`)
+            return false
+        }
+
+        // Calculate cost (will need UpgradesConfig)
+        const cost = 10 // Placeholder - actual cost depends on upgrade type
+        
+        if (saveData.upgradePoints < cost) {
+            console.warn('Not enough upgrade points')
+            return false
+        }
+
+        // Purchase upgrade
+        saveData.upgrades[upgradeKey] = currentLevel + 1
+        saveData.upgradePoints -= cost
+        
+        this.saveProgress(saveData)
+        console.log(`Purchased ${upgradeKey} level ${currentLevel + 1}`)
+        return true
+    },
+
+    // Get current level of an upgrade
+    getUpgradeLevel(upgradeKey, saveData) {
+        return saveData.upgrades[upgradeKey] || 0
     }
 }
