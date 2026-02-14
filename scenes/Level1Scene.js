@@ -1238,7 +1238,7 @@ class Level1Scene extends Phaser.Scene {
         }
         
         // Short break before next wave
-        this.time.delayedCall(3000, () => {
+        this.time.delayedCall(WaveConfig.betweenWaveDelay, () => {
             this.startNextWave();
         });
     }
