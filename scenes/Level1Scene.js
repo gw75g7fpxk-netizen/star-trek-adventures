@@ -315,34 +315,7 @@ class Level1Scene extends Phaser.Scene {
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement
         
-        // Add thrust particle emitter to player ship
-        this.createThrustParticles();
-        
         console.log(`Level1Scene: USS Defiant created at (${startX}, ${startY})`);
-    }
-    
-    createThrustParticles() {
-        // Create a small texture for thrust particles
-        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
-        graphics.fillStyle(0x00FFFF, 1);
-        graphics.fillCircle(2, 2, 2);
-        graphics.generateTexture('thrust-particle', 4, 4);
-        graphics.destroy();
-        
-        // Create thrust particle emitter
-        this.thrustEmitter = this.add.particles(0, 0, 'thrust-particle', {
-            speed: 50,
-            angle: { min: 80, max: 100 },
-            scale: { start: 0.8, end: 0 },
-            alpha: { start: 0.8, end: 0 },
-            lifespan: 200,
-            blendMode: 'ADD',
-            frequency: 30,
-            follow: this.player,
-            followOffset: { x: 0, y: 20 }
-        });
-        
-        this.thrustEmitter.start();
     }
 
     setupControls() {

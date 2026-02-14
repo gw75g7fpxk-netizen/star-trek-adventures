@@ -112,17 +112,11 @@ class PreloadScene extends Phaser.Scene {
         // Load actual enemy cruiser image (will be scaled in Level1Scene)
         this.load.image('enemy-cruiser', 'assets/images/enemy-cruiser.png');
         
+        // Load actual enemy battleship image (will be scaled in Level1Scene)
+        this.load.image('enemy-battleship', 'assets/images/enemy-battleship.png');
+        
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
-        
-        // Enemy battleship placeholder (large red hexagon)
-        const battleshipGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        battleshipGraphics.fillStyle(0xFF8800, 1);
-        battleshipGraphics.fillRect(10, 0, 60, 50);
-        battleshipGraphics.fillRect(0, 20, 80, 30);
-        battleshipGraphics.fillTriangle(40, 50, 10, 80, 70, 80);
-        battleshipGraphics.generateTexture('enemy-battleship', 80, 80);
-        battleshipGraphics.destroy();
         
         // Boss placeholder (massive red structure)
         const bossGraphics = this.make.graphics({ x: 0, y: 0, add: false });
