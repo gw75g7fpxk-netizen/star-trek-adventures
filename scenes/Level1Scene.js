@@ -1257,9 +1257,9 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            if ((enemyType === 'fighter' || enemyType === 'cruiser') && enemy.width > 0) {
+            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship') && enemy.width > 0) {
                 // Scale enemy sprites to their configured target width
-                // Fighter: 651x1076px → 30px, Cruiser: 811x790px → 50px
+                // Fighter: 651x1076px → 30px, Cruiser: 811x790px → 50px, Battleship: large PNG → 80px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
