@@ -20,25 +20,25 @@ const WaveConfig = {
             duration: 25000
         },
         wave3: { 
-            enemyCount: 10, 
-            enemyTypes: ['fighter', 'cruiser'],
-            shipCounts: { fighter: 7, cruiser: 3 },
+            enemyCount: 11, 
+            enemyTypes: ['fighter', 'cruiser', 'weaponPlatform'],
+            shipCounts: { fighter: 7, cruiser: 3, weaponPlatform: 1 },
             spawnRate: 1200, 
             difficulty: 2,
             duration: 30000
         },
         wave4: {
-            enemyCount: 12,
-            enemyTypes: ['fighter', 'cruiser'],
-            shipCounts: { fighter: 7, cruiser: 5 },
+            enemyCount: 14,
+            enemyTypes: ['fighter', 'cruiser', 'weaponPlatform'],
+            shipCounts: { fighter: 7, cruiser: 5, weaponPlatform: 2 },
             spawnRate: 1000,
             difficulty: 2.5,
             duration: 35000
         },
         wave5: {
-            enemyCount: 15,
-            enemyTypes: ['fighter', 'cruiser', 'battleship'],
-            shipCounts: { fighter: 8, cruiser: 5, battleship: 2 },
+            enemyCount: 17,
+            enemyTypes: ['fighter', 'cruiser', 'battleship', 'weaponPlatform'],
+            shipCounts: { fighter: 8, cruiser: 5, battleship: 2, weaponPlatform: 2 },
             spawnRate: 900,
             difficulty: 3,
             duration: 40000
