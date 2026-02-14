@@ -80,6 +80,15 @@ class Level1Scene extends Phaser.Scene {
         
         // Mobile UI safe area offset (accounts for browser chrome)
         this.safeAreaOffset = 120; // pixels from bottom edge
+        
+        // Default to level 1 if not specified
+        this.levelNumber = 1
+    }
+    
+    init(data) {
+        // Accept level number from scene data
+        this.levelNumber = data?.levelNumber || 1
+        console.log(`Level1Scene: Initializing level ${this.levelNumber}`)
     }
     
     // Haptic feedback stub - works on supported devices
@@ -95,7 +104,7 @@ class Level1Scene extends Phaser.Scene {
     }
 
     create() {
-        console.log('Level1Scene: Starting Level 1...');
+        console.log(`Level1Scene: Starting Level ${this.levelNumber}...`);
         
         // Reset game state on scene restart
         this.playerStats = {
@@ -1209,11 +1218,20 @@ class Level1Scene extends Phaser.Scene {
     startNextWave() {
         this.currentWave++;
         const waveKey = `wave${this.currentWave}`;
-        const waveConfig = WaveConfig.level1[waveKey];
+        const levelKey = `level${this.levelNumber}`
+        const levelConfig = WaveConfig[levelKey]
+        
+        if (!levelConfig) {
+            console.warn(`No wave config found for ${levelKey}`)
+            this.victory()
+            return
+        }
+        
+        const waveConfig = levelConfig[waveKey];
         
         if (!waveConfig) {
             // Check for boss wave
-            if (this.currentWave > WaveConfig.level1.bossWave.threshold) {
+            if (levelConfig.bossWave && this.currentWave > levelConfig.bossWave.threshold) {
                 this.startBossFight();
                 return;
             }
@@ -2288,7 +2306,8 @@ class Level1Scene extends Phaser.Scene {
             score: this.score,
             wave: this.currentWave,
             podsRescued: this.podsRescued,
-            enemiesKilled: this.enemiesKilled
+            enemiesKilled: this.enemiesKilled,
+            levelNumber: this.levelNumber
         });
     }
 
@@ -2306,7 +2325,8 @@ class Level1Scene extends Phaser.Scene {
         this.scene.start('GameOverScene', {
             score: this.score,
             wave: this.currentWave,
-            podsRescued: this.podsRescued
+            podsRescued: this.podsRescued,
+            levelNumber: this.levelNumber
         });
     }
 }
