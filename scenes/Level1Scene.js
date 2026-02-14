@@ -1354,6 +1354,7 @@ class Level1Scene extends Phaser.Scene {
         let texture = 'enemy-fighter';
         if (enemyType === 'cruiser') texture = 'enemy-cruiser';
         if (enemyType === 'battleship') texture = 'enemy-battleship';
+        if (enemyType === 'weaponPlatform') texture = 'weapon-platform';
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -1372,9 +1373,9 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship') && enemy.width > 0) {
+            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform') && enemy.width > 0) {
                 // Scale enemy sprites to their configured target width
-                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px
+                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 30px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
@@ -1517,25 +1518,58 @@ class Level1Scene extends Phaser.Scene {
                 }
                 // Otherwise, let it continue moving down (velocity already set in spawn)
                 break;
+            case 'stationary':
+                // Weapon platform - stays in place horizontally, moves down with screen scroll only
+                enemy.body.setVelocityX(0);
+                // Keep default downward velocity for scrolling effect
+                break;
         }
     }
     
     enemyFire(enemy) {
-        const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+        const config = EnemyConfig[enemy.enemyType];
         
-        if (bullet) {
-            bullet.setActive(true);
-            bullet.setVisible(true);
+        // Check if this enemy has scattershot ability
+        if (config.scattershot) {
+            // Fire bullets in all directions (360 degrees)
+            const bulletCount = config.scattershotCount || 6;
+            const angleStep = (Math.PI * 2) / bulletCount;
             
-            // Re-enable physics body if it was disabled
-            if (bullet.body) {
-                bullet.body.enable = true;
+            for (let i = 0; i < bulletCount; i++) {
+                const angle = angleStep * i;
+                const bullet = this.enemyBullets.get(enemy.x, enemy.y, 'enemy-bullet');
+                
+                if (bullet) {
+                    bullet.setActive(true);
+                    bullet.setVisible(true);
+                    
+                    // Re-enable physics body if it was disabled
+                    if (bullet.body) {
+                        bullet.body.enable = true;
+                    }
+                    
+                    const speed = config.bulletSpeed;
+                    bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                }
             }
+        } else {
+            // Standard targeting fire
+            const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
             
-            // Aim at player
-            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-            const speed = EnemyConfig[enemy.enemyType].bulletSpeed;
-            bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+            if (bullet) {
+                bullet.setActive(true);
+                bullet.setVisible(true);
+                
+                // Re-enable physics body if it was disabled
+                if (bullet.body) {
+                    bullet.body.enable = true;
+                }
+                
+                // Aim at player
+                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+                const speed = config.bulletSpeed;
+                bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+            }
         }
     }
     
@@ -1643,6 +1677,11 @@ class Level1Scene extends Phaser.Scene {
     }
     
     completePodRescue(pod) {
+        // CRITICAL: Deactivate immediately to prevent further updates in the same frame
+        // This prevents race conditions when rescuing pods at the safe zone boundary
+        pod.setActive(false);
+        pod.setVisible(false);
+        
         // Complete the rescue
         this.podsRescued++;
         this.addScore(PodConfig.points);
@@ -1662,8 +1701,6 @@ class Level1Scene extends Phaser.Scene {
         this.podRescueTracking.delete(pod);
         
         // Remove the pod
-        pod.setActive(false);
-        pod.setVisible(false);
         pod.destroy();
         
         console.log('Pod rescued!');
