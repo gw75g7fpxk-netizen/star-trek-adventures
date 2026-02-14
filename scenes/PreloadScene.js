@@ -106,15 +106,11 @@ class PreloadScene extends Phaser.Scene {
         // Load actual player ship image
         this.load.image('player-ship', 'assets/images/player-ship.jpeg');
         
+        // Load actual enemy fighter image (will be scaled in Level1Scene)
+        this.load.image('enemy-fighter', 'assets/images/enemy-fighter.png');
+        
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
-        
-        // Enemy fighter placeholder (red triangle)
-        const fighterGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        fighterGraphics.fillStyle(0xFF0000, 1);
-        fighterGraphics.fillTriangle(15, 30, 0, 0, 30, 0);
-        fighterGraphics.generateTexture('enemy-fighter', 30, 30);
-        fighterGraphics.destroy();
         
         // Enemy cruiser placeholder (red pentagon)
         const cruiserGraphics = this.make.graphics({ x: 0, y: 0, add: false });
