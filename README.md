@@ -30,6 +30,14 @@ A vertical scrolling space shooter game inspired by Star Trek, built with Phaser
 
 ## Game Mechanics
 
+### Menu System
+- **Main Menu**: Choose between Mission Select and Ship Upgrades
+- **Mission Select**: Visual space route map showing all 10 missions
+  - Level nodes color-coded: Yellow (unlocked), Green (completed ★), Gray (locked 🔒)
+  - Info panel displays mission details and completion stats
+  - Must complete previous level to unlock next
+- **Ship Upgrades**: Spend points earned from missions (coming soon)
+
 ### Player Ship (USS Defiant)
 - Health and shield system
 - Shield regeneration over time
@@ -46,6 +54,8 @@ A vertical scrolling space shooter game inspired by Star Trek, built with Phaser
 - Points awarded for destroying enemies
 - Score multiplier system tied to pod rescues
 - Bonus points for completing waves
+- Upgrade points earned: 1 point per 100 score
+- Progress saved between sessions via localStorage
 
 ## Development
 
@@ -53,9 +63,10 @@ The game uses a modular architecture with separate configuration files:
 - `gameConfig.js` - Core game settings
 - `playerConfig.js` - Player ship stats
 - `enemyConfig.js` - Enemy types and behaviors
-- `waveConfig.js` - Wave progression
+- `waveConfig.js` - Wave progression for all 10 levels
 - `podConfig.js` - Escape pod mechanics
 - `powerUpConfig.js` - Power-up system
+- `progressConfig.js` - Level unlocks and save system
 
 ### Project Structure
 ```
@@ -68,10 +79,14 @@ The game uses a modular architecture with separate configuration files:
 │   ├── enemyConfig.js
 │   ├── waveConfig.js
 │   ├── podConfig.js
-│   └── powerUpConfig.js
+│   ├── powerUpConfig.js
+│   └── progressConfig.js
 └── scenes/             # Game scenes
     ├── BootScene.js
     ├── PreloadScene.js
+    ├── MainMenuScene.js
+    ├── LevelSelectScene.js
+    ├── UpgradesScene.js
     ├── Level1Scene.js
     ├── GameOverScene.js
     └── VictoryScene.js
@@ -86,12 +101,13 @@ The game currently uses procedurally generated placeholder graphics. For product
 
 ## Future Enhancements
 
-- Additional levels with unique environments
+- Expand wave content for levels 2-10 with unique challenges
+- Implement ship upgrade system with purchasable enhancements
 - More enemy types and attack patterns
-- Expanded power-up system
-- Local high score persistence
+- Additional power-up types
 - Full sprite replacements for production graphics
 - Enhanced sound effects and background music
+- Leaderboard system
 
 ## License
 
