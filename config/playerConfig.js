@@ -13,6 +13,9 @@ const PlayerConfig = {
     // Weapon Configuration
     bulletSpeed: 400, // pixels per second (upward)
     
+    // Visual Configuration
+    scale: 0.0625, // Scale factor for player ship sprite (image is 468x960, scaled to ~60px tall)
+    
     // Starting position (will be calculated relative to screen size)
     startX: 0.5, // 50% of screen width
     startY: 0.75  // 75% of screen height (adjusted for mobile safe area)

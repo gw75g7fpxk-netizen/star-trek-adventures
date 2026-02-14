@@ -298,6 +298,9 @@ class Level1Scene extends Phaser.Scene {
         this.player = this.physics.add.sprite(startX, startY, 'player-ship');
         this.player.setCollideWorldBounds(true);
         
+        // Scale the player ship to appropriate size (uniform scaling maintains aspect ratio)
+        this.player.setScale(PlayerConfig.scale, PlayerConfig.scale);
+        
         // Set player velocity limits
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement

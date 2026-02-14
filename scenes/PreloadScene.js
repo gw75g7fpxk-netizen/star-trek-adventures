@@ -103,8 +103,8 @@ class PreloadScene extends Phaser.Scene {
     }
 
     loadPlaceholderAssets() {
-        // Load actual player ship image
-        this.load.image('player-ship', 'assets/images/player-ship.jpeg');
+        // Load actual player ship image (PNG with proper alpha transparency)
+        this.load.image('player-ship', 'assets/images/player-ship.png');
         
         // Load actual enemy fighter image (will be scaled in Level1Scene)
         this.load.image('enemy-fighter', 'assets/images/enemy-fighter.png');
