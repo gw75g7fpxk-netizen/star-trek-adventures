@@ -36,6 +36,16 @@ const CHEAT_FIRE_RATE = 100; // Milliseconds between shots
 // Escape pod spawn position (above screen top)
 const ESCAPE_POD_SPAWN_Y = -20;
 
+// Shield impact effect constants
+const SHIELD_IMPACT = {
+    radius: 40,           // Initial radius of shield bubble
+    color: 0x00FFFF,      // Cyan color for shield effect
+    strokeWidth: 3,       // Stroke thickness
+    strokeAlpha: 0.8,     // Stroke opacity
+    scale: 1.5,           // Expansion scale
+    duration: 300         // Animation duration in milliseconds
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -890,6 +900,9 @@ class Level1Scene extends Phaser.Scene {
         this.playSound('hit');
         
         if (this.playerStats.shields > 0) {
+            // Show shield impact effect before taking damage
+            this.showShieldImpact();
+            
             this.playerStats.shields -= amount;
             if (this.playerStats.shields < 0) {
                 const overflow = Math.abs(this.playerStats.shields);
@@ -908,6 +921,36 @@ class Level1Scene extends Phaser.Scene {
             this.triggerHaptic('heavy');
             this.gameOver();
         }
+    }
+    
+    showShieldImpact() {
+        // Create a shield impact bubble around the player ship
+        const shieldBubble = this.add.circle(
+            this.player.x, 
+            this.player.y, 
+            SHIELD_IMPACT.radius, 
+            SHIELD_IMPACT.color, 
+            0
+        );
+        shieldBubble.setStrokeStyle(
+            SHIELD_IMPACT.strokeWidth, 
+            SHIELD_IMPACT.color, 
+            SHIELD_IMPACT.strokeAlpha
+        );
+        shieldBubble.setDepth(10); // Render above player
+        
+        // Animate the shield bubble expanding and fading out
+        this.tweens.add({
+            targets: shieldBubble,
+            scaleX: SHIELD_IMPACT.scale,
+            scaleY: SHIELD_IMPACT.scale,
+            alpha: 0,
+            duration: SHIELD_IMPACT.duration,
+            ease: 'Power2.easeOut',
+            onComplete: () => {
+                shieldBubble.destroy();
+            }
+        });
     }
     
     setupCollisions() {
@@ -1240,9 +1283,10 @@ class Level1Scene extends Phaser.Scene {
             enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
-            // Scale enemy fighter to correct size while maintaining aspect ratio
-            if (enemyType === 'fighter' && enemy.width > 0) {
-                // Enemy fighter PNG is 651x1076px, scale to 30px width
+            // Scale enemy sprites to correct size while maintaining aspect ratio
+            if ((enemyType === 'fighter' || enemyType === 'cruiser') && enemy.width > 0) {
+                // Scale enemy sprites to their configured target width
+                // Fighter: 651x1076px → 30px, Cruiser: 811x790px → 50px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
