@@ -10,6 +10,5 @@ const PodConfig = {
     multiplier: 1.5, // Score multiplier bonus
     size: { width: 10, height: 16 }, // Display size after scaling
     scale: 0.035, // Scale factor for sprite (279x461 -> ~10x16) - reduced by half
-    safeZoneY: 0.9, // 90% down the screen = safe zone
-    flashRate: 500 // Flash every 500ms for visual cue
+    safeZoneY: 0.9 // 90% down the screen = safe zone
 };
