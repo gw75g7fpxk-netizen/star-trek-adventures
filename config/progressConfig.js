@@ -34,7 +34,7 @@ const ProgressConfig = {
         8: { name: 'Wormhole Defense', description: 'Secure the Bajoran wormhole' },
         9: { name: 'Final Stand', description: 'Hold the line at all costs' },
         10: { name: 'Endgame', description: 'Face the Dominion flagship' },
-        11: { name: 'Testing Grounds', description: 'Secret testing level - one of each enemy type' }
+        11: { name: 'Testing Grounds', description: 'Holodeck simulation - analyze enemy capabilities' }
     },
 
     // Save game data to localStorage
