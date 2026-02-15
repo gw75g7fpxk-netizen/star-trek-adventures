@@ -1728,17 +1728,9 @@ class Level1Scene extends Phaser.Scene {
             pod.setActive(true);
             pod.setVisible(true);
             pod.setScale(PodConfig.scale);
+            pod.setAlpha(1); // Fully visible at all times
             pod.health = PodConfig.health;
             pod.body.setVelocity(0, PodConfig.speed);
-            
-            // Flashing effect
-            this.tweens.add({
-                targets: pod,
-                alpha: 0.3,
-                duration: PodConfig.flashRate,
-                yoyo: true,
-                repeat: -1
-            });
         }
     }
     
