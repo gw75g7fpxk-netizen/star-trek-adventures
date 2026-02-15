@@ -8,7 +8,8 @@ const SOUND_CONFIG = {
     boss: { freq: 80, duration: 0.5, gain: 0.2 },
     powerup: { startFreq: 600, endFreq: 1200, duration: 0.15, gain: 0.15 },
     hit: { startFreq: 300, endFreq: 150, duration: 0.08, gain: 0.12 },
-    charging: { startFreq: 200, endFreq: 600, duration: 0.5, gain: 0.08 }
+    charging: { startFreq: 200, endFreq: 600, duration: 0.5, gain: 0.08 },
+    torpedo: { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.15 }
 };
 
 // Invincibility durations (in milliseconds)
@@ -780,6 +781,16 @@ class Level1Scene extends Phaser.Scene {
                 oscillator.start(time);
                 oscillator.stop(time + config.duration);
                 break;
+            case 'torpedo':
+                // Deep rumbling torpedo sound that rises in pitch
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(config.startFreq, time);
+                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
+                break;
         }
     }
 
@@ -1055,11 +1066,14 @@ class Level1Scene extends Phaser.Scene {
         
         if (!target) return // No enemies to target
         
+        // Play torpedo sound
+        this.playSound('torpedo')
+        
         // Create torpedo
         const torpedo = this.bullets.get(this.player.x, this.player.y - 20, 'bullet')
         if (torpedo) {
             this.enableBulletPhysics(torpedo)
-            torpedo.setTint(0x00FFFF) // Cyan tint for quantum torpedoes
+            torpedo.setTint(0x0000FF) // Blue tint for quantum torpedoes
             torpedo.setScale(1.5) // Make torpedoes larger
             
             // Store torpedo data
