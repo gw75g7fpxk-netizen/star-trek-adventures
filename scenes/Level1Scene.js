@@ -1066,12 +1066,12 @@ class Level1Scene extends Phaser.Scene {
         
         if (!target) return // No enemies to target
         
-        // Play torpedo sound
-        this.playSound('torpedo')
-        
         // Create torpedo
         const torpedo = this.bullets.get(this.player.x, this.player.y - 20, 'bullet')
         if (torpedo) {
+            // Play torpedo sound
+            this.playSound('torpedo')
+            
             this.enableBulletPhysics(torpedo)
             torpedo.setTint(0x0000FF) // Blue tint for quantum torpedoes
             torpedo.setScale(1.5) // Make torpedoes larger
