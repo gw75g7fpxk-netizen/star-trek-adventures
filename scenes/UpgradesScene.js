@@ -153,7 +153,7 @@ class UpgradesScene extends Phaser.Scene {
         const upgrades = UpgradesConfig.getUpgradesByCategory(this.selectedCategory)
         
         const startY = this.upgradeListY
-        const spacing = isMobile ? 70 : 85
+        const spacing = isMobile ? 90 : 110
         const nameSize = isMobile ? '14px' : '16px'
         const descSize = isMobile ? '11px' : '12px'
         const levelSize = isMobile ? '12px' : '14px'
@@ -166,6 +166,23 @@ class UpgradesScene extends Phaser.Scene {
             const cost = UpgradesConfig.getCostToUpgrade(upgrade.key, currentLevel)
             const canAfford = cost !== null && this.saveData.upgradePoints >= cost
             const isMaxed = currentLevel >= maxLevel
+            
+            // Background box for this upgrade option
+            const boxPadding = isMobile ? 8 : 10
+            const boxWidth = isMobile ? width - 40 : width - 160
+            const boxHeight = isMobile ? 75 : 80
+            const boxX = width / 2
+            const boxY = y + (isMobile ? 24 : 27)
+            
+            const background = this.add.rectangle(
+                boxX,
+                boxY,
+                boxWidth,
+                boxHeight,
+                0x000000,
+                0.7
+            )
+            this.upgradeElements.push(background)
             
             // Upgrade name
             const nameText = this.add.text(width / 2, y, upgrade.name, {
