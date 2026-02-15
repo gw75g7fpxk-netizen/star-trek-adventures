@@ -919,7 +919,7 @@ class Level1Scene extends Phaser.Scene {
         let closestDistance = Infinity
         const detectionRange = 200 // Detection range for point defense
         
-        this.enemyBullets.children.entries.forEach(bullet => {
+        this.enemyBullets.children.each(bullet => {
             if (bullet.active && bullet.visible) {
                 const distance = Phaser.Math.Distance.Between(
                     this.player.x, this.player.y,
@@ -1055,7 +1055,7 @@ class Level1Scene extends Phaser.Scene {
         let target = null
         let maxHealth = 0
         
-        this.enemies.children.entries.forEach(enemy => {
+        this.enemies.children.each(enemy => {
             if (enemy.active && enemy.visible && enemy.health > maxHealth) {
                 maxHealth = enemy.health
                 target = enemy
