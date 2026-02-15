@@ -24,7 +24,7 @@ const ProgressConfig = {
 
     // Level metadata for display in level select
     levelInfo: {
-        1: { name: 'First Contact', description: 'Encounter initial Dominion forces' },
+        1: { name: 'First Contact', description: 'Encounter initial Crystalis forces' },
         2: { name: 'Defensive Line', description: 'Defend the Federation outpost' },
         3: { name: 'Supply Run', description: 'Protect the convoy through hostile space' },
         4: { name: 'Deep Space Patrol', description: 'Patrol the frontier sectors' },
@@ -33,7 +33,7 @@ const ProgressConfig = {
         7: { name: 'Battle of Sector 001', description: 'Defend Earth from invasion' },
         8: { name: 'Wormhole Defense', description: 'Secure the Bajoran wormhole' },
         9: { name: 'Final Stand', description: 'Hold the line at all costs' },
-        10: { name: 'Endgame', description: 'Face the Dominion flagship' },
+        10: { name: 'Endgame', description: 'Face the Crystalis flagship' },
         11: { name: 'Testing Grounds', description: 'Holodeck simulation - analyze enemy capabilities' }
     },
 

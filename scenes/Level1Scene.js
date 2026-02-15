@@ -344,7 +344,7 @@ class Level1Scene extends Phaser.Scene {
     }
 
     createPlayer() {
-        // Create player ship (USS Defiant) - use percentage-based positioning for mobile compatibility
+        // Create player ship (USS Aurora) - use percentage-based positioning for mobile compatibility
         const startX = this.cameraWidth * PlayerConfig.startX;
         const startY = this.cameraHeight * PlayerConfig.startY;
         this.player = this.physics.add.sprite(startX, startY, 'player-ship');
@@ -357,7 +357,7 @@ class Level1Scene extends Phaser.Scene {
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement
         
-        console.log(`Level1Scene: USS Defiant created at (${startX}, ${startY})`);
+        console.log(`Level1Scene: USS Aurora created at (${startX}, ${startY})`);
     }
 
     setupControls() {

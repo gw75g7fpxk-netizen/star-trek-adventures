@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Star Trek Adventures is a vertical scrolling space shooter game built with Phaser 3. The player commands the USS Defiant against waves of Dominion forces in fast-paced arcade action. The game features wave-based combat, boss battles, rescue missions, power-ups, and responsive controls for both desktop and mobile.
+Star Trek Adventures is a vertical scrolling space shooter game built with Phaser 3. The player commands the USS Aurora against waves of Crystalis forces in fast-paced arcade action. The game features wave-based combat, boss battles, rescue missions, power-ups, and responsive controls for both desktop and mobile.
 
 ## Tech Stack
 

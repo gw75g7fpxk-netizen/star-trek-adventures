@@ -2,7 +2,7 @@
 // This file contains player stats and can be easily modified for game balancing
 
 const PlayerConfig = {
-    // USS Defiant Stats
+    // USS Aurora Stats
     health: 3, // 3 hits at 1 damage each
     maxHealth: 3,
     shields: 3, // 3 hits at 1 damage each

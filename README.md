@@ -1,6 +1,6 @@
 # Star Trek Adventures
 
-A vertical scrolling space shooter game inspired by Star Trek, built with Phaser 3. Command the USS Defiant against waves of Dominion forces in fast-paced arcade action.
+A vertical scrolling space shooter game inspired by Star Trek, built with Phaser 3. Command the USS Aurora against waves of Crystalis forces in fast-paced arcade action.
 
 ## Play the Game
 
@@ -38,7 +38,7 @@ A vertical scrolling space shooter game inspired by Star Trek, built with Phaser
   - Must complete previous level to unlock next
 - **Ship Upgrades**: Spend points earned from missions (coming soon)
 
-### Player Ship (USS Defiant)
+### Player Ship (USS Aurora)
 - Health and shield system
 - Shield regeneration over time
 - Invulnerability period after taking damage with visual feedback
@@ -48,7 +48,7 @@ A vertical scrolling space shooter game inspired by Star Trek, built with Phaser
 - **Fighters**: Fast, light attack ships
 - **Cruisers**: Medium warships with balanced stats
 - **Battleships**: Heavy units with high health
-- **Boss**: Massive Dominion battleship with three distinct phases
+- **Boss**: Massive Crystalis battleship with three distinct phases
 
 ### Scoring System
 - Points awarded for destroying enemies

@@ -2,7 +2,7 @@
 // This file contains enemy stats and configurations for all enemy types
 
 const EnemyConfig = {
-    // Dominion Fighter - Small, fast attack ship
+    // Crystalis Fighter - Small, fast attack ship
     fighter: {
         health: 1,
         shields: 0,
@@ -30,7 +30,7 @@ const EnemyConfig = {
         formationSpacing: 36 // Vertical spacing between scouts in formation
     },
     
-    // Dominion Cruiser - Medium warship
+    // Crystalis Cruiser - Medium warship
     cruiser: {
         health: 3,
         shields: 3,
@@ -43,7 +43,7 @@ const EnemyConfig = {
         size: { width: 60, height: 60 }
     },
     
-    // Dominion Battleship (Mini-boss)
+    // Crystalis Battleship (Mini-boss)
     battleship: {
         health: 8,
         shields: 8,
@@ -71,7 +71,7 @@ const EnemyConfig = {
         size: { width: 40, height: 40 }
     },
     
-    // Boss - Massive Dominion Battleship
+    // Boss - Massive Crystalis Battleship
     boss: {
         health: 1000,
         speed: 30,
