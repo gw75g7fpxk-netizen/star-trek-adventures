@@ -1179,12 +1179,24 @@ class Level1Scene extends Phaser.Scene {
         this.disableBulletPhysics(bullet);
         
         // Calculate damage - quantum torpedoes do more damage
-        let damage = 10 // Default bullet damage
+        let damage = 1 // Default bullet damage
         if (bullet.isQuantumTorpedo) {
-            damage = bullet.damage * 10 // Torpedoes do 5x10 = 50 damage by default
+            damage = bullet.damage // Torpedoes use configured damage value
         }
         
-        enemy.health -= damage;
+        // Apply damage to shields first, then health
+        if (enemy.shields > 0) {
+            enemy.shields -= damage;
+            if (enemy.shields < 0) {
+                // Overflow damage goes to health
+                const overflow = Math.abs(enemy.shields);
+                enemy.shields = 0;
+                enemy.health -= overflow;
+            }
+        } else {
+            // No shields, damage health directly
+            enemy.health -= damage;
+        }
         
         // Set invincibility after taking damage
         enemy.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
@@ -1550,6 +1562,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.setVisible(true);
             enemy.enemyType = enemyType;
             enemy.health = config.health;
+            enemy.shields = config.shields || 0; // Initialize shields
             enemy.points = config.points;
             enemy.fireRate = config.fireRate;
             enemy.lastFired = 0;
@@ -1562,7 +1575,7 @@ class Level1Scene extends Phaser.Scene {
             // Scale enemy sprites to correct size while maintaining aspect ratio
             if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform') && enemy.width > 0) {
                 // Scale enemy sprites to their configured target width
-                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 30px
+                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 40px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);

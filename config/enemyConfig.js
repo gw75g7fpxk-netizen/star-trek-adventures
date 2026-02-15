@@ -4,7 +4,8 @@
 const EnemyConfig = {
     // Dominion Fighter - Small, fast attack ship
     fighter: {
-        health: 10,
+        health: 1,
+        shields: 0,
         speed: 150,
         fireRate: 2000, // milliseconds between shots
         bulletSpeed: 300,
@@ -16,7 +17,8 @@ const EnemyConfig = {
     
     // Dominion Cruiser - Medium warship
     cruiser: {
-        health: 50,
+        health: 3,
+        shields: 3,
         speed: 80,
         fireRate: 1500,
         bulletSpeed: 250,
@@ -28,7 +30,8 @@ const EnemyConfig = {
     
     // Dominion Battleship (Mini-boss)
     battleship: {
-        health: 150,
+        health: 8,
+        shields: 8,
         speed: 40,
         fireRate: 1000,
         bulletSpeed: 200,
@@ -40,7 +43,8 @@ const EnemyConfig = {
     
     // Weapon Platform - Stationary turret with scattershot
     weaponPlatform: {
-        health: 5,
+        health: 1,
+        shields: 5,
         speed: 0, // Stationary horizontally (moves vertically with screen scroll)
         fireRate: 3000, // Fires slowly (every 3 seconds)
         bulletSpeed: 200,
@@ -49,7 +53,7 @@ const EnemyConfig = {
         movementPattern: 'stationary',
         scattershot: true, // Fires in all directions
         scattershotCount: 6, // Number of bullets per shot
-        size: { width: 30, height: 30 }
+        size: { width: 40, height: 40 }
     },
     
     // Boss - Massive Dominion Battleship
