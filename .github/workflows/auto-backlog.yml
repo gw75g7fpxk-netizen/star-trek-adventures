@@ -38,7 +38,6 @@ jobs:
               return "proceed";
             }
         result-encoding: string
-        id: issue_check
 
       - name: Stop if guardrail triggered
         if: steps.issue_check.outputs.result == 'skip'
@@ -70,7 +69,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          PROMPT=$(cat <<'EOF'
+          PROMPT='
 You are a senior software architect.
 
 Analyze the provided repository codebase and generate 10 high-quality GitHub issues.
@@ -89,8 +88,7 @@ Rules:
 - Mix: refactors, tests, reliability, small features, documentation
 - Avoid duplicates
 - Be specific and practical
-EOF
-)
+'
 
           curl https://api.openai.com/v1/chat/completions \
             -s \
