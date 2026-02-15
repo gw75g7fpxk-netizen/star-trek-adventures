@@ -86,23 +86,22 @@ jobs:
           - Avoid duplicates
           - Be specific and practical'
 
-          # Read context from file and escape for JSON
-          CONTEXT=$(cat repo-context-limited.txt | jq -Rs .)
-
-          # Build JSON payload
+          # Build JSON payload with prompt
+          PROMPT_JSON=$(echo "$PROMPT\n\nRepository Codebase:\n" | jq -Rs .)
+          
           cat > payload.json <<EOF
           {
             "model": "gpt-4o-mini",
             "temperature": 0.4,
             "messages": [
               {"role": "system", "content": "You generate precise GitHub development tasks."},
-              {"role": "user", "content": $(echo "$PROMPT\n\nRepository Codebase:\n" | jq -Rs .) }
+              {"role": "user", "content": $PROMPT_JSON}
             ]
           }
           EOF
 
-          # Add context to the user message
-          jq --arg context "$(cat repo-context-limited.txt)" \
+          # Add context to the user message using jq's --rawfile for safety
+          jq --rawfile context repo-context-limited.txt \
             '.messages[1].content = (.messages[1].content + "\n" + $context)' \
             payload.json > payload-final.json
 
