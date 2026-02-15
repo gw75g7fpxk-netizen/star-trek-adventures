@@ -49,7 +49,7 @@ class UpgradesScene extends Phaser.Scene {
         this.createUpgradeList(isMobile)
         
         // Reset button
-        const resetButtonY = isMobile ? height - 130 : height - 90
+        const resetButtonY = isMobile ? height - 160 : height - 90
         const resetButtonSize = isMobile ? '16px' : '18px'
         const resetButton = this.add.text(width / 2, resetButtonY, '[ RESET ALL UPGRADES ]', {
             fontSize: resetButtonSize,
@@ -75,7 +75,7 @@ class UpgradesScene extends Phaser.Scene {
         })
         
         // Back button
-        const backButtonY = isMobile ? height - 90 : height - 50
+        const backButtonY = isMobile ? height - 110 : height - 50
         const backButtonSize = isMobile ? '18px' : '20px'
         const backButton = this.add.text(width / 2, backButtonY, '[ BACK TO MENU ]', {
             fontSize: backButtonSize,
