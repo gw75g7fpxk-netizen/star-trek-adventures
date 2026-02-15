@@ -920,7 +920,7 @@ class Level1Scene extends Phaser.Scene {
         let closestDistance = Infinity
         const detectionRange = 200 // Detection range for point defense
         
-        this.enemyBullets.children.entries.forEach(bullet => {
+        this.enemyBullets.children.each(bullet => {
             if (bullet.active && bullet.visible) {
                 const distance = Phaser.Math.Distance.Between(
                     this.player.x, this.player.y,
@@ -1056,7 +1056,7 @@ class Level1Scene extends Phaser.Scene {
         let target = null
         let maxHealth = 0
         
-        this.enemies.children.entries.forEach(enemy => {
+        this.enemies.children.each(enemy => {
             if (enemy.active && enemy.visible && enemy.health > maxHealth) {
                 maxHealth = enemy.health
                 target = enemy
@@ -2815,19 +2815,34 @@ class Level1Scene extends Phaser.Scene {
         const pulseCannonsLevel = this.saveData.upgrades.pulseCannons || 0
         this.pulseCannonsStats = UpgradesConfig.getUpgradeStats('pulseCannons', pulseCannonsLevel)
         this.pulseCannonsReady = true
-        this.pulseCannonsLastFired = 0
+        // Initialize to allow immediate firing if enabled
+        if (this.pulseCannonsStats && this.pulseCannonsStats.enabled) {
+            this.pulseCannonsLastFired = -this.pulseCannonsStats.cooldown
+        } else {
+            this.pulseCannonsLastFired = 0
+        }
         
         // Quantum Torpedos
         const torpedosLevel = this.saveData.upgrades.quantumTorpedos || 0
         this.quantumTorpedosStats = UpgradesConfig.getUpgradeStats('quantumTorpedos', torpedosLevel)
         this.quantumTorpedosReady = true
-        this.quantumTorpedosLastFired = 0
+        // Initialize to allow immediate firing if enabled
+        if (this.quantumTorpedosStats && this.quantumTorpedosStats.enabled) {
+            this.quantumTorpedosLastFired = -this.quantumTorpedosStats.cooldown
+        } else {
+            this.quantumTorpedosLastFired = 0
+        }
         
         // Point Defense
         const pointDefenseLevel = this.saveData.upgrades.pointDefense || 0
         this.pointDefenseStats = UpgradesConfig.getUpgradeStats('pointDefense', pointDefenseLevel)
         this.pointDefenseReady = true
-        this.pointDefenseLastFired = 0
+        // Initialize to allow immediate firing if enabled
+        if (this.pointDefenseStats && this.pointDefenseStats.enabled) {
+            this.pointDefenseLastFired = -this.pointDefenseStats.cooldown
+        } else {
+            this.pointDefenseLastFired = 0
+        }
     }
 
 
