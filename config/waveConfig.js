@@ -43,11 +43,12 @@ const WaveConfig = {
             spawnRate: 900,
             difficulty: 3,
             duration: 40000
-        },
-        bossWave: {
-            threshold: 5, // Boss appears after wave 5
-            type: 'boss'
         }
+        // Boss wave disabled - player progresses to next level after wave 5
+        // bossWave: {
+        //     threshold: 5, // Boss appears after wave 5
+        //     type: 'boss'
+        // }
     },
     // Levels 2-10: Placeholder wave configurations (single wave with 5 fighters)
     // These will be expanded with proper content later
