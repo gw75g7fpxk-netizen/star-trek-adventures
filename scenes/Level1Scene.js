@@ -37,6 +37,9 @@ const CHEAT_FIRE_RATE = 100; // Milliseconds between shots
 // Escape pod spawn position (above screen top)
 const ESCAPE_POD_SPAWN_Y = -20;
 
+// Scout formation flight pattern constants
+const SCOUT_CIRCLE_TRIGGER_FRACTION = 3; // Start circling at 1/3 of screen height
+
 // Shield impact effect constants
 const SHIELD_IMPACT = {
     radius: 40,           // Initial radius of shield bubble
@@ -1861,7 +1864,7 @@ class Level1Scene extends Phaser.Scene {
                     enemy.body.setVelocityX(0);
                     
                     // Check if reached 1/3 down the screen (not halfway)
-                    if (enemy.y >= this.cameraHeight / 3) {
+                    if (enemy.y >= this.cameraHeight / SCOUT_CIRCLE_TRIGGER_FRACTION) {
                         // Transition to circle phase
                         enemy.formationPhase = 'circle';
                         enemy.circleCenter.x = enemy.x;
@@ -1874,14 +1877,12 @@ class Level1Scene extends Phaser.Scene {
                     const angularSpeed = 0.03; // Slower for smoother movement
                     enemy.circleCurrentAngle += angularSpeed;
                     
-                    // Directly set position on circle for smooth movement
+                    // Calculate position on circle
                     const newX = enemy.circleCenter.x + Math.cos(enemy.circleCurrentAngle) * enemy.circleRadius;
                     const newY = enemy.circleCenter.y + Math.sin(enemy.circleCurrentAngle) * enemy.circleRadius;
                     
-                    enemy.x = newX;
-                    enemy.y = newY;
-                    // Set velocity to zero since we're directly positioning
-                    enemy.body.setVelocity(0, 0);
+                    // Update physics body position to maintain proper collision detection
+                    enemy.body.reset(newX, newY);
                     
                     // Check if completed one full circle
                     if (enemy.circleCurrentAngle >= Math.PI * 2) {
