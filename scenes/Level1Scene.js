@@ -1902,12 +1902,12 @@ class Level1Scene extends Phaser.Scene {
                         
                         // Notify other scouts in formation (only once)
                         if (!enemy.hasNotifiedFollowers && enemy.formationMembers) {
+                            enemy.hasNotifiedFollowers = true; // Set flag first for idempotency
                             enemy.formationMembers.forEach((member) => {
                                 if (member.active && member !== enemy) {
                                     member.leaderCircleStartY = enemy.leaderCircleStartY;
                                 }
                             });
-                            enemy.hasNotifiedFollowers = true;
                         }
                     } else if (enemy.formationIndex > 0 && enemy.leaderCircleStartY !== undefined) {
                         // Follower scouts transition when they reach the same Y position where leader started
