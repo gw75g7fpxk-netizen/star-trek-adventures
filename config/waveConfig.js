@@ -141,5 +141,48 @@ const WaveConfig = {
             difficulty: 1,
             duration: 20000
         }
+    },
+    // Level 11: Secret Testing Level - One wave for each enemy type (no escape pods)
+    level11: {
+        wave1: { 
+            enemyCount: 1, 
+            enemyTypes: ['fighter'],
+            shipCounts: { fighter: 1 },
+            spawnRate: 2000, 
+            difficulty: 1,
+            duration: 10000
+        },
+        wave2: { 
+            enemyCount: 1, 
+            enemyTypes: ['scout'],
+            shipCounts: { scout: 1 },
+            spawnRate: 2000, 
+            difficulty: 1,
+            duration: 10000
+        },
+        wave3: { 
+            enemyCount: 1, 
+            enemyTypes: ['cruiser'],
+            shipCounts: { cruiser: 1 },
+            spawnRate: 2000, 
+            difficulty: 1,
+            duration: 10000
+        },
+        wave4: { 
+            enemyCount: 1, 
+            enemyTypes: ['battleship'],
+            shipCounts: { battleship: 1 },
+            spawnRate: 2000, 
+            difficulty: 1,
+            duration: 10000
+        },
+        wave5: { 
+            enemyCount: 1, 
+            enemyTypes: ['weaponPlatform'],
+            shipCounts: { weaponPlatform: 1 },
+            spawnRate: 2000, 
+            difficulty: 1,
+            duration: 10000
+        }
     }
 };

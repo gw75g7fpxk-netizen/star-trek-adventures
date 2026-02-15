@@ -3,6 +3,8 @@ class LevelSelectScene extends Phaser.Scene {
     constructor() {
         super({ key: 'LevelSelectScene' })
         this.selectedLevel = 1
+        this.secretTapCount = 0 // Track taps on "MISSION SELECT" title
+        this.secretTapTimer = null // Timer to reset tap count
     }
 
     create() {
@@ -28,6 +30,27 @@ class LevelSelectScene extends Phaser.Scene {
             fontStyle: 'bold'
         })
         title.setOrigin(0.5)
+        title.setInteractive({ useHandCursor: true })
+        
+        // Add secret tap counter to unlock testing level
+        title.on('pointerdown', () => {
+            this.secretTapCount++
+            
+            // Reset timer on each tap
+            if (this.secretTapTimer) {
+                this.secretTapTimer.remove()
+            }
+            
+            // Reset counter after 2 seconds of no taps
+            this.secretTapTimer = this.time.delayedCall(2000, () => {
+                this.secretTapCount = 0
+            })
+            
+            // Unlock level 11 after 5 taps
+            if (this.secretTapCount >= 5) {
+                this.unlockSecretLevel()
+            }
+        })
         
         // Create the level map
         this.createLevelMap(isMobile)
@@ -77,7 +100,8 @@ class LevelSelectScene extends Phaser.Scene {
                 { x: width * 0.55, y: height * 0.56 },  // Level 7
                 { x: width * 0.75, y: height * 0.56 },  // Level 8
                 { x: width * 0.55, y: height * 0.68 },  // Level 9
-                { x: width * 0.75, y: height * 0.68 }   // Level 10
+                { x: width * 0.75, y: height * 0.68 },  // Level 10
+                { x: width * 0.65, y: height * 0.80 }   // Level 11 (secret)
             ]
         } else {
             // Desktop: Original winding space route
@@ -91,7 +115,8 @@ class LevelSelectScene extends Phaser.Scene {
                 { x: width * 0.55, y: height * 0.6 },  // Level 7
                 { x: width * 0.4, y: height * 0.55 },  // Level 8
                 { x: width * 0.3, y: height * 0.65 },  // Level 9
-                { x: width * 0.2, y: height * 0.75 }   // Level 10
+                { x: width * 0.2, y: height * 0.75 },  // Level 10
+                { x: width * 0.5, y: height * 0.85 }   // Level 11 (secret)
             ]
         }
         
@@ -115,7 +140,7 @@ class LevelSelectScene extends Phaser.Scene {
         const starOffset = isMobile ? -25 : -35
         const lockOffset = isMobile ? -25 : -35
         
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 11; i++) {
             const pos = levelPositions[i - 1]
             const isUnlocked = ProgressConfig.isLevelUnlocked(i, this.saveData)
             const stats = ProgressConfig.getLevelStats(i, this.saveData)
@@ -352,5 +377,21 @@ class LevelSelectScene extends Phaser.Scene {
             // All levels use Level1Scene with level number parameter
             this.scene.start('Level1Scene', { levelNumber: this.selectedLevel })
         }
+    }
+    
+    unlockSecretLevel() {
+        console.log('Secret testing level unlocked!')
+        
+        // Unlock level 11 in save data
+        ProgressConfig.unlockLevel(11, this.saveData)
+        
+        // Reset tap counter
+        this.secretTapCount = 0
+        if (this.secretTapTimer) {
+            this.secretTapTimer.remove()
+        }
+        
+        // Recreate the level map to show level 11
+        this.scene.restart()
     }
 }
