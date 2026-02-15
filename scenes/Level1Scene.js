@@ -1612,6 +1612,12 @@ class Level1Scene extends Phaser.Scene {
         
         const config = EnemyConfig[enemyType];
         
+        // Special handling for scout formations
+        if (enemyType === 'scout') {
+            this.spawnScoutFormation(config);
+            return;
+        }
+        
         // Random spawn position at top
         const x = Phaser.Math.Between(50, this.cameraWidth - 50);
         const y = -50;
@@ -1654,6 +1660,55 @@ class Level1Scene extends Phaser.Scene {
             
             // Disable collision detection initially - will be enabled when enemy enters screen
             enemy.body.checkCollision.none = true;
+        }
+    }
+    
+    spawnScoutFormation(config) {
+        // Spawn scouts in a formation with consistent horizontal position
+        const formationSize = config.formationSize || 3;
+        const formationSpacing = config.formationSpacing || 30;
+        const x = Phaser.Math.Between(50, this.cameraWidth - 50);
+        
+        for (let i = 0; i < formationSize; i++) {
+            const y = -50 - (i * formationSpacing); // Each scout spawns slightly above the previous one
+            const scout = this.enemies.get(x, y, 'enemy-fighter'); // Use fighter texture
+            
+            if (scout) {
+                scout.setActive(true);
+                scout.setVisible(true);
+                scout.enemyType = 'scout';
+                scout.health = config.health;
+                scout.shields = config.shields || 0;
+                scout.points = config.points;
+                scout.fireRate = config.fireRate;
+                scout.lastFired = 0;
+                scout.invincibleUntil = 0;
+                scout.movementPattern = config.movementPattern;
+                scout.patternOffset = Math.random() * Math.PI * 2;
+                scout.hasEnteredScreen = false;
+                scout.initialSpeed = config.speed;
+                scout.formationIndex = i; // Track position in formation
+                
+                // Scout formation flight phases
+                scout.formationPhase = 'straight'; // 'straight', 'circle', 'diagonal'
+                scout.circleStartAngle = 0;
+                scout.circleCenter = { x: 0, y: 0 };
+                scout.circleRadius = 50;
+                scout.diagonalDirection = 1; // Will be set when entering diagonal phase
+                
+                // Scale scout to half the size of fighter
+                if (scout.width > 0) {
+                    const targetWidth = config.size.width;
+                    const scale = targetWidth / scout.width;
+                    scout.setScale(scale);
+                }
+                
+                // Set initial velocity
+                scout.body.setVelocity(0, config.speed);
+                
+                // Disable collision detection initially
+                scout.body.checkCollision.none = true;
+            }
         }
     }
     
@@ -1721,15 +1776,15 @@ class Level1Scene extends Phaser.Scene {
             // Update movement pattern
             this.updateEnemyMovement(enemy);
             
-            // Enemy shooting - only if on screen
-            if (enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
+            // Enemy shooting - only if on screen and has weapons (scouts don't shoot)
+            if (enemy.enemyType !== 'scout' && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
                 this.enemyFire(enemy);
                 enemy.lastFired = time;
             }
             
-            // Target escape pods - only if on screen
+            // Target escape pods - only if on screen and has weapons
             const nearestPod = this.findNearestPod(enemy);
-            if (enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
+            if (enemy.enemyType !== 'scout' && enemy.fireRate && enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
                 // Shoot at pod only if fire rate allows
                 if (time > enemy.lastFired + enemy.fireRate) {
                     const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y);
@@ -1791,6 +1846,62 @@ class Level1Scene extends Phaser.Scene {
                 // Weapon platform - stays in place horizontally, moves down with screen scroll only
                 enemy.body.setVelocityX(0);
                 // Keep default downward velocity for scrolling effect
+                break;
+            case 'formation':
+                // Scouts fly in formation with three phases
+                // Phase 1: Straight down until halfway
+                // Phase 2: Circle pattern once
+                // Phase 3: Diagonal towards bottom
+                
+                if (enemy.formationPhase === 'straight') {
+                    // Keep moving straight down
+                    enemy.body.setVelocityX(0);
+                    
+                    // Check if reached halfway down the screen
+                    if (enemy.y >= this.cameraHeight / 2) {
+                        // Transition to circle phase
+                        enemy.formationPhase = 'circle';
+                        enemy.circleCenter.x = enemy.x;
+                        enemy.circleCenter.y = enemy.y;
+                        enemy.circleStartAngle = 0;
+                        enemy.circleCurrentAngle = 0;
+                        // Add offset based on formation index for staggered effect
+                        enemy.circleStartTime = this.time.now + (enemy.formationIndex * 100);
+                    }
+                } else if (enemy.formationPhase === 'circle') {
+                    // Fly in a circle once
+                    if (this.time.now >= enemy.circleStartTime) {
+                        const angularSpeed = 0.05; // Radians per frame
+                        enemy.circleCurrentAngle += angularSpeed;
+                        
+                        // Calculate position on circle
+                        const newX = enemy.circleCenter.x + Math.cos(enemy.circleCurrentAngle) * enemy.circleRadius;
+                        const newY = enemy.circleCenter.y + Math.sin(enemy.circleCurrentAngle) * enemy.circleRadius;
+                        
+                        // Set velocity to move towards the calculated position
+                        const dx = newX - enemy.x;
+                        const dy = newY - enemy.y;
+                        const speed = config.speed * 1.5; // Slightly faster during circle
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 0) {
+                            enemy.body.setVelocity((dx / distance) * speed, (dy / distance) * speed);
+                        }
+                        
+                        // Check if completed one full circle
+                        if (enemy.circleCurrentAngle >= Math.PI * 2) {
+                            // Transition to diagonal phase
+                            enemy.formationPhase = 'diagonal';
+                            // Randomly choose left or right diagonal
+                            enemy.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
+                        }
+                    }
+                } else if (enemy.formationPhase === 'diagonal') {
+                    // Fly diagonally towards bottom of screen
+                    const diagonalSpeed = config.speed;
+                    const horizontalSpeed = diagonalSpeed * 0.5 * enemy.diagonalDirection;
+                    enemy.body.setVelocity(horizontalSpeed, diagonalSpeed);
+                }
                 break;
         }
     }

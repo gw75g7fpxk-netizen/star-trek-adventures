@@ -15,6 +15,21 @@ const EnemyConfig = {
         size: { width: 25, height: 25 }
     },
     
+    // Scout - Small, unarmed ship that flies in formation
+    scout: {
+        health: 1,
+        shields: 0,
+        speed: 150,
+        fireRate: null, // Scouts don't fire weapons
+        bulletSpeed: null,
+        damage: 1, // Collision damage
+        points: 50,
+        movementPattern: 'formation', // Flies in formation with other scouts
+        size: { width: 12.5, height: 12.5 }, // Half the size of fighter
+        formationSize: 3, // Default number of scouts in a formation
+        formationSpacing: 30 // Vertical spacing between scouts in formation
+    },
+    
     // Dominion Cruiser - Medium warship
     cruiser: {
         health: 3,
