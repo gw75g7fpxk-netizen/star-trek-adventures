@@ -1635,6 +1635,7 @@ class Level1Scene extends Phaser.Scene {
         if (pod) {
             pod.setActive(true);
             pod.setVisible(true);
+            pod.setScale(PodConfig.scale);
             pod.health = PodConfig.health;
             pod.body.setVelocity(0, PodConfig.speed);
             
