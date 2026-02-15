@@ -809,7 +809,7 @@ class Level1Scene extends Phaser.Scene {
         if (healthPercent < 0.25) color = 0xFF0000; // Red
         
         this.healthBar.fillStyle(color, 1);
-        this.healthBar.fillRect(12, 12, 200 * healthPercent, 6);
+        this.healthBar.fillRect(12, 12, 200 * healthPercent, 14);
     }
 
     updateShieldsBar() {
