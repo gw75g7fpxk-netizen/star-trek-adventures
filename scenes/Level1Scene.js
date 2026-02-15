@@ -1623,6 +1623,13 @@ class Level1Scene extends Phaser.Scene {
                 scout.initialSpeed = config.speed;
                 scout.formationIndex = i; // Track position in formation
                 
+                // Scout formation flight phases
+                scout.formationPhase = 'straight'; // 'straight', 'circle', 'diagonal'
+                scout.circleStartAngle = 0;
+                scout.circleCenter = { x: 0, y: 0 };
+                scout.circleRadius = 50;
+                scout.diagonalDirection = 1; // Will be set when entering diagonal phase
+                
                 // Scale scout to half the size of fighter
                 if (scout.width > 0) {
                     const targetWidth = config.size.width;
@@ -1774,9 +1781,60 @@ class Level1Scene extends Phaser.Scene {
                 // Keep default downward velocity for scrolling effect
                 break;
             case 'formation':
-                // Scouts fly in formation - straight down in the same column
-                // Movement is already set in spawn, just keep it straight
-                enemy.body.setVelocityX(0);
+                // Scouts fly in formation with three phases
+                // Phase 1: Straight down until halfway
+                // Phase 2: Circle pattern once
+                // Phase 3: Diagonal towards bottom
+                
+                if (enemy.formationPhase === 'straight') {
+                    // Keep moving straight down
+                    enemy.body.setVelocityX(0);
+                    
+                    // Check if reached halfway down the screen
+                    if (enemy.y >= this.cameraHeight / 2) {
+                        // Transition to circle phase
+                        enemy.formationPhase = 'circle';
+                        enemy.circleCenter.x = enemy.x;
+                        enemy.circleCenter.y = enemy.y;
+                        enemy.circleStartAngle = 0;
+                        enemy.circleCurrentAngle = 0;
+                        // Add offset based on formation index for staggered effect
+                        enemy.circleStartTime = this.time.now + (enemy.formationIndex * 100);
+                    }
+                } else if (enemy.formationPhase === 'circle') {
+                    // Fly in a circle once
+                    if (this.time.now >= enemy.circleStartTime) {
+                        const angularSpeed = 0.05; // Radians per frame
+                        enemy.circleCurrentAngle += angularSpeed;
+                        
+                        // Calculate position on circle
+                        const newX = enemy.circleCenter.x + Math.cos(enemy.circleCurrentAngle) * enemy.circleRadius;
+                        const newY = enemy.circleCenter.y + Math.sin(enemy.circleCurrentAngle) * enemy.circleRadius;
+                        
+                        // Set velocity to move towards the calculated position
+                        const dx = newX - enemy.x;
+                        const dy = newY - enemy.y;
+                        const speed = config.speed * 1.5; // Slightly faster during circle
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 0) {
+                            enemy.body.setVelocity((dx / distance) * speed, (dy / distance) * speed);
+                        }
+                        
+                        // Check if completed one full circle
+                        if (enemy.circleCurrentAngle >= Math.PI * 2) {
+                            // Transition to diagonal phase
+                            enemy.formationPhase = 'diagonal';
+                            // Randomly choose left or right diagonal
+                            enemy.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
+                        }
+                    }
+                } else if (enemy.formationPhase === 'diagonal') {
+                    // Fly diagonally towards bottom of screen
+                    const diagonalSpeed = config.speed;
+                    const horizontalSpeed = diagonalSpeed * 0.5 * enemy.diagonalDirection;
+                    enemy.body.setVelocity(horizontalSpeed, diagonalSpeed);
+                }
                 break;
         }
     }
