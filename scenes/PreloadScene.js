@@ -118,6 +118,9 @@ class PreloadScene extends Phaser.Scene {
         // Load weapon platform image (will be scaled in Level1Scene)
         this.load.image('weapon-platform', 'assets/images/weapon-platform.png');
         
+        // Load escape pod sprite
+        this.load.image('escape-pod', 'assets/images/escape-pod.png');
+        
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
         
@@ -183,15 +186,6 @@ class PreloadScene extends Phaser.Scene {
         enemyBulletGraphics.fillRect(0, 0, 6, 10);
         enemyBulletGraphics.generateTexture('enemy-bullet', 6, 10);
         enemyBulletGraphics.destroy();
-        
-        // Escape pod placeholder (white/cyan circle)
-        const podGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        podGraphics.fillStyle(0xFFFFFF, 1);
-        podGraphics.fillCircle(10, 10, 10);
-        podGraphics.fillStyle(0x00FFFF, 1);
-        podGraphics.fillCircle(10, 10, 6);
-        podGraphics.generateTexture('escape-pod', 20, 20);
-        podGraphics.destroy();
         
         // Power-up placeholders (various colors)
         const powerUpGraphics = this.make.graphics({ x: 0, y: 0, add: false });

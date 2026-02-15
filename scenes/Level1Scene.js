@@ -1600,6 +1600,7 @@ class Level1Scene extends Phaser.Scene {
         if (pod) {
             pod.setActive(true);
             pod.setVisible(true);
+            pod.setScale(0.07); // Scale down sprite to appropriate size (279x461 -> ~20x32)
             pod.health = PodConfig.health;
             pod.body.setVelocity(0, PodConfig.speed);
             
