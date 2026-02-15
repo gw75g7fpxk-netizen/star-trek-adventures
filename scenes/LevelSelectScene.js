@@ -30,11 +30,15 @@ class LevelSelectScene extends Phaser.Scene {
             fontStyle: 'bold'
         })
         title.setOrigin(0.5)
-        title.setInteractive({ useHandCursor: true })
+        
+        // Make the title interactive with a larger hit area for easier tapping
+        const hitArea = new Phaser.Geom.Rectangle(-200, -20, 400, 40)
+        title.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains)
         
         // Add secret tap counter to unlock testing level
         title.on('pointerdown', () => {
             this.secretTapCount++
+            console.log(`Tap ${this.secretTapCount}/5 on MISSION SELECT`)
             
             // Reset timer on each tap
             if (this.secretTapTimer) {
