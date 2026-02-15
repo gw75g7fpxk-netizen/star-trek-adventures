@@ -144,6 +144,7 @@ class Level1Scene extends Phaser.Scene {
         this.invincibleUntil = 0; // Timestamp for invincibility after taking damage
         this.lastShieldRecharge = 0; // Timestamp for last shield recharge
         this.shieldRechargeRate = 30000; // 30 seconds in milliseconds
+        this.scoutFormationId = 0; // Counter for unique formation IDs
         
         // Store camera dimensions for responsive layout
         this.updateCameraDimensions();
@@ -1689,11 +1690,11 @@ class Level1Scene extends Phaser.Scene {
         // Choose one diagonal direction for the entire formation
         const formationDiagonalDirection = Math.random() < 0.5 ? -1 : 1;
         
-        // Generate unique formation ID for this group
-        if (!this.scoutFormationId) {
-            this.scoutFormationId = 0;
-        }
+        // Get unique formation ID for this group
         const formationId = this.scoutFormationId++;
+        
+        // Store formation members for efficient communication
+        const formationMembers = [];
         
         for (let i = 0; i < formationSize; i++) {
             const y = -50 - (i * formationSpacing); // Each scout spawns slightly above the previous one
@@ -1723,6 +1724,7 @@ class Level1Scene extends Phaser.Scene {
                 scout.circleRadius = 50;
                 scout.diagonalDirection = formationDiagonalDirection; // Shared direction for entire formation
                 scout.leaderCircleStartY = null; // Will be set by the formation leader
+                scout.formationMembers = formationMembers; // Reference to all members in formation
                 
                 // Scale scout to half the size of fighter
                 if (scout.width > 0) {
@@ -1736,6 +1738,9 @@ class Level1Scene extends Phaser.Scene {
                 
                 // Disable collision detection initially
                 scout.body.checkCollision.none = true;
+                
+                // Add to formation members array
+                formationMembers.push(scout);
             }
         }
     }
@@ -1894,16 +1899,14 @@ class Level1Scene extends Phaser.Scene {
                         // Zero out velocity so body.reset works smoothly
                         enemy.body.setVelocity(0, 0);
                         
-                        // Notify other scouts in formation by finding them
-                        this.enemies.children.each((otherScout) => {
-                            if (otherScout.active && 
-                                otherScout.enemyType === 'scout' && 
-                                otherScout.formationId === enemy.formationId && 
-                                otherScout !== enemy) {
-                                // Share the leader's circle start position with followers
-                                otherScout.leaderCircleStartY = enemy.leaderCircleStartY;
-                            }
-                        });
+                        // Notify other scouts in formation using formation members array
+                        if (enemy.formationMembers) {
+                            enemy.formationMembers.forEach((member) => {
+                                if (member.active && member !== enemy) {
+                                    member.leaderCircleStartY = enemy.leaderCircleStartY;
+                                }
+                            });
+                        }
                     } else if (enemy.formationIndex > 0 && enemy.leaderCircleStartY !== null) {
                         // Follower scouts transition when they reach the same Y position where leader started
                         if (enemy.y >= enemy.leaderCircleStartY) {
