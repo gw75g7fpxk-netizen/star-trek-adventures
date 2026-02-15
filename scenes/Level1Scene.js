@@ -2034,11 +2034,18 @@ class Level1Scene extends Phaser.Scene {
         const x = this.cameraWidth / 2;
         const y = -100;
         
-        this.boss = this.physics.add.sprite(x, y, 'boss');
+        this.boss = this.physics.add.sprite(x, y, 'boss-core');
         this.boss.setActive(true);
-        this.boss.setVisible(false); // Boss sprite should be invisible - boss is rendered via components only
+        this.boss.setVisible(true); // Boss core is now always visible
         // Ensure boss is rendered behind its components (generators/turrets)
         this.boss.setDepth(RENDER_DEPTH.BOSS);
+        
+        // Configure physics body for boss
+        if (this.boss.body) {
+            this.boss.body.enable = true;
+            this.boss.body.setSize(200, 200); // Set body size to match core texture
+            this.boss.body.checkCollision.none = false;
+        }
         
         // Initialize boss stats
         this.boss.phase = 0;
@@ -2086,7 +2093,7 @@ class Level1Scene extends Phaser.Scene {
             const generator = this.bossComponents.get(
                 this.boss.x + pos.x,
                 this.boss.y + pos.y,
-                'boss-generator'
+                'boss-generator-yellow' // Use yellow texture for active generators
             );
             
             if (generator) {
@@ -2123,7 +2130,7 @@ class Level1Scene extends Phaser.Scene {
             const turret = this.bossComponents.get(
                 this.boss.x + Math.cos(angle) * radius,
                 this.boss.y + Math.sin(angle) * radius,
-                'boss-turret'
+                'boss-turret-yellow' // Use yellow texture for active turrets
             );
             
             if (turret) {
@@ -2153,9 +2160,16 @@ class Level1Scene extends Phaser.Scene {
         this.boss.phase = 3;
         this.boss.phaseHealth = EnemyConfig.boss.phases[2].health;
         
-        // Make boss core visible by changing texture to red core
-        this.boss.setTexture('boss-core');
+        // Change boss core to yellow to indicate it's now damageable
+        this.boss.setTexture('boss-core-yellow');
         this.boss.setVisible(true);
+        
+        // Ensure physics body is properly enabled for collisions in phase 3
+        if (this.boss.body) {
+            this.boss.body.enable = true;
+            this.boss.body.checkCollision.none = false;
+            // Body size already set at spawn (200x200)
+        }
         
         // Boss becomes more aggressive
         this.boss.attackRate = 1000;
@@ -2285,6 +2299,9 @@ class Level1Scene extends Phaser.Scene {
             actualBoss.health -= 10;
             actualBoss.phaseHealth -= 10;
             
+            // Play hit sound effect
+            this.playSound('hit');
+            
             // Set invincibility after taking damage
             actualBoss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
             
@@ -2310,10 +2327,15 @@ class Level1Scene extends Phaser.Scene {
         
         generator.health -= 10;
         
+        // Play hit sound effect
+        this.playSound('hit');
+        
         // Set invincibility after taking damage
         generator.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (generator.health <= 0) {
+            // Play explosion sound effect
+            this.playSound('explosion');
             this.createExplosion(generator.x, generator.y);
             generator.setActive(false);
             generator.setVisible(false);
@@ -2355,10 +2377,15 @@ class Level1Scene extends Phaser.Scene {
         
         turret.health -= 10;
         
+        // Play hit sound effect
+        this.playSound('hit');
+        
         // Set invincibility after taking damage
         turret.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         if (turret.health <= 0) {
+            // Play explosion sound effect
+            this.playSound('explosion');
             this.createExplosion(turret.x, turret.y);
             turret.setActive(false);
             turret.setVisible(false);

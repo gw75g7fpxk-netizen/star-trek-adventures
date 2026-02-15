@@ -129,25 +129,46 @@ class PreloadScene extends Phaser.Scene {
         bossGraphics.generateTexture('boss', 200, 200);
         bossGraphics.destroy();
         
-        // Boss core (Phase 3) - large red circle
+        // Boss core (Phase 3) - large red circle (inactive)
         const bossCoreGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         bossCoreGraphics.fillStyle(0xFF0000, 1); // Red
         bossCoreGraphics.fillCircle(100, 100, 100); // Large red circle, 200px diameter
         bossCoreGraphics.generateTexture('boss-core', 200, 200);
         bossCoreGraphics.destroy();
         
-        // Boss components (generators and turrets) - red shapes
+        // Boss core - yellow variant (active/damageable)
+        const bossCoreYellowGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        bossCoreYellowGraphics.fillStyle(0xFFFF00, 1); // Yellow
+        bossCoreYellowGraphics.fillCircle(100, 100, 100); // Large yellow circle, 200px diameter
+        bossCoreYellowGraphics.generateTexture('boss-core-yellow', 200, 200);
+        bossCoreYellowGraphics.destroy();
+        
+        // Boss components (generators and turrets) - red shapes (inactive)
         const generatorGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         generatorGraphics.fillStyle(0xFF0000, 1); // Red
         generatorGraphics.fillRect(0, 0, 30, 30);
         generatorGraphics.generateTexture('boss-generator', 30, 30);
         generatorGraphics.destroy();
         
+        // Boss generator - yellow variant (active/damageable)
+        const generatorYellowGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        generatorYellowGraphics.fillStyle(0xFFFF00, 1); // Yellow
+        generatorYellowGraphics.fillRect(0, 0, 30, 30);
+        generatorYellowGraphics.generateTexture('boss-generator-yellow', 30, 30);
+        generatorYellowGraphics.destroy();
+        
         const turretGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         turretGraphics.fillStyle(0xFF0000, 1); // Red
         turretGraphics.fillCircle(15, 15, 15);
         turretGraphics.generateTexture('boss-turret', 30, 30);
         turretGraphics.destroy();
+        
+        // Boss turret - yellow variant (active/damageable)
+        const turretYellowGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        turretYellowGraphics.fillStyle(0xFFFF00, 1); // Yellow
+        turretYellowGraphics.fillCircle(15, 15, 15);
+        turretYellowGraphics.generateTexture('boss-turret-yellow', 30, 30);
+        turretYellowGraphics.destroy();
         
         // Player bullet placeholder (yellow rectangle)
         const bulletGraphics = this.make.graphics({ x: 0, y: 0, add: false });
