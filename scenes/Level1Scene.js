@@ -537,28 +537,43 @@ class Level1Scene extends Phaser.Scene {
             fontStyle: 'bold'
         };
         
-        // Health bar background with LCARS style
+        // Hull health bar background with LCARS style
         const healthBarBg = this.add.graphics();
         healthBarBg.fillStyle(0x333333, 1);
-        healthBarBg.fillRect(10, 10, 204, 24);
+        healthBarBg.fillRect(10, 10, 204, 20);
         healthBarBg.lineStyle(2, 0x00FFFF, 1);
-        healthBarBg.strokeRect(10, 10, 204, 24);
+        healthBarBg.strokeRect(10, 10, 204, 20);
         healthBarBg.setScrollFactor(0);
         healthBarBg.setDepth(999);
         
-        // Health bar
+        // Hull health bar
         this.healthBar = this.add.graphics();
         this.healthBar.setScrollFactor(0);
         this.healthBar.setDepth(999);
         this.updateHealthBar();
         
+        // Shield bar background with LCARS style
+        const shieldBarBg = this.add.graphics();
+        shieldBarBg.fillStyle(0x333333, 1);
+        shieldBarBg.fillRect(10, 32, 204, 20);
+        shieldBarBg.lineStyle(2, 0x00FFFF, 1);
+        shieldBarBg.strokeRect(10, 32, 204, 20);
+        shieldBarBg.setScrollFactor(0);
+        shieldBarBg.setDepth(999);
+        
+        // Shield bar
+        this.shieldBar = this.add.graphics();
+        this.shieldBar.setScrollFactor(0);
+        this.shieldBar.setDepth(999);
+        this.updateShieldsBar();
+        
         // Health text with LCARS styling
-        this.healthText = this.add.text(10, 40, `HULL: ${this.playerStats.health}/${this.playerStats.maxHealth}`, hudStyle);
+        this.healthText = this.add.text(10, 54, `HULL: ${this.playerStats.health}/${this.playerStats.maxHealth}`, hudStyle);
         this.healthText.setScrollFactor(0);
         this.healthText.setDepth(999);
         
         // Shields text with LCARS styling
-        this.shieldsText = this.add.text(10, 58, `SHIELDS: ${this.playerStats.shields}/${this.playerStats.maxShields}`, hudStyle);
+        this.shieldsText = this.add.text(10, 72, `SHIELDS: ${this.playerStats.shields}/${this.playerStats.maxShields}`, hudStyle);
         this.shieldsText.setScrollFactor(0);
         this.shieldsText.setDepth(999);
         
@@ -602,9 +617,9 @@ class Level1Scene extends Phaser.Scene {
         // Skip Wave button (testing feature)
         const skipButtonBg = this.add.graphics();
         skipButtonBg.fillStyle(0x333333, 0.8);
-        skipButtonBg.fillRoundedRect(10, 80, 100, 30, 5);
+        skipButtonBg.fillRoundedRect(10, 94, 100, 30, 5);
         skipButtonBg.lineStyle(2, 0xFF9900, 1);
-        skipButtonBg.strokeRoundedRect(10, 80, 100, 30, 5);
+        skipButtonBg.strokeRoundedRect(10, 94, 100, 30, 5);
         skipButtonBg.setScrollFactor(0);
         skipButtonBg.setDepth(999);
         
@@ -614,7 +629,7 @@ class Level1Scene extends Phaser.Scene {
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
         };
-        this.skipWaveButton = this.add.text(60, 95, 'SKIP WAVE', skipButtonStyle);
+        this.skipWaveButton = this.add.text(60, 109, 'SKIP WAVE', skipButtonStyle);
         this.skipWaveButton.setOrigin(0.5, 0.5);
         this.skipWaveButton.setScrollFactor(0);
         this.skipWaveButton.setDepth(1000);
@@ -780,7 +795,22 @@ class Level1Scene extends Phaser.Scene {
         if (healthPercent < 0.25) color = 0xFF0000; // Red
         
         this.healthBar.fillStyle(color, 1);
-        this.healthBar.fillRect(12, 12, 200 * healthPercent, 20);
+        this.healthBar.fillRect(12, 12, 200 * healthPercent, 16);
+    }
+
+    updateShieldsBar() {
+        this.shieldBar.clear();
+        
+        // Calculate shields percentage
+        const shieldsPercent = this.playerStats.shields / this.playerStats.maxShields;
+        
+        // Color based on shields
+        let color = 0x00FFFF; // Cyan (LCARS style)
+        if (shieldsPercent < 0.5) color = 0x9999FF; // Light blue
+        if (shieldsPercent < 0.25) color = 0xFF00FF; // Magenta
+        
+        this.shieldBar.fillStyle(color, 1);
+        this.shieldBar.fillRect(12, 34, 200 * shieldsPercent, 16);
     }
 
     update(time, delta) {
@@ -1078,6 +1108,7 @@ class Level1Scene extends Phaser.Scene {
         this.multiplierText.setText(`MULTIPLIER: x${this.scoreMultiplier.toFixed(1)}`);
         this.podsText.setText(`PODS: ${this.podsRescued}`);
         this.updateHealthBar();
+        this.updateShieldsBar();
     }
 
     // Method for taking damage (to be used when enemies are implemented)
