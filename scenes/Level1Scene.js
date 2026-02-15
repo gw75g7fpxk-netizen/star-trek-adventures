@@ -2772,19 +2772,34 @@ class Level1Scene extends Phaser.Scene {
         const pulseCannonsLevel = this.saveData.upgrades.pulseCannons || 0
         this.pulseCannonsStats = UpgradesConfig.getUpgradeStats('pulseCannons', pulseCannonsLevel)
         this.pulseCannonsReady = true
-        this.pulseCannonsLastFired = 0
+        // Initialize to allow immediate firing if enabled
+        if (this.pulseCannonsStats && this.pulseCannonsStats.enabled) {
+            this.pulseCannonsLastFired = -this.pulseCannonsStats.cooldown
+        } else {
+            this.pulseCannonsLastFired = 0
+        }
         
         // Quantum Torpedos
         const torpedosLevel = this.saveData.upgrades.quantumTorpedos || 0
         this.quantumTorpedosStats = UpgradesConfig.getUpgradeStats('quantumTorpedos', torpedosLevel)
         this.quantumTorpedosReady = true
-        this.quantumTorpedosLastFired = 0
+        // Initialize to allow immediate firing if enabled
+        if (this.quantumTorpedosStats && this.quantumTorpedosStats.enabled) {
+            this.quantumTorpedosLastFired = -this.quantumTorpedosStats.cooldown
+        } else {
+            this.quantumTorpedosLastFired = 0
+        }
         
         // Point Defense
         const pointDefenseLevel = this.saveData.upgrades.pointDefense || 0
         this.pointDefenseStats = UpgradesConfig.getUpgradeStats('pointDefense', pointDefenseLevel)
         this.pointDefenseReady = true
-        this.pointDefenseLastFired = 0
+        // Initialize to allow immediate firing if enabled
+        if (this.pointDefenseStats && this.pointDefenseStats.enabled) {
+            this.pointDefenseLastFired = -this.pointDefenseStats.cooldown
+        } else {
+            this.pointDefenseLastFired = 0
+        }
     }
 
 
