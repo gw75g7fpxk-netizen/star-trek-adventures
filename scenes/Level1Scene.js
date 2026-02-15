@@ -1689,6 +1689,12 @@ class Level1Scene extends Phaser.Scene {
         // Choose one diagonal direction for the entire formation
         const formationDiagonalDirection = Math.random() < 0.5 ? -1 : 1;
         
+        // Generate unique formation ID for this group
+        if (!this.scoutFormationId) {
+            this.scoutFormationId = 0;
+        }
+        const formationId = this.scoutFormationId++;
+        
         for (let i = 0; i < formationSize; i++) {
             const y = -50 - (i * formationSpacing); // Each scout spawns slightly above the previous one
             const scout = this.enemies.get(x, y, 'enemy-fighter'); // Use fighter texture
@@ -1708,6 +1714,7 @@ class Level1Scene extends Phaser.Scene {
                 scout.hasEnteredScreen = false;
                 scout.initialSpeed = config.speed;
                 scout.formationIndex = i; // Track position in formation
+                scout.formationId = formationId; // Unique ID for this formation group
                 
                 // Scout formation flight phases
                 scout.formationPhase = 'straight'; // 'straight', 'circle', 'diagonal'
@@ -1715,6 +1722,7 @@ class Level1Scene extends Phaser.Scene {
                 scout.circleCenter = { x: 0, y: 0 };
                 scout.circleRadius = 50;
                 scout.diagonalDirection = formationDiagonalDirection; // Shared direction for entire formation
+                scout.leaderCircleStartY = null; // Will be set by the formation leader
                 
                 // Scale scout to half the size of fighter
                 if (scout.width > 0) {
@@ -1869,16 +1877,46 @@ class Level1Scene extends Phaser.Scene {
                     // Keep moving straight down
                     enemy.body.setVelocityX(0);
                     
-                    // Check if reached 1/3 down the screen (not halfway)
-                    if (enemy.y >= this.cameraHeight / SCOUT_CIRCLE_TRIGGER_FRACTION) {
-                        // Transition to circle phase
+                    // Leader (formationIndex = 0) triggers transition for the formation
+                    if (enemy.formationIndex === 0 && enemy.y >= this.cameraHeight / SCOUT_CIRCLE_TRIGGER_FRACTION) {
+                        // Leader initiates circle transition
                         enemy.formationPhase = 'circle';
                         enemy.circleCenter.x = enemy.x;
                         enemy.circleCenter.y = enemy.y;
-                        // Start at top of circle (angle = -PI/2) for smooth transition
+                        
+                        // Store the leader's Y position when starting circle for followers
+                        enemy.leaderCircleStartY = enemy.y;
+                        
+                        // Calculate starting angle based on current position relative to center
+                        // Since we're moving down, we want to start from the top of the circle
                         enemy.circleCurrentAngle = -Math.PI / 2;
+                        
                         // Zero out velocity so body.reset works smoothly
                         enemy.body.setVelocity(0, 0);
+                        
+                        // Notify other scouts in formation by finding them
+                        this.enemies.children.each((otherScout) => {
+                            if (otherScout.active && 
+                                otherScout.enemyType === 'scout' && 
+                                otherScout.formationId === enemy.formationId && 
+                                otherScout !== enemy) {
+                                // Share the leader's circle start position with followers
+                                otherScout.leaderCircleStartY = enemy.leaderCircleStartY;
+                            }
+                        });
+                    } else if (enemy.formationIndex > 0 && enemy.leaderCircleStartY !== null) {
+                        // Follower scouts transition when they reach the same Y position where leader started
+                        if (enemy.y >= enemy.leaderCircleStartY) {
+                            enemy.formationPhase = 'circle';
+                            enemy.circleCenter.x = enemy.x;
+                            enemy.circleCenter.y = enemy.y;
+                            
+                            // Start at top of circle for smooth continuation
+                            enemy.circleCurrentAngle = -Math.PI / 2;
+                            
+                            // Zero out velocity so body.reset works smoothly
+                            enemy.body.setVelocity(0, 0);
+                        }
                     }
                 } else if (enemy.formationPhase === 'circle') {
                     // Fly in a circle once with smooth movement
