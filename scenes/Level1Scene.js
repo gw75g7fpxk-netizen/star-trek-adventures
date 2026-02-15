@@ -364,14 +364,14 @@ class Level1Scene extends Phaser.Scene {
             }
         });
         
-        // Cheat code: B key to jump to boss fight (for testing)
-        this.bossKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
-        this.bossKey.on('down', () => {
-            if (!this.isBossFight && !this.boss) {
-                console.log('Cheat code activated: Jumping to boss fight!');
-                this.skipToBossFight();
-            }
-        });
+        // Boss fight cheat code disabled (no boss in level 1 currently)
+        // this.bossKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+        // this.bossKey.on('down', () => {
+        //     if (!this.isBossFight && !this.boss) {
+        //         console.log('Cheat code activated: Jumping to boss fight!');
+        //         this.skipToBossFight();
+        //     }
+        // });
         
         // Mobile controls
         this.isFiring = false;
@@ -1495,11 +1495,11 @@ class Level1Scene extends Phaser.Scene {
         const waveConfig = levelConfig[waveKey];
         
         if (!waveConfig) {
-            // Check for boss wave
-            if (levelConfig.bossWave && this.currentWave > levelConfig.bossWave.threshold) {
-                this.startBossFight();
-                return;
-            }
+            // Boss wave disabled - skip directly to victory after all waves
+            // if (levelConfig.bossWave && this.currentWave > levelConfig.bossWave.threshold) {
+            //     this.startBossFight();
+            //     return;
+            // }
             // No more waves, victory
             this.victory();
             return;
