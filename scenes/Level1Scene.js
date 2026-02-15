@@ -51,6 +51,16 @@ const SHIELD_IMPACT = {
     duration: 300         // Animation duration in milliseconds
 };
 
+// HUD bar dimension constants
+const HUD_BAR = {
+    width: 204,           // Total bar width in pixels
+    height: 10,           // Bar height in pixels
+    segmentGap: 2,        // Gap between segments in pixels
+    xPos: 10,             // X position on screen
+    healthYPos: 10,       // Y position for health bar
+    shieldsYPos: 22       // Y position for shields bar
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -64,6 +74,10 @@ class Level1Scene extends Phaser.Scene {
             speed: PlayerConfig.speed,
             fireRate: PlayerConfig.fireRate
         };
+        
+        // Track previous max values for HUD bar optimization
+        this.previousMaxHealth = PlayerConfig.maxHealth;
+        this.previousMaxShields = PlayerConfig.maxShields;
         
         // Game state
         this.currentWave = 0;
@@ -542,47 +556,31 @@ class Level1Scene extends Phaser.Scene {
             fontStyle: 'bold'
         };
         
-        // Hull health bar background with LCARS style
-        const healthBarBg = this.add.graphics();
-        healthBarBg.fillStyle(0x333333, 1);
-        healthBarBg.fillRect(10, 10, 204, 10);
-        healthBarBg.lineStyle(2, 0x00FFFF, 1);
-        healthBarBg.strokeRect(10, 10, 204, 10);
-        healthBarBg.setScrollFactor(0);
-        healthBarBg.setDepth(999);
+        // Create segmented health bar background with divisions
+        this.healthBarBg = this.add.graphics();
+        this.healthBarBg.setScrollFactor(0);
+        this.healthBarBg.setDepth(999);
+        this.createSegmentedBarBackground(this.healthBarBg, HUD_BAR.xPos, HUD_BAR.healthYPos, this.playerStats.maxHealth);
         
-        // Hull health bar
+        // Hull health bar (will be drawn with segments)
         this.healthBar = this.add.graphics();
         this.healthBar.setScrollFactor(0);
         this.healthBar.setDepth(999);
         this.updateHealthBar();
         
-        // Shield bar background with LCARS style
-        const shieldBarBg = this.add.graphics();
-        shieldBarBg.fillStyle(0x333333, 1);
-        shieldBarBg.fillRect(10, 22, 204, 10);
-        shieldBarBg.lineStyle(2, 0x00FFFF, 1);
-        shieldBarBg.strokeRect(10, 22, 204, 10);
-        shieldBarBg.setScrollFactor(0);
-        shieldBarBg.setDepth(999);
+        // Create segmented shield bar background with divisions
+        this.shieldBarBg = this.add.graphics();
+        this.shieldBarBg.setScrollFactor(0);
+        this.shieldBarBg.setDepth(999);
+        this.createSegmentedBarBackground(this.shieldBarBg, HUD_BAR.xPos, HUD_BAR.shieldsYPos, this.playerStats.maxShields);
         
-        // Shield bar
+        // Shield bar (will be drawn with segments)
         this.shieldBar = this.add.graphics();
         this.shieldBar.setScrollFactor(0);
         this.shieldBar.setDepth(999);
         this.updateShieldsBar();
         
-        // Health text with LCARS styling
-        this.healthText = this.add.text(10, 46, `HULL: ${this.playerStats.health}/${this.playerStats.maxHealth}`, hudStyle);
-        this.healthText.setScrollFactor(0);
-        this.healthText.setDepth(999);
-        
-        // Shields text with LCARS styling
-        this.shieldsText = this.add.text(10, 64, `SHIELDS: ${this.playerStats.shields}/${this.playerStats.maxShields}`, hudStyle);
-        this.shieldsText.setScrollFactor(0);
-        this.shieldsText.setDepth(999);
-        
-        // Score text (top right) with LCARS styling
+        // Score text (top right) with LCARS styling - adjusted Y position since bars are now taller
         this.scoreText = this.add.text(this.cameraWidth - 10, 10, `SCORE: ${this.score}`, titleStyle);
         this.scoreText.setOrigin(1, 0);
         this.scoreText.setScrollFactor(0);
@@ -798,34 +796,85 @@ class Level1Scene extends Phaser.Scene {
         }
     }
 
+    createSegmentedBarBackground(graphics, x, y, maxSegments) {
+        const segmentWidth = (HUD_BAR.width - (maxSegments - 1) * HUD_BAR.segmentGap) / maxSegments;
+        
+        graphics.clear();
+        
+        // Draw outer border
+        graphics.lineStyle(2, 0x00FFFF, 1);
+        graphics.strokeRect(x, y, HUD_BAR.width, HUD_BAR.height);
+        
+        // Draw dark background
+        graphics.fillStyle(0x333333, 1);
+        graphics.fillRect(x + 2, y + 2, HUD_BAR.width - 4, HUD_BAR.height - 4);
+        
+        // Draw segment dividers
+        graphics.lineStyle(1, 0x00FFFF, 0.5);
+        for (let i = 1; i < maxSegments; i++) {
+            const dividerX = x + 2 + i * (segmentWidth + HUD_BAR.segmentGap) - HUD_BAR.segmentGap / 2;
+            graphics.lineBetween(dividerX, y + 2, dividerX, y + HUD_BAR.height - 2);
+        }
+    }
+
     updateHealthBar() {
         this.healthBar.clear();
         
-        // Calculate health percentage
-        const healthPercent = this.playerStats.health / this.playerStats.maxHealth;
+        // Only redraw background if maxHealth changed (e.g., from upgrades)
+        if (this.playerStats.maxHealth !== this.previousMaxHealth) {
+            this.createSegmentedBarBackground(this.healthBarBg, HUD_BAR.xPos, HUD_BAR.healthYPos, this.playerStats.maxHealth);
+            this.previousMaxHealth = this.playerStats.maxHealth;
+        }
         
-        // Color based on health
+        const maxSegments = this.playerStats.maxHealth;
+        const currentSegments = this.playerStats.health;
+        const segmentWidth = (HUD_BAR.width - (maxSegments - 1) * HUD_BAR.segmentGap) / maxSegments;
+        
+        // Calculate health percentage for color
+        const healthPercent = currentSegments / maxSegments;
+        
+        // Color based on health percentage
         let color = 0x00FF00; // Green
         if (healthPercent < 0.5) color = 0xFFFF00; // Yellow
         if (healthPercent < 0.25) color = 0xFF0000; // Red
         
         this.healthBar.fillStyle(color, 1);
-        this.healthBar.fillRect(12, 12, 200 * healthPercent, 6);
+        
+        // Draw filled segments
+        for (let i = 0; i < currentSegments; i++) {
+            const segmentX = 12 + i * (segmentWidth + HUD_BAR.segmentGap);
+            this.healthBar.fillRect(segmentX, 12, segmentWidth, 6);
+        }
     }
 
     updateShieldsBar() {
         this.shieldBar.clear();
         
-        // Calculate shields percentage
-        const shieldsPercent = this.playerStats.shields / this.playerStats.maxShields;
+        // Only redraw background if maxShields changed (e.g., from upgrades)
+        if (this.playerStats.maxShields !== this.previousMaxShields) {
+            this.createSegmentedBarBackground(this.shieldBarBg, HUD_BAR.xPos, HUD_BAR.shieldsYPos, this.playerStats.maxShields);
+            this.previousMaxShields = this.playerStats.maxShields;
+        }
         
-        // Color based on shields
+        const maxSegments = this.playerStats.maxShields;
+        const currentSegments = this.playerStats.shields;
+        const segmentWidth = (HUD_BAR.width - (maxSegments - 1) * HUD_BAR.segmentGap) / maxSegments;
+        
+        // Calculate shields percentage for color
+        const shieldsPercent = currentSegments / maxSegments;
+        
+        // Color based on shields percentage
         let color = 0x00FFFF; // Cyan (LCARS style)
         if (shieldsPercent < 0.5) color = 0x9999FF; // Light blue
         if (shieldsPercent < 0.25) color = 0xFF00FF; // Magenta
         
         this.shieldBar.fillStyle(color, 1);
-        this.shieldBar.fillRect(12, 24, 200 * shieldsPercent, 6);
+        
+        // Draw filled segments
+        for (let i = 0; i < currentSegments; i++) {
+            const segmentX = 12 + i * (segmentWidth + HUD_BAR.segmentGap);
+            this.shieldBar.fillRect(segmentX, 24, segmentWidth, 6);
+        }
     }
 
     update(time, delta) {
@@ -1119,8 +1168,6 @@ class Level1Scene extends Phaser.Scene {
     }
 
     updateHUD() {
-        this.healthText.setText(`HULL: ${this.playerStats.health}/${this.playerStats.maxHealth}`);
-        this.shieldsText.setText(`SHIELDS: ${this.playerStats.shields}/${this.playerStats.maxShields}`);
         this.scoreText.setText(`SCORE: ${this.score}`);
         this.waveText.setText(`WAVE: ${this.currentWave}`);
         this.multiplierText.setText(`MULTIPLIER: x${this.scoreMultiplier.toFixed(1)}`);
