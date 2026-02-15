@@ -123,6 +123,10 @@ class Level1Scene extends Phaser.Scene {
         // Apply upgrades to player stats
         this.applyUpgrades()
         
+        // Store base values for power-ups (after upgrades are applied)
+        this.baseFireRate = this.playerStats.fireRate;
+        this.baseSpeed = this.playerStats.speed;
+        
         this.currentWave = 0;
         this.score = 0;
         this.scoreMultiplier = 1.0;
@@ -981,7 +985,7 @@ class Level1Scene extends Phaser.Scene {
                 const bullet = this.bullets.get(leftCannonX, cannonY, 'bullet')
                 if (bullet) {
                     this.enableBulletPhysics(bullet)
-                    bullet.setTint(0xFF6600) // Orange tint for pulse cannons
+                    bullet.setTint(0xFFFF00) // Yellow tint to match primary weapon
                     bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed)
                 }
             })
@@ -993,7 +997,7 @@ class Level1Scene extends Phaser.Scene {
                 const bullet = this.bullets.get(rightCannonX, cannonY, 'bullet')
                 if (bullet) {
                     this.enableBulletPhysics(bullet)
-                    bullet.setTint(0xFF6600) // Orange tint for pulse cannons
+                    bullet.setTint(0xFFFF00) // Yellow tint to match primary weapon
                     bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed)
                 }
             })
@@ -1143,6 +1147,36 @@ class Level1Scene extends Phaser.Scene {
         });
     }
     
+    showShieldImpactAt(x, y) {
+        // Create a shield impact bubble at specified position
+        const shieldBubble = this.add.circle(
+            x, 
+            y, 
+            SHIELD_IMPACT.radius, 
+            SHIELD_IMPACT.color, 
+            0
+        );
+        shieldBubble.setStrokeStyle(
+            SHIELD_IMPACT.strokeWidth, 
+            SHIELD_IMPACT.color, 
+            SHIELD_IMPACT.strokeAlpha
+        );
+        shieldBubble.setDepth(10); // Render above other objects
+        
+        // Animate the shield bubble expanding and fading out
+        this.tweens.add({
+            targets: shieldBubble,
+            scaleX: SHIELD_IMPACT.scale,
+            scaleY: SHIELD_IMPACT.scale,
+            alpha: 0,
+            duration: SHIELD_IMPACT.duration,
+            ease: 'Power2.easeOut',
+            onComplete: () => {
+                shieldBubble.destroy();
+            }
+        });
+    }
+    
     setupCollisions() {
         // Player bullets vs enemies
         this.physics.add.overlap(this.bullets, this.enemies, this.hitEnemy, null, this);
@@ -1186,6 +1220,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Apply damage to shields first, then health
         if (enemy.shields > 0) {
+            // Show shield impact effect
+            this.showShieldImpactAt(enemy.x, enemy.y);
+            
             enemy.shields -= damage;
             if (enemy.shields < 0) {
                 // Overflow damage goes to health
@@ -1319,19 +1356,17 @@ class Level1Scene extends Phaser.Scene {
                 this.activePowerUps.push({
                     type: type,
                     effect: config.effect,
-                    endTime: this.time.now + config.duration,
-                    originalValue: this.playerStats.fireRate
+                    endTime: this.time.now + config.duration
                 });
-                this.playerStats.fireRate = this.playerStats.fireRate * (1 - config.amount);
+                this.playerStats.fireRate = this.baseFireRate * (1 - config.amount);
                 break;
             case 'increase_speed':
                 this.activePowerUps.push({
                     type: type,
                     effect: config.effect,
-                    endTime: this.time.now + config.duration,
-                    originalValue: this.playerStats.speed
+                    endTime: this.time.now + config.duration
                 });
-                this.playerStats.speed = this.playerStats.speed * config.amount;
+                this.playerStats.speed = this.baseSpeed * config.amount;
                 break;
             case 'score_multiplier':
                 this.activePowerUps.push({
@@ -1915,10 +1950,24 @@ class Level1Scene extends Phaser.Scene {
                 // Revert effect
                 switch (powerUp.effect) {
                     case 'increase_fire_rate':
-                        this.playerStats.fireRate = powerUp.originalValue;
+                        // Check if there are other active fire rate power-ups
+                        const otherFireRatePowerUps = this.activePowerUps.filter(
+                            p => p.effect === 'increase_fire_rate' && p !== powerUp
+                        );
+                        if (otherFireRatePowerUps.length === 0) {
+                            // No other fire rate power-ups, reset to base
+                            this.playerStats.fireRate = this.baseFireRate;
+                        }
                         break;
                     case 'increase_speed':
-                        this.playerStats.speed = powerUp.originalValue;
+                        // Check if there are other active speed power-ups
+                        const otherSpeedPowerUps = this.activePowerUps.filter(
+                            p => p.effect === 'increase_speed' && p !== powerUp
+                        );
+                        if (otherSpeedPowerUps.length === 0) {
+                            // No other speed power-ups, reset to base
+                            this.playerStats.speed = this.baseSpeed;
+                        }
                         break;
                     case 'score_multiplier':
                         this.scoreMultiplier /= powerUp.multiplierAmount;
