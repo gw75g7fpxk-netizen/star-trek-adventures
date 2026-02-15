@@ -2503,13 +2503,23 @@ class Level1Scene extends Phaser.Scene {
         // Save high score before transitioning
         this.saveHighScore();
         
+        // Award and save session points (roguelite style)
+        const saveData = ProgressConfig.loadProgress();
+        const pointsEarned = ProgressConfig.addSessionPoints(
+            this.score,
+            this.podsRescued,
+            this.currentWave,
+            saveData
+        );
+        
         // Transition to victory scene
         this.scene.start('VictoryScene', {
             score: this.score,
             wave: this.currentWave,
             podsRescued: this.podsRescued,
             enemiesKilled: this.enemiesKilled,
-            levelNumber: this.levelNumber
+            levelNumber: this.levelNumber,
+            pointsEarned: pointsEarned
         });
     }
 
@@ -2581,12 +2591,22 @@ class Level1Scene extends Phaser.Scene {
         // Save high score before transitioning
         this.saveHighScore();
         
+        // Award and save session points (roguelite style - earn points even on death!)
+        const saveData = ProgressConfig.loadProgress();
+        const pointsEarned = ProgressConfig.addSessionPoints(
+            this.score,
+            this.podsRescued,
+            this.currentWave,
+            saveData
+        );
+        
         // Transition to game over scene
         this.scene.start('GameOverScene', {
             score: this.score,
             wave: this.currentWave,
             podsRescued: this.podsRescued,
-            levelNumber: this.levelNumber
+            levelNumber: this.levelNumber,
+            pointsEarned: pointsEarned
         });
     }
 }

@@ -9,6 +9,7 @@ class GameOverScene extends Phaser.Scene {
         this.wave = data.wave || 0;
         this.podsRescued = data.podsRescued || 0;
         this.levelNumber = data.levelNumber || 1;
+        this.pointsEarned = data.pointsEarned || 0;
     }
 
     create() {
@@ -42,7 +43,7 @@ class GameOverScene extends Phaser.Scene {
         const statsY = height / 2;
         const statsPanel = this.add.graphics();
         statsPanel.lineStyle(3, 0xFF0000, 1);
-        statsPanel.strokeRect(width / 2 - 220, statsY - 20, 440, 180);
+        statsPanel.strokeRect(width / 2 - 220, statsY - 20, 440, 220);
         
         this.add.text(width / 2, statsY, `FINAL SCORE: ${this.finalScore}`, {
             fontSize: '24px',
@@ -67,6 +68,15 @@ class GameOverScene extends Phaser.Scene {
             fontSize: '20px',
             color: '#00FFFF',
             fontFamily: 'Courier New, monospace'
+        }).setOrigin(0.5);
+        
+        // Display credits earned (roguelite progression!)
+        const creditsY = statsY + 160; // Positioned below pods rescued
+        this.add.text(width / 2, creditsY, `CREDITS EARNED: +${this.pointsEarned}`, {
+            fontSize: '20px',
+            color: '#00FF00',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
         }).setOrigin(0.5);
         
         // Navigation buttons
