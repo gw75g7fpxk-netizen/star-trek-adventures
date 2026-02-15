@@ -544,9 +544,9 @@ class Level1Scene extends Phaser.Scene {
         // Hull health bar background with LCARS style
         const healthBarBg = this.add.graphics();
         healthBarBg.fillStyle(0x333333, 1);
-        healthBarBg.fillRect(10, 10, 204, 20);
+        healthBarBg.fillRect(10, 10, 204, 18);
         healthBarBg.lineStyle(2, 0x00FFFF, 1);
-        healthBarBg.strokeRect(10, 10, 204, 20);
+        healthBarBg.strokeRect(10, 10, 204, 18);
         healthBarBg.setScrollFactor(0);
         healthBarBg.setDepth(999);
         
@@ -559,9 +559,9 @@ class Level1Scene extends Phaser.Scene {
         // Shield bar background with LCARS style
         const shieldBarBg = this.add.graphics();
         shieldBarBg.fillStyle(0x333333, 1);
-        shieldBarBg.fillRect(10, 32, 204, 10);
+        shieldBarBg.fillRect(10, 30, 204, 10);
         shieldBarBg.lineStyle(2, 0x00FFFF, 1);
-        shieldBarBg.strokeRect(10, 32, 204, 10);
+        shieldBarBg.strokeRect(10, 30, 204, 10);
         shieldBarBg.setScrollFactor(0);
         shieldBarBg.setDepth(999);
         
@@ -809,7 +809,7 @@ class Level1Scene extends Phaser.Scene {
         if (healthPercent < 0.25) color = 0xFF0000; // Red
         
         this.healthBar.fillStyle(color, 1);
-        this.healthBar.fillRect(12, 12, 200 * healthPercent, 8);
+        this.healthBar.fillRect(12, 12, 200 * healthPercent, 6);
     }
 
     updateShieldsBar() {
@@ -824,7 +824,7 @@ class Level1Scene extends Phaser.Scene {
         if (shieldsPercent < 0.25) color = 0xFF00FF; // Magenta
         
         this.shieldBar.fillStyle(color, 1);
-        this.shieldBar.fillRect(12, 34, 200 * shieldsPercent, 8);
+        this.shieldBar.fillRect(12, 32, 200 * shieldsPercent, 6);
     }
 
     update(time, delta) {
@@ -1875,8 +1875,10 @@ class Level1Scene extends Phaser.Scene {
                         enemy.formationPhase = 'circle';
                         enemy.circleCenter.x = enemy.x;
                         enemy.circleCenter.y = enemy.y;
-                        enemy.circleStartAngle = 0;
-                        enemy.circleCurrentAngle = 0;
+                        // Start at top of circle (angle = -PI/2) for smooth transition
+                        enemy.circleCurrentAngle = -Math.PI / 2;
+                        // Zero out velocity so body.reset works smoothly
+                        enemy.body.setVelocity(0, 0);
                     }
                 } else if (enemy.formationPhase === 'circle') {
                     // Fly in a circle once with smooth movement
@@ -1890,8 +1892,8 @@ class Level1Scene extends Phaser.Scene {
                     // Update physics body position to maintain proper collision detection
                     enemy.body.reset(newX, newY);
                     
-                    // Check if completed one full circle
-                    if (enemy.circleCurrentAngle >= Math.PI * 2) {
+                    // Check if completed one full circle (from -PI/2 to 3*PI/2)
+                    if (enemy.circleCurrentAngle >= Math.PI * 1.5) {
                         // Transition to diagonal phase
                         enemy.formationPhase = 'diagonal';
                     }
