@@ -18,9 +18,6 @@ class UpgradesScene extends Phaser.Scene {
         // Background
         this.createStarfield()
         
-        // Add content panel with border and background
-        this.createContentPanel(isMobile)
-        
         // Title
         const titleSize = isMobile ? '24px' : '32px'
         const titleY = isMobile ? 30 : 40
@@ -156,7 +153,7 @@ class UpgradesScene extends Phaser.Scene {
         const upgrades = UpgradesConfig.getUpgradesByCategory(this.selectedCategory)
         
         const startY = this.upgradeListY
-        const spacing = isMobile ? 70 : 85
+        const spacing = isMobile ? 90 : 110
         const nameSize = isMobile ? '14px' : '16px'
         const descSize = isMobile ? '11px' : '12px'
         const levelSize = isMobile ? '12px' : '14px'
@@ -169,6 +166,23 @@ class UpgradesScene extends Phaser.Scene {
             const cost = UpgradesConfig.getCostToUpgrade(upgrade.key, currentLevel)
             const canAfford = cost !== null && this.saveData.upgradePoints >= cost
             const isMaxed = currentLevel >= maxLevel
+            
+            // Background box for this upgrade option
+            const boxPadding = isMobile ? 8 : 10
+            const boxWidth = isMobile ? width - 40 : width - 160
+            const boxHeight = isMobile ? 75 : 80
+            const boxX = width / 2
+            const boxY = y + (isMobile ? 24 : 27)
+            
+            const background = this.add.rectangle(
+                boxX,
+                boxY,
+                boxWidth,
+                boxHeight,
+                0x000000,
+                0.7
+            )
+            this.upgradeElements.push(background)
             
             // Upgrade name
             const nameText = this.add.text(width / 2, y, upgrade.name, {
@@ -278,38 +292,5 @@ class UpgradesScene extends Phaser.Scene {
             
             this.add.circle(x, y, size, 0xFFFFFF, alpha)
         }
-    }
-    
-    createContentPanel(isMobile) {
-        const width = this.cameras.main.width
-        const height = this.cameras.main.height
-        
-        // Calculate content area bounds
-        const titleY = isMobile ? 30 : 40
-        const backButtonY = isMobile ? height - 90 : height - 50
-        
-        // Panel dimensions - only cover the text content area
-        const contentPadding = isMobile ? 20 : 40
-        const sidePadding = isMobile ? 30 : 80
-        
-        const panelX = sidePadding
-        const panelY = titleY - contentPadding
-        const panelWidth = width - (sidePadding * 2)
-        const panelHeight = backButtonY - titleY + contentPadding * 2
-        
-        // Background rectangle with dark semi-transparent fill
-        const background = this.add.rectangle(
-            panelX + panelWidth / 2,
-            panelY + panelHeight / 2,
-            panelWidth,
-            panelHeight,
-            0x0a0a0a,
-            0.85
-        )
-        
-        // Border graphics
-        const border = this.add.graphics()
-        border.lineStyle(2, 0x00aaff, 1)
-        border.strokeRect(panelX, panelY, panelWidth, panelHeight)
     }
 }
