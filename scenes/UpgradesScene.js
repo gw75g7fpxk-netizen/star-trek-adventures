@@ -48,6 +48,32 @@ class UpgradesScene extends Phaser.Scene {
         this.upgradeListY = listStartY
         this.createUpgradeList(isMobile)
         
+        // Reset button
+        const resetButtonY = isMobile ? height - 130 : height - 90
+        const resetButtonSize = isMobile ? '16px' : '18px'
+        const resetButton = this.add.text(width / 2, resetButtonY, '[ RESET ALL UPGRADES ]', {
+            fontSize: resetButtonSize,
+            color: '#FF6600',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        })
+        resetButton.setOrigin(0.5)
+        resetButton.setInteractive()
+        
+        resetButton.on('pointerdown', () => {
+            this.resetUpgrades()
+        })
+        
+        resetButton.on('pointerover', () => {
+            resetButton.setColor('#FF9900')
+            resetButton.setScale(1.05)
+        })
+        
+        resetButton.on('pointerout', () => {
+            resetButton.setColor('#FF6600')
+            resetButton.setScale(1.0)
+        })
+        
         // Back button
         const backButtonY = isMobile ? height - 90 : height - 50
         const backButtonSize = isMobile ? '18px' : '20px'
@@ -277,6 +303,41 @@ class UpgradesScene extends Phaser.Scene {
         this.createUpgradeList(this.cameras.main.width < 600 || this.cameras.main.height < 600)
         
         console.log(`Purchased ${upgradeKey} level ${currentLevel + 1}`)
+    }
+    
+    resetUpgrades() {
+        // Calculate total points to refund
+        let totalRefund = 0
+        Object.keys(this.saveData.upgrades).forEach(upgradeKey => {
+            const currentLevel = this.saveData.upgrades[upgradeKey]
+            if (currentLevel > 0) {
+                const upgrade = UpgradesConfig.upgrades[upgradeKey]
+                if (upgrade) {
+                    // Refund cost per level * number of levels
+                    totalRefund += upgrade.costPerLevel * currentLevel
+                }
+            }
+        })
+        
+        // Reset all upgrades to level 0
+        Object.keys(this.saveData.upgrades).forEach(upgradeKey => {
+            this.saveData.upgrades[upgradeKey] = 0
+        })
+        
+        // Add refunded points back
+        this.saveData.upgradePoints += totalRefund
+        
+        // Save progress
+        ProgressConfig.saveProgress(this.saveData)
+        
+        // Update display
+        this.pointsText.setText(`Credits: ${this.saveData.upgradePoints}`)
+        
+        // Recreate upgrade list to show new state
+        this.clearUpgradeList()
+        this.createUpgradeList(this.cameras.main.width < 600 || this.cameras.main.height < 600)
+        
+        console.log(`All upgrades reset. Refunded ${totalRefund} credits.`)
     }
     
     createStarfield() {
