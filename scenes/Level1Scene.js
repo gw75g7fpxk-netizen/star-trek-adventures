@@ -37,6 +37,9 @@ const CHEAT_FIRE_RATE = 100; // Milliseconds between shots
 // Escape pod spawn position (above screen top)
 const ESCAPE_POD_SPAWN_Y = -20;
 
+// Scout formation flight pattern constants
+const SCOUT_CIRCLE_TRIGGER_FRACTION = 3; // Start circling at 1/3 of screen height
+
 // Shield impact effect constants
 const SHIELD_IMPACT = {
     radius: 40,           // Initial radius of shield bubble
@@ -555,9 +558,9 @@ class Level1Scene extends Phaser.Scene {
         // Shield bar background with LCARS style
         const shieldBarBg = this.add.graphics();
         shieldBarBg.fillStyle(0x333333, 1);
-        shieldBarBg.fillRect(10, 32, 204, 20);
+        shieldBarBg.fillRect(10, 32, 204, 10);
         shieldBarBg.lineStyle(2, 0x00FFFF, 1);
-        shieldBarBg.strokeRect(10, 32, 204, 20);
+        shieldBarBg.strokeRect(10, 32, 204, 10);
         shieldBarBg.setScrollFactor(0);
         shieldBarBg.setDepth(999);
         
@@ -795,7 +798,7 @@ class Level1Scene extends Phaser.Scene {
         if (healthPercent < 0.25) color = 0xFF0000; // Red
         
         this.healthBar.fillStyle(color, 1);
-        this.healthBar.fillRect(12, 12, 200 * healthPercent, 16);
+        this.healthBar.fillRect(12, 12, 200 * healthPercent, 8);
     }
 
     updateShieldsBar() {
@@ -810,7 +813,7 @@ class Level1Scene extends Phaser.Scene {
         if (shieldsPercent < 0.25) color = 0xFF00FF; // Magenta
         
         this.shieldBar.fillStyle(color, 1);
-        this.shieldBar.fillRect(12, 34, 200 * shieldsPercent, 16);
+        this.shieldBar.fillRect(12, 34, 200 * shieldsPercent, 8);
     }
 
     update(time, delta) {
@@ -1669,6 +1672,9 @@ class Level1Scene extends Phaser.Scene {
         const formationSpacing = config.formationSpacing || 30;
         const x = Phaser.Math.Between(50, this.cameraWidth - 50);
         
+        // Choose one diagonal direction for the entire formation
+        const formationDiagonalDirection = Math.random() < 0.5 ? -1 : 1;
+        
         for (let i = 0; i < formationSize; i++) {
             const y = -50 - (i * formationSpacing); // Each scout spawns slightly above the previous one
             const scout = this.enemies.get(x, y, 'enemy-fighter'); // Use fighter texture
@@ -1694,7 +1700,7 @@ class Level1Scene extends Phaser.Scene {
                 scout.circleStartAngle = 0;
                 scout.circleCenter = { x: 0, y: 0 };
                 scout.circleRadius = 50;
-                scout.diagonalDirection = 1; // Will be set when entering diagonal phase
+                scout.diagonalDirection = formationDiagonalDirection; // Shared direction for entire formation
                 
                 // Scale scout to half the size of fighter
                 if (scout.width > 0) {
@@ -1849,7 +1855,7 @@ class Level1Scene extends Phaser.Scene {
                 break;
             case 'formation':
                 // Scouts fly in formation with three phases
-                // Phase 1: Straight down until halfway
+                // Phase 1: Straight down until 1/3 of screen
                 // Phase 2: Circle pattern once
                 // Phase 3: Diagonal towards bottom
                 
@@ -1857,47 +1863,35 @@ class Level1Scene extends Phaser.Scene {
                     // Keep moving straight down
                     enemy.body.setVelocityX(0);
                     
-                    // Check if reached halfway down the screen
-                    if (enemy.y >= this.cameraHeight / 2) {
+                    // Check if reached 1/3 down the screen (not halfway)
+                    if (enemy.y >= this.cameraHeight / SCOUT_CIRCLE_TRIGGER_FRACTION) {
                         // Transition to circle phase
                         enemy.formationPhase = 'circle';
                         enemy.circleCenter.x = enemy.x;
                         enemy.circleCenter.y = enemy.y;
                         enemy.circleStartAngle = 0;
                         enemy.circleCurrentAngle = 0;
-                        // Add offset based on formation index for staggered effect
-                        enemy.circleStartTime = this.time.now + (enemy.formationIndex * 100);
                     }
                 } else if (enemy.formationPhase === 'circle') {
-                    // Fly in a circle once
-                    if (this.time.now >= enemy.circleStartTime) {
-                        const angularSpeed = 0.05; // Radians per frame
-                        enemy.circleCurrentAngle += angularSpeed;
-                        
-                        // Calculate position on circle
-                        const newX = enemy.circleCenter.x + Math.cos(enemy.circleCurrentAngle) * enemy.circleRadius;
-                        const newY = enemy.circleCenter.y + Math.sin(enemy.circleCurrentAngle) * enemy.circleRadius;
-                        
-                        // Set velocity to move towards the calculated position
-                        const dx = newX - enemy.x;
-                        const dy = newY - enemy.y;
-                        const speed = config.speed * 1.5; // Slightly faster during circle
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        
-                        if (distance > 0) {
-                            enemy.body.setVelocity((dx / distance) * speed, (dy / distance) * speed);
-                        }
-                        
-                        // Check if completed one full circle
-                        if (enemy.circleCurrentAngle >= Math.PI * 2) {
-                            // Transition to diagonal phase
-                            enemy.formationPhase = 'diagonal';
-                            // Randomly choose left or right diagonal
-                            enemy.diagonalDirection = Math.random() < 0.5 ? -1 : 1;
-                        }
+                    // Fly in a circle once with smooth movement
+                    const angularSpeed = 0.03; // Slower for smoother movement
+                    enemy.circleCurrentAngle += angularSpeed;
+                    
+                    // Calculate position on circle
+                    const newX = enemy.circleCenter.x + Math.cos(enemy.circleCurrentAngle) * enemy.circleRadius;
+                    const newY = enemy.circleCenter.y + Math.sin(enemy.circleCurrentAngle) * enemy.circleRadius;
+                    
+                    // Update physics body position to maintain proper collision detection
+                    enemy.body.reset(newX, newY);
+                    
+                    // Check if completed one full circle
+                    if (enemy.circleCurrentAngle >= Math.PI * 2) {
+                        // Transition to diagonal phase
+                        enemy.formationPhase = 'diagonal';
                     }
                 } else if (enemy.formationPhase === 'diagonal') {
                     // Fly diagonally towards bottom of screen
+                    // Use the shared diagonal direction for the whole formation
                     const diagonalSpeed = config.speed;
                     const horizontalSpeed = diagonalSpeed * 0.5 * enemy.diagonalDirection;
                     enemy.body.setVelocity(horizontalSpeed, diagonalSpeed);
