@@ -33,7 +33,8 @@ const ProgressConfig = {
         7: { name: 'Battle of Sector 001', description: 'Defend Earth from invasion' },
         8: { name: 'Wormhole Defense', description: 'Secure the Bajoran wormhole' },
         9: { name: 'Final Stand', description: 'Hold the line at all costs' },
-        10: { name: 'Endgame', description: 'Face the Dominion flagship' }
+        10: { name: 'Endgame', description: 'Face the Dominion flagship' },
+        11: { name: 'Testing Grounds', description: 'Holodeck simulation - analyze enemy capabilities' }
     },
 
     // Save game data to localStorage
@@ -90,10 +91,11 @@ const ProgressConfig = {
             wave: stats.wave || 0
         }
         
-        // Unlock next level if it exists
+        // Unlock next level if it exists (skip level 11 - secret testing level)
         if (levelNumber < 10) {
             this.unlockLevel(levelNumber + 1, saveData)
         }
+        // Level 11 (testing level) does not unlock anything
         
         // Save progress (points already awarded during gameplay)
         this.saveProgress(saveData)
