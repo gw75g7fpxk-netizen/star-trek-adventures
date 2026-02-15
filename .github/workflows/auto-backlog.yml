@@ -22,6 +22,7 @@ jobs:
         id: issue_check
         uses: actions/github-script@v7
         with:
+          result-encoding: string
           script: |
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -37,7 +38,6 @@ jobs:
             } else {
               return "proceed";
             }
-        result-encoding: string
 
       - name: Stop if guardrail triggered
         if: steps.issue_check.outputs.result == 'skip'
@@ -69,26 +69,24 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          PROMPT='
-You are a senior software architect.
-
-Analyze the provided repository codebase and generate 10 high-quality GitHub issues.
-
-Return ONLY valid JSON:
-[
-  {
-    "title": "Short actionable task title",
-    "body": "Detailed description, rationale, and acceptance criteria. Mention relevant files.",
-    "labels": ["enhancement"]
-  }
-]
-
-Rules:
-- Each task should be < 2 hours of work
-- Mix: refactors, tests, reliability, small features, documentation
-- Avoid duplicates
-- Be specific and practical
-'
+          PROMPT='You are a senior software architect.
+          
+          Analyze the provided repository codebase and generate 10 high-quality GitHub issues.
+          
+          Return ONLY valid JSON:
+          [
+            {
+              "title": "Short actionable task title",
+              "body": "Detailed description, rationale, and acceptance criteria. Mention relevant files.",
+              "labels": ["enhancement"]
+            }
+          ]
+          
+          Rules:
+          - Each task should be < 2 hours of work
+          - Mix: refactors, tests, reliability, small features, documentation
+          - Avoid duplicates
+          - Be specific and practical'
 
           curl https://api.openai.com/v1/chat/completions \
             -s \
