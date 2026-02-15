@@ -1887,8 +1887,9 @@ class Level1Scene extends Phaser.Scene {
                     if (enemy.formationIndex === 0 && enemy.y >= this.cameraHeight / SCOUT_CIRCLE_TRIGGER_FRACTION) {
                         // Leader initiates circle transition
                         enemy.formationPhase = 'circle';
+                        // Set circle center so current position is at the top of the circle
                         enemy.circleCenter.x = enemy.x;
-                        enemy.circleCenter.y = enemy.y;
+                        enemy.circleCenter.y = enemy.y + enemy.circleRadius;
                         
                         // Store the leader's Y position when starting circle for followers
                         enemy.leaderCircleStartY = enemy.y;
@@ -1913,8 +1914,9 @@ class Level1Scene extends Phaser.Scene {
                         // Follower scouts transition when they reach the same Y position where leader started
                         if (enemy.y >= enemy.leaderCircleStartY) {
                             enemy.formationPhase = 'circle';
+                            // Set circle center so current position is at the top of the circle
                             enemy.circleCenter.x = enemy.x;
-                            enemy.circleCenter.y = enemy.y;
+                            enemy.circleCenter.y = enemy.y + enemy.circleRadius;
                             
                             // Start at top of circle for smooth continuation
                             enemy.circleCurrentAngle = -Math.PI / 2;
