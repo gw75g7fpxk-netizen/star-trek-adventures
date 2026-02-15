@@ -1554,7 +1554,6 @@ class Level1Scene extends Phaser.Scene {
             // }
             // No more waves - mark this as the final wave
             // Victory will trigger when all enemies are defeated
-            console.log('Final wave reached - victory will trigger when all enemies defeated');
             this.isFinalWave = true;
             this.checkVictoryCondition();
             return;
@@ -2811,11 +2810,8 @@ class Level1Scene extends Phaser.Scene {
         // Count active enemies (enemies that are alive and visible)
         const activeEnemies = this.enemies.getChildren().filter(enemy => enemy.active).length;
         
-        console.log(`Victory check - Active enemies: ${activeEnemies}, isFinalWave: ${this.isFinalWave}`);
-        
         // Victory condition: final wave AND no active enemies
         if (activeEnemies === 0) {
-            console.log('All enemies defeated in final wave - triggering victory!');
             this.victory();
         }
     }
