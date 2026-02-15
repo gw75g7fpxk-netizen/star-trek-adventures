@@ -1546,6 +1546,12 @@ class Level1Scene extends Phaser.Scene {
         
         const config = EnemyConfig[enemyType];
         
+        // Special handling for scout formations
+        if (enemyType === 'scout') {
+            this.spawnScoutFormation(config);
+            return;
+        }
+        
         // Random spawn position at top
         const x = Phaser.Math.Between(50, this.cameraWidth - 50);
         const y = -50;
@@ -1588,6 +1594,48 @@ class Level1Scene extends Phaser.Scene {
             
             // Disable collision detection initially - will be enabled when enemy enters screen
             enemy.body.checkCollision.none = true;
+        }
+    }
+    
+    spawnScoutFormation(config) {
+        // Spawn scouts in a formation with consistent horizontal position
+        const formationSize = config.formationSize || 3;
+        const formationSpacing = config.formationSpacing || 30;
+        const x = Phaser.Math.Between(50, this.cameraWidth - 50);
+        
+        for (let i = 0; i < formationSize; i++) {
+            const y = -50 - (i * formationSpacing); // Each scout spawns slightly above the previous one
+            const scout = this.enemies.get(x, y, 'enemy-fighter'); // Use fighter texture
+            
+            if (scout) {
+                scout.setActive(true);
+                scout.setVisible(true);
+                scout.enemyType = 'scout';
+                scout.health = config.health;
+                scout.shields = config.shields || 0;
+                scout.points = config.points;
+                scout.fireRate = config.fireRate;
+                scout.lastFired = 0;
+                scout.invincibleUntil = 0;
+                scout.movementPattern = config.movementPattern;
+                scout.patternOffset = Math.random() * Math.PI * 2;
+                scout.hasEnteredScreen = false;
+                scout.initialSpeed = config.speed;
+                scout.formationIndex = i; // Track position in formation
+                
+                // Scale scout to half the size of fighter
+                if (scout.width > 0) {
+                    const targetWidth = config.size.width;
+                    const scale = targetWidth / scout.width;
+                    scout.setScale(scale);
+                }
+                
+                // Set initial velocity
+                scout.body.setVelocity(0, config.speed);
+                
+                // Disable collision detection initially
+                scout.body.checkCollision.none = true;
+            }
         }
     }
     
@@ -1654,15 +1702,15 @@ class Level1Scene extends Phaser.Scene {
             // Update movement pattern
             this.updateEnemyMovement(enemy);
             
-            // Enemy shooting - only if on screen
-            if (enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
+            // Enemy shooting - only if on screen and has weapons (scouts don't shoot)
+            if (enemy.enemyType !== 'scout' && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
                 this.enemyFire(enemy);
                 enemy.lastFired = time;
             }
             
-            // Target escape pods - only if on screen
+            // Target escape pods - only if on screen and has weapons
             const nearestPod = this.findNearestPod(enemy);
-            if (enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
+            if (enemy.enemyType !== 'scout' && enemy.fireRate && enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
                 // Shoot at pod only if fire rate allows
                 if (time > enemy.lastFired + enemy.fireRate) {
                     const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y);
@@ -1724,6 +1772,11 @@ class Level1Scene extends Phaser.Scene {
                 // Weapon platform - stays in place horizontally, moves down with screen scroll only
                 enemy.body.setVelocityX(0);
                 // Keep default downward velocity for scrolling effect
+                break;
+            case 'formation':
+                // Scouts fly in formation - straight down in the same column
+                // Movement is already set in spawn, just keep it straight
+                enemy.body.setVelocityX(0);
                 break;
         }
     }
