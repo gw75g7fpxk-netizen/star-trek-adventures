@@ -1723,8 +1723,9 @@ class Level1Scene extends Phaser.Scene {
                 scout.circleCenter = { x: 0, y: 0 };
                 scout.circleRadius = 50;
                 scout.diagonalDirection = formationDiagonalDirection; // Shared direction for entire formation
-                scout.leaderCircleStartY = null; // Will be set by the formation leader
+                scout.leaderCircleStartY = undefined; // Will be set by the formation leader
                 scout.formationMembers = formationMembers; // Reference to all members in formation
+                scout.hasNotifiedFollowers = false; // Track if leader has notified followers
                 
                 // Scale scout to half the size of fighter
                 if (scout.width > 0) {
@@ -1899,15 +1900,16 @@ class Level1Scene extends Phaser.Scene {
                         // Zero out velocity so body.reset works smoothly
                         enemy.body.setVelocity(0, 0);
                         
-                        // Notify other scouts in formation using formation members array
-                        if (enemy.formationMembers) {
+                        // Notify other scouts in formation (only once)
+                        if (!enemy.hasNotifiedFollowers && enemy.formationMembers) {
                             enemy.formationMembers.forEach((member) => {
                                 if (member.active && member !== enemy) {
                                     member.leaderCircleStartY = enemy.leaderCircleStartY;
                                 }
                             });
+                            enemy.hasNotifiedFollowers = true;
                         }
-                    } else if (enemy.formationIndex > 0 && enemy.leaderCircleStartY !== null) {
+                    } else if (enemy.formationIndex > 0 && enemy.leaderCircleStartY !== undefined) {
                         // Follower scouts transition when they reach the same Y position where leader started
                         if (enemy.y >= enemy.leaderCircleStartY) {
                             enemy.formationPhase = 'circle';
