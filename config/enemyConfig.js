@@ -25,9 +25,9 @@ const EnemyConfig = {
         damage: 1, // Collision damage
         points: 50,
         movementPattern: 'formation', // Flies in formation with other scouts
-        size: { width: 12.5, height: 12.5 }, // Half the size of fighter
+        size: { width: 15, height: 15 }, // 15x15 size
         formationSize: 3, // Default number of scouts in a formation
-        formationSpacing: 30 // Vertical spacing between scouts in formation
+        formationSpacing: 36 // Vertical spacing between scouts in formation
     },
     
     // Dominion Cruiser - Medium warship
