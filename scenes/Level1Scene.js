@@ -2510,6 +2510,12 @@ class Level1Scene extends Phaser.Scene {
                 break;
             case 'mine':
                 // Mine - stationary until player gets close, then chase
+                // Safety check: ensure playerShip exists
+                if (!this.playerShip || !this.playerShip.active) {
+                    enemy.body.setVelocityX(0);
+                    break;
+                }
+                
                 if (!enemy.isChasing) {
                     // Check distance to player
                     const distanceToPlayer = Phaser.Math.Distance.Between(
