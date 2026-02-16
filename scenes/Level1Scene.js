@@ -75,6 +75,10 @@ const CRYSTAL_PULSE = {
     minScale: 0.9         // Minimum scale during pulse
 };
 
+// Boss movement constants
+const CONFIG_SPEED_TO_PIXELS_DIVISOR = 20; // Converts config speed to frame-based pixel movement
+const DEFAULT_BOSS_MOVEMENT_SPEED = 2; // Default boss movement speed in pixels per frame
+
 // Enemy health bar constants
 const ENEMY_HEALTH_BAR = {
     width: 30,            // Health bar width in pixels
@@ -127,6 +131,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Enemy health bar tracking
         this.enemyHealthBars = new Map(); // Map of enemy -> health bar graphics
+        
+        // Player health bar (above ship, like enemy health bars)
+        this.playerHealthBar = null;
     }
     
     init(data) {
@@ -388,6 +395,10 @@ class Level1Scene extends Phaser.Scene {
         // Set player velocity limits
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement
+        
+        // Create health bar above player ship (like enemy health bars)
+        this.playerHealthBar = this.add.graphics();
+        this.updatePlayerHealthBar();
         
         console.log(`Level1Scene: USS Aurora created at (${startX}, ${startY})`);
     }
@@ -1208,6 +1219,7 @@ class Level1Scene extends Phaser.Scene {
         this.podsText.setText(`PODS: ${this.podsRescued}`);
         this.updateHealthBar();
         this.updateShieldsBar();
+        this.updatePlayerHealthBar(); // Update health bar above player ship
     }
 
     // Method for taking damage (to be used when enemies are implemented)
@@ -1489,6 +1501,46 @@ class Level1Scene extends Phaser.Scene {
             healthBar.destroy();
             this.enemyHealthBars.delete(enemy);
         }
+    }
+    
+    updatePlayerHealthBar() {
+        if (!this.playerHealthBar || !this.player || !this.player.active) {
+            return;
+        }
+        
+        // Calculate health bar dimensions and position (similar to enemy health bars)
+        const barWidth = 40; // Slightly wider than enemies for visibility
+        const barHeight = ENEMY_HEALTH_BAR.height;
+        const barX = this.player.x - barWidth / 2;
+        const barY = this.player.y - this.player.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset - 5; // Extra offset above player
+        
+        // Clear previous drawing
+        this.playerHealthBar.clear();
+        
+        // Draw background (black)
+        this.playerHealthBar.fillStyle(0x000000, 0.8);
+        this.playerHealthBar.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Calculate health percentage
+        const healthPercent = this.playerStats.health / this.playerStats.maxHealth;
+        
+        // Choose color based on health percentage (same as HUD bars)
+        let healthColor;
+        if (healthPercent > 0.5) {
+            healthColor = 0x00ff00; // Green
+        } else if (healthPercent > 0.25) {
+            healthColor = 0xffff00; // Yellow
+        } else {
+            healthColor = 0xff0000; // Red
+        }
+        
+        // Draw health bar (colored based on health)
+        this.playerHealthBar.fillStyle(healthColor, 1);
+        this.playerHealthBar.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+        
+        // Draw border (white)
+        this.playerHealthBar.lineStyle(1, 0xffffff, 0.8);
+        this.playerHealthBar.strokeRect(barX, barY, barWidth, barHeight);
     }
     
     playerHit(player, bullet) {
@@ -2809,7 +2861,9 @@ class Level1Scene extends Phaser.Scene {
         }
         
         // Boss horizontal movement
-        this.boss.x += this.boss.moveDirection * 2;
+        // Use config speed for movement (crystalNode has speed: 40)
+        const moveSpeed = EnemyConfig[this.currentBossType]?.speed || DEFAULT_BOSS_MOVEMENT_SPEED;
+        this.boss.x += this.boss.moveDirection * (moveSpeed / CONFIG_SPEED_TO_PIXELS_DIVISOR);
         if (this.boss.x < 150 || this.boss.x > this.cameraWidth - 150) {
             this.boss.moveDirection *= -1;
         }
@@ -2849,29 +2903,27 @@ class Level1Scene extends Phaser.Scene {
     }
     
     bossAttack() {
-        // CrystalNode fires bursts of 3 shots
+        // CrystalNode fires bursts of 3 shots straight down (like pulse cannons)
         if (this.currentBossType === 'crystalNode') {
             const config = EnemyConfig.crystalNode;
             const burstCount = config.burstCount || 3;
             const burstDelay = config.burstDelay || 200;
             
+            // Fire 3 bullets straight down with spacing (similar to pulse cannons)
             for (let burst = 0; burst < burstCount; burst++) {
                 this.time.delayedCall(burst * burstDelay, () => {
                     // Check if boss is still active before firing
                     if (!this.boss || !this.boss.active) return;
                     
-                    // Fire spread of bullets
-                    for (let i = -2; i <= 2; i++) {
-                        const angle = Math.PI / 2 + (i * 0.2);
-                        const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
-                        if (bullet) {
-                            bullet.setActive(true);
-                            bullet.setVisible(true);
-                            // Re-enable physics body if it was disabled
-                            if (bullet.body) {
-                                bullet.body.enable = true;
-                                bullet.body.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
-                            }
+                    // Fire single bullet straight down
+                    const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
+                    if (bullet) {
+                        bullet.setActive(true);
+                        bullet.setVisible(true);
+                        // Re-enable physics body if it was disabled
+                        if (bullet.body) {
+                            bullet.body.enable = true;
+                            bullet.body.setVelocity(0, config.bulletSpeed);
                         }
                     }
                 });
