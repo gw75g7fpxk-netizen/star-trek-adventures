@@ -1616,6 +1616,11 @@ class Level1Scene extends Phaser.Scene {
     }
     
     playerHitByEnemy(player, enemy) {
+        // Disable enemy collision immediately to prevent multiple damage hits
+        if (enemy.body) {
+            enemy.body.checkCollision.none = true;
+        }
+        
         this.takeDamage(1);
         this.destroyEnemy(enemy);
     }
