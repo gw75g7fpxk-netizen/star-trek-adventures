@@ -126,6 +126,9 @@
                     hudElements: null
                 };
                 
+                // Setup input listeners ONCE at the start of communication
+                this.setupCommunicationInput();
+                
                 // Show first message after player ship scaling
                 this.time.delayedCall(DialogConfig.playerShip.scaleDuration, () => {
                     this.showNextMessage();
@@ -309,9 +312,6 @@
 
                 // Store elements
                 this.communicationState.hudElements = hudElements;
-                
-                // Setup input
-                this.setupCommunicationInput();
             }
 
             setupCommunicationInput() {
