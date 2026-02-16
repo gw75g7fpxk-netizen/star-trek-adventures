@@ -3449,6 +3449,13 @@ class Level1Scene extends Phaser.Scene {
         const textFontSize = isMobile ? config.mobileTextFontSize : config.textFontSize;
         const lineHeight = isMobile ? config.mobileLineHeight : config.lineHeight;
         
+        // Calculate HUD position - center horizontally on mobile for better visibility
+        // Use Math.max to prevent negative positioning on very small screens
+        // Fallback to camera.main.width if cameraWidth not set (defensive)
+        const cameraWidth = this.cameraWidth || this.cameras.main.width;
+        const hudX = isMobile ? Math.max(0, (cameraWidth - hudWidth) / 2) : config.x;
+        const hudY = config.y;
+        
         // Create container for all HUD elements
         const hudElements = {
             graphics: [],
@@ -3458,25 +3465,25 @@ class Level1Scene extends Phaser.Scene {
 
         // Background panel
         const bg = this.add.graphics();
-        bg.fillStyle(config.backgroundColor, config.backgroundAlpha);
-        bg.fillRect(config.x, config.y, hudWidth, hudHeight);
-        bg.lineStyle(config.borderWidth, config.borderColor, 1);
-        bg.strokeRect(config.x, config.y, hudWidth, hudHeight);
         bg.setScrollFactor(0);
         bg.setDepth(1000);
+        bg.fillStyle(config.backgroundColor, config.backgroundAlpha);
+        bg.fillRect(hudX, hudY, hudWidth, hudHeight);
+        bg.lineStyle(config.borderWidth, config.borderColor, 1);
+        bg.strokeRect(hudX, hudY, hudWidth, hudHeight);
         hudElements.graphics.push(bg);
 
         // Title bar
         const titleBg = this.add.graphics();
-        titleBg.fillStyle(config.borderColor, 0.3);
-        titleBg.fillRect(config.x, config.y - 25, hudWidth, 25);
         titleBg.setScrollFactor(0);
         titleBg.setDepth(1000);
+        titleBg.fillStyle(config.borderColor, 0.3);
+        titleBg.fillRect(hudX, hudY - 25, hudWidth, 25);
         hudElements.graphics.push(titleBg);
 
         const titleText = this.add.text(
-            config.x + hudWidth / 2,
-            config.y - 12,
+            hudX + hudWidth / 2,
+            hudY - 12,
             this.communicationState.dialogData.title || 'COMMUNICATION',
             {
                 fontSize: '12px',
@@ -3494,8 +3501,8 @@ class Level1Scene extends Phaser.Scene {
         const portraitKey = DialogConfig.portraits[message.portrait];
         if (portraitKey && this.textures.exists(portraitKey)) {
             const portrait = this.add.image(
-                config.x + config.portraitPadding + portraitSize / 2,
-                config.y + hudHeight / 2,
+                hudX + config.portraitPadding + portraitSize / 2,
+                hudY + hudHeight / 2,
                 portraitKey
             );
             portrait.setDisplaySize(portraitSize, portraitSize);
@@ -3505,26 +3512,26 @@ class Level1Scene extends Phaser.Scene {
         } else {
             // Fallback: simple colored circle if image not found
             const portraitCircle = this.add.graphics();
-            portraitCircle.fillStyle(0x00FFFF, 0.5);
-            portraitCircle.fillCircle(
-                config.x + config.portraitPadding + portraitSize / 2,
-                config.y + hudHeight / 2,
-                portraitSize / 2
-            );
             portraitCircle.setScrollFactor(0);
             portraitCircle.setDepth(1001);
+            portraitCircle.fillStyle(0x00FFFF, 0.5);
+            portraitCircle.fillCircle(
+                hudX + config.portraitPadding + portraitSize / 2,
+                hudY + hudHeight / 2,
+                portraitSize / 2
+            );
             hudElements.graphics.push(portraitCircle);
         }
 
         // Text area (right side)
-        const textX = config.x + config.portraitPadding * 2 + portraitSize + config.textPadding;
+        const textX = hudX + config.portraitPadding * 2 + portraitSize + config.textPadding;
         const textWidth = hudWidth - portraitSize - config.portraitPadding * 2 - config.textPadding * 2;
 
         // Speaker name and ship
         const speakerLabel = `${message.speaker}${message.ship ? ` - ${message.ship}` : ''}`;
         const speakerText = this.add.text(
             textX,
-            config.y + config.textPadding,
+            hudY + config.textPadding,
             speakerLabel,
             {
                 fontSize: speakerFontSize,
@@ -3539,7 +3546,7 @@ class Level1Scene extends Phaser.Scene {
         hudElements.texts.push(speakerText);
 
         // Dialog text (will be shown with typewriter effect)
-        const dialogTextY = config.y + config.textPadding + lineHeight + 5;
+        const dialogTextY = hudY + config.textPadding + lineHeight + 5;
         const dialogText = this.add.text(
             textX,
             dialogTextY,
@@ -3559,8 +3566,8 @@ class Level1Scene extends Phaser.Scene {
         // Advance prompt
         const advanceText = isMobile ? config.mobileAdvanceText : config.advanceText;
         const advancePrompt = this.add.text(
-            config.x + hudWidth - config.textPadding,
-            config.y + hudHeight - config.textPadding,
+            hudX + hudWidth - config.textPadding,
+            hudY + hudHeight - config.textPadding,
             advanceText,
             {
                 fontSize: config.advanceFontSize,

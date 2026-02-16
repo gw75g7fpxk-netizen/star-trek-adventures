@@ -53,7 +53,7 @@ const DialogConfig = {
     // Camera zoom settings for dramatic effect
     camera: {
         normalZoom: 1.0,
-        communicationZoom: 1.2,    // Zoom in slightly on player during comms
+        communicationZoom: 3.0,    // Zoom in on player during comms (3x for dramatic close-up effect)
         zoomDuration: 800,          // milliseconds for zoom transition
         focusOnPlayer: true         // Center on player ship during comms
     },
