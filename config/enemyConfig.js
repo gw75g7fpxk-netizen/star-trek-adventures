@@ -143,5 +143,19 @@ const EnemyConfig = {
         movementPattern: 'horizontal',
         straightFire: true, // Fires bullets straight down instead of targeting player
         size: { width: 70, height: 70 }
+    },
+    
+    // Carrier - Large ship that launches fighters from both sides
+    carrier: {
+        health: 12, // Stronger than battleship (8 health)
+        shields: 12,
+        speed: 30, // Slow movement, similar to boss ships
+        fireRate: 4000, // Launches fighters every 4 seconds
+        bulletSpeed: null, // Doesn't fire bullets
+        damage: 1, // Collision damage
+        points: 600,
+        movementPattern: 'horizontal',
+        launchesFighters: true, // Special flag to indicate fighter launching behavior
+        size: { width: 140, height: 140 }
     }
 };
