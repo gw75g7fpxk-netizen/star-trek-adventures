@@ -27,7 +27,7 @@ class BootScene extends Phaser.Scene {
         const height = this.cameras.main.height;
         
         // Boot text
-        const bootText = this.add.text(width / 2, height / 2 - 50, 'STAR TREK ADVENTURES', {
+        const bootText = this.add.text(width / 2, height / 2 - 50, 'STAR TREK AURORA', {
             fontSize: '32px',
             color: '#00FFFF',
             fontFamily: 'Arial'

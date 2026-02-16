@@ -9,11 +9,16 @@ class VictoryScene extends Phaser.Scene {
         this.wave = data.wave || 0;
         this.podsRescued = data.podsRescued || 0;
         this.enemiesKilled = data.enemiesKilled || 0;
+        this.levelNumber = data.levelNumber || 1;
+        this.pointsEarned = data.pointsEarned || 0;
     }
 
     create() {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
+        
+        // Save level completion progress
+        this.saveLevelProgress();
         
         // Background
         this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
@@ -43,8 +48,9 @@ class VictoryScene extends Phaser.Scene {
         const title = this.add.text(width / 2, height / 4, 'MISSION COMPLETE', titleStyle);
         title.setOrigin(0.5);
         
-        // Subtitle
-        const subtitle = this.add.text(width / 2, height / 4 + 70, 'Dominion Forces Neutralized', subtitleStyle);
+        // Subtitle - show level info
+        const levelInfo = ProgressConfig.levelInfo[this.levelNumber];
+        const subtitle = this.add.text(width / 2, height / 4 + 70, `Level ${this.levelNumber}: ${levelInfo.name}`, subtitleStyle);
         subtitle.setOrigin(0.5);
         
         // Get high score
@@ -55,7 +61,7 @@ class VictoryScene extends Phaser.Scene {
         const statsY = height / 2;
         const statsPanel = this.add.graphics();
         statsPanel.lineStyle(3, 0x00FFFF, 1);
-        statsPanel.strokeRect(width / 2 - 250, statsY - 30, 500, 220);
+        statsPanel.strokeRect(width / 2 - 250, statsY - 30, 500, 260);
         
         this.add.text(width / 2, statsY, `FINAL SCORE: ${this.finalScore}`, {
             fontSize: '28px',
@@ -87,9 +93,22 @@ class VictoryScene extends Phaser.Scene {
             fontFamily: 'Courier New, monospace'
         }).setOrigin(0.5);
         
-        // Play Again button with LCARS styling
-        const playButton = this.add.text(width / 2, height * 0.85, '[ PLAY AGAIN ]', {
-            fontSize: '32px',
+        // Display credits earned
+        const creditsY = statsY + 170; // Positioned below pods rescued
+        this.add.text(width / 2, creditsY, `CREDITS EARNED: +${this.pointsEarned}`, {
+            fontSize: '20px',
+            color: '#00FF00',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        
+        // Navigation buttons
+        const buttonY = height * 0.78;
+        const buttonSpacing = 60;
+        
+        // Play Again button
+        const playButton = this.add.text(width / 2, buttonY, '[ REPLAY MISSION ]', {
+            fontSize: '28px',
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -98,12 +117,12 @@ class VictoryScene extends Phaser.Scene {
         playButton.setInteractive();
         
         playButton.on('pointerdown', () => {
-            this.scene.start('Level1Scene');
+            this.scene.start('Level1Scene', { levelNumber: this.levelNumber });
         });
         
         playButton.on('pointerover', () => {
             playButton.setColor('#00FFFF');
-            playButton.setScale(1.1);
+            playButton.setScale(1.05);
         });
         
         playButton.on('pointerout', () => {
@@ -111,9 +130,60 @@ class VictoryScene extends Phaser.Scene {
             playButton.setScale(1.0);
         });
         
-        // Keyboard restart
+        // Next Level button (if not last level)
+        if (this.levelNumber < 10) {
+            const nextButton = this.add.text(width / 2, buttonY + buttonSpacing, '[ NEXT MISSION ]', {
+                fontSize: '28px',
+                color: '#FFFF00',
+                fontFamily: 'Courier New, monospace',
+                fontStyle: 'bold'
+            });
+            nextButton.setOrigin(0.5);
+            nextButton.setInteractive();
+            
+            nextButton.on('pointerdown', () => {
+                this.scene.start('Level1Scene', { levelNumber: this.levelNumber + 1 });
+            });
+            
+            nextButton.on('pointerover', () => {
+                nextButton.setColor('#00FFFF');
+                nextButton.setScale(1.05);
+            });
+            
+            nextButton.on('pointerout', () => {
+                nextButton.setColor('#FFFF00');
+                nextButton.setScale(1.0);
+            });
+        }
+        
+        // Return to Menu button
+        const menuButton = this.add.text(width / 2, buttonY + buttonSpacing * 2, '[ RETURN TO MENU ]', {
+            fontSize: '24px',
+            color: '#888888',
+            fontFamily: 'Courier New, monospace'
+        });
+        menuButton.setOrigin(0.5);
+        menuButton.setInteractive();
+        
+        menuButton.on('pointerdown', () => {
+            this.scene.start('MainMenuScene');
+        });
+        
+        menuButton.on('pointerover', () => {
+            menuButton.setColor('#00FFFF');
+        });
+        
+        menuButton.on('pointerout', () => {
+            menuButton.setColor('#888888');
+        });
+        
+        // Keyboard shortcut - space for replay, M for menu
         this.input.keyboard.once('keydown-SPACE', () => {
-            this.scene.start('Level1Scene');
+            this.scene.start('Level1Scene', { levelNumber: this.levelNumber });
+        });
+        
+        this.input.keyboard.once('keydown-M', () => {
+            this.scene.start('MainMenuScene');
         });
         
         // Add some celebratory particle effects
@@ -144,5 +214,15 @@ class VictoryScene extends Phaser.Scene {
         } catch (e) {
             return 0;
         }
+    }
+    
+    saveLevelProgress() {
+        const saveData = ProgressConfig.loadProgress();
+        ProgressConfig.saveLevelStats(this.levelNumber, {
+            score: this.finalScore,
+            enemiesKilled: this.enemiesKilled,
+            podsRescued: this.podsRescued,
+            wave: this.wave
+        }, saveData);
     }
 }

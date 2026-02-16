@@ -28,14 +28,14 @@ class PreloadScene extends Phaser.Scene {
     }
 
     create() {
-        console.log('PreloadScene: Assets ready, starting Level 1...');
+        console.log('PreloadScene: Assets ready, starting main menu...');
         
         // Initialize audio context early to reduce sound delay later
         this.initializeAudioContext();
         
         // Small delay for effect
         this.time.delayedCall(this.SCENE_TRANSITION_DELAY, () => {
-            this.scene.start('Level1Scene');
+            this.scene.start('MainMenuScene');
         });
     }
     
@@ -70,7 +70,7 @@ class PreloadScene extends Phaser.Scene {
         const height = this.cameras.main.height;
         
         // Title
-        const title = this.add.text(width / 2, height / 2 - 100, 'STAR TREK ADVENTURES', {
+        const title = this.add.text(width / 2, height / 2 - 100, 'STAR TREK AURORA', {
             fontSize: '32px',
             color: '#00FFFF',
             fontFamily: 'Arial'
@@ -103,48 +103,99 @@ class PreloadScene extends Phaser.Scene {
     }
 
     loadPlaceholderAssets() {
-        // Create placeholder graphics as textures
+        // Load actual player ship image (PNG with proper alpha transparency)
+        this.load.image('player-ship', 'assets/images/player-ship.png');
+        
+        // Load actual enemy fighter image (will be scaled in Level1Scene)
+        this.load.image('enemy-fighter', 'assets/images/enemy-fighter.png');
+        
+        // Load actual enemy cruiser image (will be scaled in Level1Scene)
+        this.load.image('enemy-cruiser', 'assets/images/enemy-cruiser.png');
+        
+        // Load actual enemy battleship image (will be scaled in Level1Scene)
+        this.load.image('enemy-battleship', 'assets/images/enemy-battleship.png');
+        
+        // Load weapon platform image (will be scaled in Level1Scene)
+        this.load.image('weapon-platform', 'assets/images/weapon-platform.png');
+        
+        // Load escape pod sprite
+        this.load.image('escape-pod', 'assets/images/escape-pod.png');
+        
+        // Create procedural asteroid texture
+        const asteroidGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        asteroidGraphics.fillStyle(0x888888, 1); // Gray color
+        asteroidGraphics.fillCircle(20, 20, 20); // Main circle
+        asteroidGraphics.fillStyle(0x666666, 1); // Darker gray for crater
+        asteroidGraphics.fillCircle(15, 15, 7);
+        asteroidGraphics.fillCircle(25, 18, 5);
+        asteroidGraphics.fillStyle(0x555555, 1); // Even darker
+        asteroidGraphics.fillCircle(20, 25, 4);
+        asteroidGraphics.generateTexture('asteroid', 40, 40);
+        asteroidGraphics.destroy();
+        
+        // Create crystal node boss texture (pulsing crystal for Level 2 boss)
+        const crystalNodeGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        crystalNodeGraphics.fillStyle(0x00FFFF, 1); // Cyan crystal
+        crystalNodeGraphics.fillCircle(60, 60, 60); // Main body
+        crystalNodeGraphics.fillStyle(0x00CCCC, 1); // Darker cyan
+        crystalNodeGraphics.fillCircle(60, 60, 45);
+        crystalNodeGraphics.fillStyle(0xFFFFFF, 1); // White highlights
+        crystalNodeGraphics.fillCircle(50, 50, 20);
+        crystalNodeGraphics.fillCircle(70, 55, 15);
+        crystalNodeGraphics.generateTexture('crystal-node', 120, 120);
+        crystalNodeGraphics.destroy();
+        
+        // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
         
-        // Player ship placeholder (blue triangle)
-        const playerGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        playerGraphics.fillStyle(0x0088FF, 1);
-        playerGraphics.fillTriangle(20, 0, 0, 40, 40, 40);
-        playerGraphics.generateTexture('player-ship', 40, 40);
-        playerGraphics.destroy();
-        
-        // Enemy fighter placeholder (red triangle)
-        const fighterGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        fighterGraphics.fillStyle(0xFF0000, 1);
-        fighterGraphics.fillTriangle(15, 30, 0, 0, 30, 0);
-        fighterGraphics.generateTexture('enemy-fighter', 30, 30);
-        fighterGraphics.destroy();
-        
-        // Enemy cruiser placeholder (red pentagon)
-        const cruiserGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        cruiserGraphics.fillStyle(0xFF4444, 1);
-        cruiserGraphics.fillRect(5, 0, 40, 35);
-        cruiserGraphics.fillTriangle(25, 35, 5, 50, 45, 50);
-        cruiserGraphics.generateTexture('enemy-cruiser', 50, 50);
-        cruiserGraphics.destroy();
-        
-        // Enemy battleship placeholder (large red hexagon)
-        const battleshipGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        battleshipGraphics.fillStyle(0xFF8800, 1);
-        battleshipGraphics.fillRect(10, 0, 60, 50);
-        battleshipGraphics.fillRect(0, 20, 80, 30);
-        battleshipGraphics.fillTriangle(40, 50, 10, 80, 70, 80);
-        battleshipGraphics.generateTexture('enemy-battleship', 80, 80);
-        battleshipGraphics.destroy();
-        
-        // Boss placeholder (massive red structure)
+        // Boss placeholder texture removed - waiting for proper boss sprite
+        // The boss sprite reference 'boss' needs to be created but without visible texture
         const bossGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        bossGraphics.fillStyle(0x880000, 1);
-        bossGraphics.fillRect(25, 0, 150, 100);
-        bossGraphics.fillRect(0, 40, 200, 80);
-        bossGraphics.fillTriangle(100, 120, 40, 200, 160, 200);
+        bossGraphics.fillStyle(0x000000, 0); // Transparent
+        bossGraphics.fillRect(0, 0, 200, 200);
         bossGraphics.generateTexture('boss', 200, 200);
         bossGraphics.destroy();
+        
+        // Boss core (Phase 3) - large red circle (inactive)
+        const bossCoreGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        bossCoreGraphics.fillStyle(0xFF0000, 1); // Red
+        bossCoreGraphics.fillCircle(100, 100, 100); // Large red circle, 200px diameter
+        bossCoreGraphics.generateTexture('boss-core', 200, 200);
+        bossCoreGraphics.destroy();
+        
+        // Boss core - yellow variant (active/damageable)
+        const bossCoreYellowGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        bossCoreYellowGraphics.fillStyle(0xFFFF00, 1); // Yellow
+        bossCoreYellowGraphics.fillCircle(100, 100, 100); // Large yellow circle, 200px diameter
+        bossCoreYellowGraphics.generateTexture('boss-core-yellow', 200, 200);
+        bossCoreYellowGraphics.destroy();
+        
+        // Boss components (generators and turrets) - red shapes (inactive)
+        const generatorGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        generatorGraphics.fillStyle(0xFF0000, 1); // Red
+        generatorGraphics.fillRect(0, 0, 30, 30);
+        generatorGraphics.generateTexture('boss-generator', 30, 30);
+        generatorGraphics.destroy();
+        
+        // Boss generator - yellow variant (active/damageable)
+        const generatorYellowGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        generatorYellowGraphics.fillStyle(0xFFFF00, 1); // Yellow
+        generatorYellowGraphics.fillRect(0, 0, 30, 30);
+        generatorYellowGraphics.generateTexture('boss-generator-yellow', 30, 30);
+        generatorYellowGraphics.destroy();
+        
+        const turretGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        turretGraphics.fillStyle(0xFF0000, 1); // Red
+        turretGraphics.fillCircle(15, 15, 15);
+        turretGraphics.generateTexture('boss-turret', 30, 30);
+        turretGraphics.destroy();
+        
+        // Boss turret - yellow variant (active/damageable)
+        const turretYellowGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        turretYellowGraphics.fillStyle(0xFFFF00, 1); // Yellow
+        turretYellowGraphics.fillCircle(15, 15, 15);
+        turretYellowGraphics.generateTexture('boss-turret-yellow', 30, 30);
+        turretYellowGraphics.destroy();
         
         // Player bullet placeholder (yellow rectangle)
         const bulletGraphics = this.make.graphics({ x: 0, y: 0, add: false });
@@ -159,15 +210,6 @@ class PreloadScene extends Phaser.Scene {
         enemyBulletGraphics.fillRect(0, 0, 6, 10);
         enemyBulletGraphics.generateTexture('enemy-bullet', 6, 10);
         enemyBulletGraphics.destroy();
-        
-        // Escape pod placeholder (white/cyan circle)
-        const podGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        podGraphics.fillStyle(0xFFFFFF, 1);
-        podGraphics.fillCircle(10, 10, 10);
-        podGraphics.fillStyle(0x00FFFF, 1);
-        podGraphics.fillCircle(10, 10, 6);
-        podGraphics.generateTexture('escape-pod', 20, 20);
-        podGraphics.destroy();
         
         // Power-up placeholders (various colors)
         const powerUpGraphics = this.make.graphics({ x: 0, y: 0, add: false });

@@ -1,19 +1,23 @@
-# Star Trek Adventures
+# Star Trek Aurora
 
-A vertical scrolling space shooter game inspired by Star Trek, built with Phaser 3. Command the USS Defiant against waves of Dominion forces in fast-paced arcade action.
+A vertical scrolling space shooter game inspired by Star Trek, built with Phaser 3. Command the USS Aurora against waves of Crystalis forces in fast-paced arcade action.
 
 ## Play the Game
 
-🎮 **[Play Star Trek Adventures](https://gw75g7fpxk-netizen.github.io/star-trek-adventures/)**
+🎮 **[Play Star Trek Aurora](https://gw75g7fpxk-netizen.github.io/star-trek-adventures/)**
 
 ## Features
 
 ### Core Gameplay
+- **10 Mission Campaign**: Progress through a complete story-driven campaign across 10 unique missions
 - **Wave-based Combat**: Battle through increasingly difficult waves of enemy fighters, cruisers, and battleships
-- **Boss Battles**: Multi-phase boss fight with shield generators, turrets, and vulnerable core mechanics
+- **Boss Battles**: Multi-phase boss fights with shield generators, turrets, and vulnerable core mechanics
 - **Rescue Missions**: Save Federation escape pods while defending them from enemy fire for bonus score multipliers
 - **Power-ups**: Collect upgrades to enhance your ship's capabilities
 - **Dynamic Difficulty**: Enemy waves scale in speed, quantity, and aggression
+- **Story Dialog System**: Cinematic communication sequences with crew members that advance the narrative
+- **Mission Select**: Visual space route map showing all missions with progress tracking
+- **Ship Upgrades**: Spend upgrade points earned from missions to enhance your ship (coming soon)
 
 ### Controls
 - **Desktop**: WASD or Arrow keys for movement, Spacebar to fire
@@ -30,7 +34,22 @@ A vertical scrolling space shooter game inspired by Star Trek, built with Phaser
 
 ## Game Mechanics
 
-### Player Ship (USS Defiant)
+### Story & Campaign
+The game features a complete 10-mission storyline where the USS Aurora encounters the mysterious Crystalis forces. Each mission builds on the previous one with:
+- **Narrative Dialog**: Intro and outro communication sequences with your crew
+- **Progressive Unlocking**: Complete missions to unlock the next in the campaign
+- **Story Continuity**: Discover the truth about the Crystalline Entity and the Crystalis civilization
+- **Save System**: Your progress is automatically saved via localStorage
+
+### Menu System
+- **Main Menu**: Choose between Mission Select and Ship Upgrades
+- **Mission Select**: Visual space route map showing all 10 missions
+  - Level nodes color-coded: Yellow (unlocked), Green (completed ★), Gray (locked 🔒)
+  - Info panel displays mission details and completion stats
+  - Must complete previous level to unlock next
+- **Ship Upgrades**: Spend points earned from missions (coming soon)
+
+### Player Ship (USS Aurora)
 - Health and shield system
 - Shield regeneration over time
 - Invulnerability period after taking damage with visual feedback
@@ -40,12 +59,14 @@ A vertical scrolling space shooter game inspired by Star Trek, built with Phaser
 - **Fighters**: Fast, light attack ships
 - **Cruisers**: Medium warships with balanced stats
 - **Battleships**: Heavy units with high health
-- **Boss**: Massive Dominion battleship with three distinct phases
+- **Boss**: Massive Crystalis battleship with three distinct phases
 
 ### Scoring System
 - Points awarded for destroying enemies
 - Score multiplier system tied to pod rescues
 - Bonus points for completing waves
+- Upgrade points earned: 1 point per 100 score
+- Progress saved between sessions via localStorage
 
 ## Development
 
@@ -53,9 +74,12 @@ The game uses a modular architecture with separate configuration files:
 - `gameConfig.js` - Core game settings
 - `playerConfig.js` - Player ship stats
 - `enemyConfig.js` - Enemy types and behaviors
-- `waveConfig.js` - Wave progression
+- `waveConfig.js` - Wave progression for all 10 levels
 - `podConfig.js` - Escape pod mechanics
 - `powerUpConfig.js` - Power-up system
+- `progressConfig.js` - Level unlocks and save system
+- `upgradesConfig.js` - Ship upgrade system (coming soon)
+- `dialogConfig.js` - Story dialog and communications
 
 ### Project Structure
 ```
@@ -68,10 +92,16 @@ The game uses a modular architecture with separate configuration files:
 │   ├── enemyConfig.js
 │   ├── waveConfig.js
 │   ├── podConfig.js
-│   └── powerUpConfig.js
+│   ├── powerUpConfig.js
+│   ├── progressConfig.js
+│   ├── upgradesConfig.js
+│   └── dialogConfig.js
 └── scenes/             # Game scenes
     ├── BootScene.js
     ├── PreloadScene.js
+    ├── MainMenuScene.js
+    ├── LevelSelectScene.js
+    ├── UpgradesScene.js
     ├── Level1Scene.js
     ├── GameOverScene.js
     └── VictoryScene.js
@@ -98,12 +128,13 @@ The game currently uses procedurally generated placeholder graphics. For product
 
 ## Future Enhancements
 
-- Additional levels with unique environments
-- More enemy types and attack patterns
-- Expanded power-up system
-- Local high score persistence
-- Full sprite replacements for production graphics
+- Complete wave content for levels 3-10 with unique challenges per storyline
+- Implement ship upgrade system with purchasable enhancements using earned upgrade points
+- Add more diverse enemy types and attack patterns
+- Expand power-up variety and effects
+- Full sprite replacements for production-quality graphics
 - Enhanced sound effects and background music
+- Multiplayer leaderboard system
 
 ## License
 

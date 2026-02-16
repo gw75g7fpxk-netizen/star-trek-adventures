@@ -8,6 +8,8 @@ class GameOverScene extends Phaser.Scene {
         this.finalScore = data.score || 0;
         this.wave = data.wave || 0;
         this.podsRescued = data.podsRescued || 0;
+        this.levelNumber = data.levelNumber || 1;
+        this.pointsEarned = data.pointsEarned || 0;
     }
 
     create() {
@@ -17,7 +19,8 @@ class GameOverScene extends Phaser.Scene {
         // Background
         this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
         
-        // LCARS-style title
+        // LCARS-style title with level info
+        const levelInfo = ProgressConfig.levelInfo[this.levelNumber];
         const title = this.add.text(width / 2, height / 3, 'MISSION FAILED', {
             fontSize: '64px',
             color: '#FF0000',
@@ -26,6 +29,13 @@ class GameOverScene extends Phaser.Scene {
         });
         title.setOrigin(0.5);
         
+        const levelText = this.add.text(width / 2, height / 3 + 65, `Level ${this.levelNumber}: ${levelInfo.name}`, {
+            fontSize: '20px',
+            color: '#FFFF00',
+            fontFamily: 'Courier New, monospace'
+        });
+        levelText.setOrigin(0.5);
+        
         // Get high score
         const highScore = this.getHighScore();
         
@@ -33,7 +43,7 @@ class GameOverScene extends Phaser.Scene {
         const statsY = height / 2;
         const statsPanel = this.add.graphics();
         statsPanel.lineStyle(3, 0xFF0000, 1);
-        statsPanel.strokeRect(width / 2 - 220, statsY - 20, 440, 180);
+        statsPanel.strokeRect(width / 2 - 220, statsY - 20, 440, 220);
         
         this.add.text(width / 2, statsY, `FINAL SCORE: ${this.finalScore}`, {
             fontSize: '24px',
@@ -60,9 +70,22 @@ class GameOverScene extends Phaser.Scene {
             fontFamily: 'Courier New, monospace'
         }).setOrigin(0.5);
         
-        // Restart button with LCARS styling
-        const restartButton = this.add.text(width / 2, height * 0.8, '[ RESTART MISSION ]', {
-            fontSize: '32px',
+        // Display credits earned (roguelite progression!)
+        const creditsY = statsY + 160; // Positioned below pods rescued
+        this.add.text(width / 2, creditsY, `CREDITS EARNED: +${this.pointsEarned}`, {
+            fontSize: '20px',
+            color: '#00FF00',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        
+        // Navigation buttons
+        const buttonY = height * 0.75;
+        const buttonSpacing = 60;
+        
+        // Restart button
+        const restartButton = this.add.text(width / 2, buttonY, '[ RETRY MISSION ]', {
+            fontSize: '28px',
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
             fontStyle: 'bold'
@@ -71,12 +94,12 @@ class GameOverScene extends Phaser.Scene {
         restartButton.setInteractive();
         
         restartButton.on('pointerdown', () => {
-            this.scene.start('Level1Scene');
+            this.scene.start('Level1Scene', { levelNumber: this.levelNumber });
         });
         
         restartButton.on('pointerover', () => {
             restartButton.setColor('#00FFFF');
-            restartButton.setScale(1.1);
+            restartButton.setScale(1.05);
         });
         
         restartButton.on('pointerout', () => {
@@ -84,9 +107,34 @@ class GameOverScene extends Phaser.Scene {
             restartButton.setScale(1.0);
         });
         
-        // Keyboard restart
+        // Return to Menu button
+        const menuButton = this.add.text(width / 2, buttonY + buttonSpacing, '[ RETURN TO MENU ]', {
+            fontSize: '24px',
+            color: '#888888',
+            fontFamily: 'Courier New, monospace'
+        });
+        menuButton.setOrigin(0.5);
+        menuButton.setInteractive();
+        
+        menuButton.on('pointerdown', () => {
+            this.scene.start('MainMenuScene');
+        });
+        
+        menuButton.on('pointerover', () => {
+            menuButton.setColor('#00FFFF');
+        });
+        
+        menuButton.on('pointerout', () => {
+            menuButton.setColor('#888888');
+        });
+        
+        // Keyboard shortcuts
         this.input.keyboard.once('keydown-SPACE', () => {
-            this.scene.start('Level1Scene');
+            this.scene.start('Level1Scene', { levelNumber: this.levelNumber });
+        });
+        
+        this.input.keyboard.once('keydown-M', () => {
+            this.scene.start('MainMenuScene');
         });
     }
     

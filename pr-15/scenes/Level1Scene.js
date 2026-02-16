@@ -8,7 +8,8 @@ const SOUND_CONFIG = {
     boss: { freq: 80, duration: 0.5, gain: 0.2 },
     powerup: { startFreq: 600, endFreq: 1200, duration: 0.15, gain: 0.15 },
     hit: { startFreq: 300, endFreq: 150, duration: 0.08, gain: 0.12 },
-    charging: { startFreq: 200, endFreq: 600, duration: 0.5, gain: 0.08 }
+    charging: { startFreq: 200, endFreq: 600, duration: 0.5, gain: 0.08 },
+    torpedo: { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.15 }
 };
 
 // Invincibility durations (in milliseconds)
@@ -25,6 +26,7 @@ const RENDER_DEPTH = {
 
 // Enemy spawn and visibility constants
 const ENEMY_VISIBLE_THRESHOLD = 10; // Y position where enemy is considered visibly on screen
+const DEFAULT_VERTICAL_SCROLL_SPEED = 50; // Default downward velocity for stationary enemies (px/s)
 
 // Sound interval for charging sound during pod rescue (in milliseconds)
 const CHARGING_SOUND_INTERVAL = 500;
@@ -35,6 +37,55 @@ const CHEAT_FIRE_RATE = 100; // Milliseconds between shots
 
 // Escape pod spawn position (above screen top)
 const ESCAPE_POD_SPAWN_Y = -20;
+
+// Scout formation flight pattern constants
+const SCOUT_CIRCLE_TRIGGER_FRACTION = 3; // Start circling at 1/3 of screen height
+
+// Shield impact effect constants
+const SHIELD_IMPACT = {
+    radius: 40,           // Initial radius of shield bubble
+    color: 0x00FFFF,      // Cyan color for shield effect
+    strokeWidth: 3,       // Stroke thickness
+    strokeAlpha: 0.8,     // Stroke opacity
+    scale: 1.5,           // Expansion scale
+    duration: 300         // Animation duration in milliseconds
+};
+
+// HUD bar dimension constants
+// Asteroid rotation constants
+const ASTEROID_ROTATION_FACTOR = 0.01; // Rotation speed multiplier for asteroids
+
+// Asteroid avoidance constants
+const ASTEROID_AVOIDANCE_RADIUS = 100; // Distance at which enemies start avoiding asteroids (in pixels)
+const ASTEROID_AVOIDANCE_FORCE = 80; // Force multiplier for asteroid avoidance vector
+
+// Crystal node boss animation constants
+const CRYSTAL_PULSE = {
+    speed: 0.002,         // Pulse animation speed
+    maxScale: 1.1,        // Maximum scale during pulse
+    minScale: 0.9         // Minimum scale during pulse
+};
+
+// Boss movement constants
+const CONFIG_SPEED_TO_PIXELS_DIVISOR = 20; // Converts config speed to frame-based pixel movement
+const DEFAULT_BOSS_MOVEMENT_SPEED = 2; // Default boss movement speed in pixels per frame
+
+// Enemy health bar constants
+const ENEMY_HEALTH_BAR = {
+    width: 30,            // Health bar width in pixels
+    height: 4,            // Health bar height in pixels
+    yOffset: 8            // Distance above enemy sprite
+};
+
+const PLAYER_HEALTH_BAR = {
+    width: 40,            // Health bar width in pixels
+    height: 4,            // Health bar height in pixels
+    segmentGap: 1,        // Gap between segments in pixels
+    yOffset: 8            // Distance above player sprite (same as enemy for consistency)
+};
+
+// Boss-type enemies that get special explosion effects
+const BOSS_TYPE_ENEMIES = ['boss', 'crystalNode', 'battleship'];
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -58,7 +109,7 @@ class Level1Scene extends Phaser.Scene {
         this.enemiesKilled = 0;
         this.podsRescued = 0;
         this.isWaveActive = false;
-        this.isBossFight = false;
+        this.isFinalWave = false;
         
         // Power-up effects
         this.activePowerUps = [];
@@ -70,6 +121,24 @@ class Level1Scene extends Phaser.Scene {
         
         // Mobile UI safe area offset (accounts for browser chrome)
         this.safeAreaOffset = 120; // pixels from bottom edge
+        
+        // Default to level 1 if not specified
+        this.levelNumber = 1;
+        
+        // Enemy health bar tracking
+        this.enemyHealthBars = new Map(); // Map of enemy -> health bar graphics
+        
+        // Player health bar (above ship, like enemy health bars)
+        this.playerHealthBar = null;
+    }
+    
+    init(data) {
+        // Accept level number from scene data
+        this.levelNumber = data?.levelNumber || 1
+        // Initialize pause state
+        this.isPaused = false
+        this.pauseMenu = null
+        console.log(`Level1Scene: Initializing level ${this.levelNumber}`)
     }
     
     // Haptic feedback stub - works on supported devices
@@ -85,7 +154,10 @@ class Level1Scene extends Phaser.Scene {
     }
 
     create() {
-        console.log('Level1Scene: Starting Level 1...');
+        console.log(`Level1Scene: Starting Level ${this.levelNumber}...`);
+        
+        // Load save data for upgrades
+        this.saveData = ProgressConfig.loadProgress()
         
         // Reset game state on scene restart
         this.playerStats = {
@@ -96,6 +168,14 @@ class Level1Scene extends Phaser.Scene {
             speed: PlayerConfig.speed,
             fireRate: PlayerConfig.fireRate
         };
+        
+        // Apply upgrades to player stats
+        this.applyUpgrades()
+        
+        // Store base values for power-ups (after upgrades are applied)
+        this.baseFireRate = this.playerStats.fireRate;
+        this.baseSpeed = this.playerStats.speed;
+        
         this.currentWave = 0;
         this.score = 0;
         this.scoreMultiplier = 1.0;
@@ -103,12 +183,13 @@ class Level1Scene extends Phaser.Scene {
         this.enemiesKilled = 0;
         this.podsRescued = 0;
         this.isWaveActive = false;
-        this.isBossFight = false;
+        this.isFinalWave = false;
         this.activePowerUps = [];
         this.podRescueTracking = new Map();
         this.invincibleUntil = 0; // Timestamp for invincibility after taking damage
         this.lastShieldRecharge = 0; // Timestamp for last shield recharge
         this.shieldRechargeRate = 30000; // 30 seconds in milliseconds
+        this.scoutFormationId = 0; // Counter for unique formation IDs
         
         // Store camera dimensions for responsive layout
         this.updateCameraDimensions();
@@ -166,23 +247,36 @@ class Level1Scene extends Phaser.Scene {
             runChildUpdate: true
         });
         
-        // Setup boss components group (generators and turrets)
-        this.bossComponents = this.physics.add.group({
-            classType: Phaser.Physics.Arcade.Sprite,
-            maxSize: 20,
-            runChildUpdate: true
-        });
-        
         // Setup collisions
         this.setupCollisions();
         
         // Initialize shield recharge timer to current time
         this.lastShieldRecharge = this.time.now;
         
-        // Start first wave
-        this.startNextWave();
+        // Check for level intro dialog
+        if (DialogConfig.hasDialog(this.levelNumber, 'intro')) {
+            // Show intro dialog before starting waves
+            this.showCommunication('intro', () => {
+                this.startNextWave();
+            });
+        } else {
+            // Start first wave immediately if no dialog
+            this.startNextWave();
+        }
         
         console.log('Level1Scene: Level ready!');
+    }
+    
+    shutdown() {
+        // Clean up event listeners to prevent memory leaks
+        if (this.escKey) {
+            this.escKey.off('down');
+        }
+        if (this.pauseButton) {
+            this.pauseButton.off('pointerdown');
+            this.pauseButton.off('pointerover');
+            this.pauseButton.off('pointerout');
+        }
     }
     
     updateCameraDimensions() {
@@ -292,44 +386,30 @@ class Level1Scene extends Phaser.Scene {
     }
 
     createPlayer() {
-        // Create player ship (USS Defiant) - use percentage-based positioning for mobile compatibility
+        // Create player ship (USS Aurora) - use percentage-based positioning for mobile compatibility
         const startX = this.cameraWidth * PlayerConfig.startX;
         const startY = this.cameraHeight * PlayerConfig.startY;
         this.player = this.physics.add.sprite(startX, startY, 'player-ship');
         this.player.setCollideWorldBounds(true);
         
+        // Scale the player ship to appropriate size (uniform scaling maintains aspect ratio)
+        this.player.setScale(PlayerConfig.scale, PlayerConfig.scale);
+        
         // Set player velocity limits
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement
         
-        // Add thrust particle emitter to player ship
-        this.createThrustParticles();
+        // Create shield bar above player ship
+        this.playerShieldBar = this.add.graphics();
         
-        console.log(`Level1Scene: USS Defiant created at (${startX}, ${startY})`);
-    }
-    
-    createThrustParticles() {
-        // Create a small texture for thrust particles
-        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
-        graphics.fillStyle(0x00FFFF, 1);
-        graphics.fillCircle(2, 2, 2);
-        graphics.generateTexture('thrust-particle', 4, 4);
-        graphics.destroy();
+        // Create health bar above player ship (like enemy health bars)
+        this.playerHealthBar = this.add.graphics();
         
-        // Create thrust particle emitter
-        this.thrustEmitter = this.add.particles(0, 0, 'thrust-particle', {
-            speed: 50,
-            angle: { min: 80, max: 100 },
-            scale: { start: 0.8, end: 0 },
-            alpha: { start: 0.8, end: 0 },
-            lifespan: 200,
-            blendMode: 'ADD',
-            frequency: 30,
-            follow: this.player,
-            followOffset: { x: 0, y: 20 }
-        });
+        // Update both bars
+        this.updatePlayerShieldBar();
+        this.updatePlayerHealthBar();
         
-        this.thrustEmitter.start();
+        console.log(`Level1Scene: USS Aurora created at (${startX}, ${startY})`);
     }
 
     setupControls() {
@@ -343,14 +423,26 @@ class Level1Scene extends Phaser.Scene {
         };
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         
-        // Cheat code: B key to jump to boss fight (for testing)
-        this.bossKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
-        this.bossKey.on('down', () => {
-            if (!this.isBossFight && !this.boss) {
-                console.log('Cheat code activated: Jumping to boss fight!');
-                this.skipToBossFight();
-            }
+        // Pause key (ESC)
+        this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+        this.escKey.on('down', () => {
+            this.togglePause();
         });
+        
+        // Cheat code: N key to skip to next wave (for testing)
+        this.nextWaveKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.N);
+        this.nextWaveKey.on('down', () => {
+            console.log('Cheat code activated: Skipping to next wave!');
+            this.skipToNextWave();
+        });
+        
+        // Boss fight cheat code disabled (no boss in level 1 currently)
+        // this.bossKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+        // this.bossKey.on('down', () => {
+        //     console.log('Cheat code activated: Jumping to boss fight!');
+        //     this.skipToBossFight();
+        // });
+        // });
         
         // Mobile controls
         this.isFiring = false;
@@ -521,31 +613,6 @@ class Level1Scene extends Phaser.Scene {
             fontStyle: 'bold'
         };
         
-        // Health bar background with LCARS style
-        const healthBarBg = this.add.graphics();
-        healthBarBg.fillStyle(0x333333, 1);
-        healthBarBg.fillRect(10, 10, 204, 24);
-        healthBarBg.lineStyle(2, 0x00FFFF, 1);
-        healthBarBg.strokeRect(10, 10, 204, 24);
-        healthBarBg.setScrollFactor(0);
-        healthBarBg.setDepth(999);
-        
-        // Health bar
-        this.healthBar = this.add.graphics();
-        this.healthBar.setScrollFactor(0);
-        this.healthBar.setDepth(999);
-        this.updateHealthBar();
-        
-        // Health text with LCARS styling
-        this.healthText = this.add.text(10, 40, `HULL: ${this.playerStats.health}/${this.playerStats.maxHealth}`, hudStyle);
-        this.healthText.setScrollFactor(0);
-        this.healthText.setDepth(999);
-        
-        // Shields text with LCARS styling
-        this.shieldsText = this.add.text(10, 58, `SHIELDS: ${this.playerStats.shields}/${this.playerStats.maxShields}`, hudStyle);
-        this.shieldsText.setScrollFactor(0);
-        this.shieldsText.setDepth(999);
-        
         // Score text (top right) with LCARS styling
         this.scoreText = this.add.text(this.cameraWidth - 10, 10, `SCORE: ${this.score}`, titleStyle);
         this.scoreText.setOrigin(1, 0);
@@ -582,6 +649,74 @@ class Level1Scene extends Phaser.Scene {
         this.highScoreText.setOrigin(1, 0);
         this.highScoreText.setScrollFactor(0);
         this.highScoreText.setDepth(999);
+        
+        // Skip Wave button (testing feature)
+        const skipButtonBg = this.add.graphics();
+        skipButtonBg.fillStyle(0x333333, 0.8);
+        skipButtonBg.fillRoundedRect(10, 86, 100, 30, 5);
+        skipButtonBg.lineStyle(2, 0xFF9900, 1);
+        skipButtonBg.strokeRoundedRect(10, 86, 100, 30, 5);
+        skipButtonBg.setScrollFactor(0);
+        skipButtonBg.setDepth(999);
+        
+        const skipButtonStyle = {
+            fontSize: '12px',
+            color: '#FF9900',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        };
+        this.skipWaveButton = this.add.text(60, 101, 'SKIP WAVE', skipButtonStyle);
+        this.skipWaveButton.setOrigin(0.5, 0.5);
+        this.skipWaveButton.setScrollFactor(0);
+        this.skipWaveButton.setDepth(1000);
+        this.skipWaveButton.setInteractive({ useHandCursor: true });
+        
+        // Skip wave button click handler
+        this.skipWaveButton.on('pointerdown', () => {
+            this.skipToNextWave();
+        });
+        
+        // Add hover effect for skip button
+        this.skipWaveButton.on('pointerover', () => {
+            this.skipWaveButton.setColor('#FFCC00');
+        });
+        this.skipWaveButton.on('pointerout', () => {
+            this.skipWaveButton.setColor('#FF9900');
+        });
+        
+        // Pause button (upper left corner)
+        const pauseButtonBg = this.add.graphics();
+        pauseButtonBg.fillStyle(0x333333, 0.8);
+        pauseButtonBg.fillRoundedRect(10, 10, 80, 30, 5);
+        pauseButtonBg.lineStyle(2, 0xFF9900, 1);
+        pauseButtonBg.strokeRoundedRect(10, 10, 80, 30, 5);
+        pauseButtonBg.setScrollFactor(0);
+        pauseButtonBg.setDepth(999);
+        
+        const pauseButtonStyle = {
+            fontSize: '12px',
+            color: '#FF9900',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        };
+        this.pauseButton = this.add.text(50, 25, 'PAUSE', pauseButtonStyle);
+        this.pauseButton.setOrigin(0.5, 0.5);
+        this.pauseButton.setScrollFactor(0);
+        this.pauseButton.setDepth(1000);
+        this.pauseButton.setInteractive({ useHandCursor: true });
+        
+        // Pause button click handler
+        this.pauseButton.on('pointerdown', () => {
+            this.togglePause();
+        });
+        
+        // Add hover effect for pause button
+        this.pauseButton.on('pointerover', () => {
+            this.pauseButton.setColor('#FFCC00');
+        });
+        this.pauseButton.on('pointerout', () => {
+            this.pauseButton.setColor('#FF9900');
+        });
         
         console.log('Level1Scene: HUD created');
     }
@@ -713,22 +848,17 @@ class Level1Scene extends Phaser.Scene {
                 oscillator.start(time);
                 oscillator.stop(time + config.duration);
                 break;
+            case 'torpedo':
+                // Deep rumbling torpedo sound that rises in pitch
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(config.startFreq, time);
+                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                gainNode.gain.setValueAtTime(config.gain, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                oscillator.start(time);
+                oscillator.stop(time + config.duration);
+                break;
         }
-    }
-
-    updateHealthBar() {
-        this.healthBar.clear();
-        
-        // Calculate health percentage
-        const healthPercent = this.playerStats.health / this.playerStats.maxHealth;
-        
-        // Color based on health
-        let color = 0x00FF00; // Green
-        if (healthPercent < 0.5) color = 0xFFFF00; // Yellow
-        if (healthPercent < 0.25) color = 0xFF0000; // Red
-        
-        this.healthBar.fillStyle(color, 1);
-        this.healthBar.fillRect(12, 12, 200 * healthPercent, 20);
     }
 
     update(time, delta) {
@@ -742,6 +872,9 @@ class Level1Scene extends Phaser.Scene {
         // Handle shield regeneration
         this.handleShieldRegeneration(time);
         
+        // Handle point defense system
+        this.handlePointDefense(time);
+        
         // Handle player movement
         this.handlePlayerMovement();
         
@@ -750,11 +883,6 @@ class Level1Scene extends Phaser.Scene {
         
         // Update enemies
         this.updateEnemies(time);
-        
-        // Update boss
-        if (this.isBossFight) {
-            this.updateBoss(time);
-        }
         
         // Update escape pods
         this.updateEscapePods();
@@ -808,6 +936,62 @@ class Level1Scene extends Phaser.Scene {
         }
     }
     
+    handlePointDefense(time) {
+        // Point defense system - destroys incoming enemy torpedoes
+        if (!this.pointDefenseStats || !this.pointDefenseStats.enabled) return
+        
+        // Check if point defense is ready
+        if (time < this.pointDefenseLastFired + this.pointDefenseStats.cooldown) return
+        
+        // Find closest enemy bullet
+        let closestBullet = null
+        let closestDistance = Infinity
+        const detectionRange = 200 // Detection range for point defense
+        
+        this.enemyBullets.children.each(bullet => {
+            if (bullet.active && bullet.visible) {
+                const distance = Phaser.Math.Distance.Between(
+                    this.player.x, this.player.y,
+                    bullet.x, bullet.y
+                )
+                
+                if (distance < detectionRange && distance < closestDistance) {
+                    closestDistance = distance
+                    closestBullet = bullet
+                }
+            }
+        })
+        
+        // Destroy closest bullet if found
+        if (closestBullet) {
+            // Create visual effect (beam from player to bullet)
+            const beam = this.add.line(
+                0, 0,
+                this.player.x, this.player.y,
+                closestBullet.x, closestBullet.y,
+                0x00FFFF, 0.8
+            )
+            beam.setLineWidth(2)
+            
+            // Remove beam after short delay
+            this.time.delayedCall(100, () => {
+                beam.destroy()
+            })
+            
+            // Destroy the bullet
+            closestBullet.setActive(false)
+            closestBullet.setVisible(false)
+            
+            // Create small explosion at bullet location
+            this.createExplosion(closestBullet.x, closestBullet.y, 0.3)
+            
+            this.playSound('hit')
+            this.pointDefenseLastFired = time
+            
+            console.log('Point defense activated!')
+        }
+    }
+    
     handleInvulnerabilityVisuals() {
         // Fade out player ship slightly during invulnerability period
         if (this.time.now < this.invincibleUntil) {
@@ -825,6 +1009,22 @@ class Level1Scene extends Phaser.Scene {
         if ((this.spaceKey.isDown || this.isFiring || this.autoFire) && canFire) {
             this.fireBullet();
             this.lastFired = time;
+            
+            // Fire pulse cannons if unlocked and ready
+            if (this.pulseCannonsStats && this.pulseCannonsStats.enabled) {
+                if (time > this.pulseCannonsLastFired + this.pulseCannonsStats.cooldown) {
+                    this.firePulseCannons()
+                    this.pulseCannonsLastFired = time
+                }
+            }
+            
+            // Fire quantum torpedos if unlocked and ready
+            if (this.quantumTorpedosStats && this.quantumTorpedosStats.enabled) {
+                if (time > this.quantumTorpedosLastFired + this.quantumTorpedosStats.cooldown) {
+                    this.fireQuantumTorpedo()
+                    this.quantumTorpedosLastFired = time
+                }
+            }
         }
     }
 
@@ -842,6 +1042,84 @@ class Level1Scene extends Phaser.Scene {
             
             // Haptic feedback on fire
             this.triggerHaptic('light');
+        }
+    }
+    
+    firePulseCannons() {
+        // Fire bursts from two cannons offset from player position
+        const leftCannonX = this.player.x - 25
+        const rightCannonX = this.player.x + 25
+        const cannonY = this.player.y
+        const burstsPerCannon = this.pulseCannonsStats.burstsPerCannon
+        
+        // Fire bursts from left cannon
+        for (let i = 0; i < burstsPerCannon; i++) {
+            this.time.delayedCall(i * 100, () => {
+                const bullet = this.bullets.get(leftCannonX, cannonY, 'bullet')
+                if (bullet) {
+                    this.enableBulletPhysics(bullet)
+                    bullet.setTint(0xFFFF00) // Yellow tint to match primary weapon
+                    bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed)
+                }
+            })
+        }
+        
+        // Fire bursts from right cannon
+        for (let i = 0; i < burstsPerCannon; i++) {
+            this.time.delayedCall(i * 100, () => {
+                const bullet = this.bullets.get(rightCannonX, cannonY, 'bullet')
+                if (bullet) {
+                    this.enableBulletPhysics(bullet)
+                    bullet.setTint(0xFFFF00) // Yellow tint to match primary weapon
+                    bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed)
+                }
+            })
+        }
+        
+        this.playSound('phaser')
+    }
+    
+    fireQuantumTorpedo() {
+        // Find the most powerful enemy (highest health)
+        let target = null
+        let maxHealth = 0
+        
+        this.enemies.children.each(enemy => {
+            if (enemy.active && enemy.visible && enemy.health > maxHealth) {
+                maxHealth = enemy.health
+                target = enemy
+            }
+        })
+        
+        if (!target) return // No enemies to target
+        
+        // Create torpedo
+        const torpedo = this.bullets.get(this.player.x, this.player.y - 20, 'bullet')
+        if (torpedo) {
+            // Play torpedo sound
+            this.playSound('torpedo')
+            
+            this.enableBulletPhysics(torpedo)
+            torpedo.setTint(0x0000FF) // Blue tint for quantum torpedoes
+            torpedo.setScale(1.5) // Make torpedoes larger
+            
+            // Store torpedo data
+            torpedo.damage = this.quantumTorpedosStats.damage
+            torpedo.isQuantumTorpedo = true
+            torpedo.target = target
+            
+            // Calculate velocity towards target
+            const dx = target.x - torpedo.x
+            const dy = target.y - torpedo.y
+            const distance = Math.sqrt(dx * dx + dy * dy)
+            const speed = PlayerConfig.bulletSpeed * 0.8 // Slightly slower than regular bullets
+            
+            torpedo.body.setVelocity(
+                (dx / distance) * speed,
+                (dy / distance) * speed
+            )
+            
+            this.playSound('phaser')
         }
     }
 
@@ -864,13 +1142,12 @@ class Level1Scene extends Phaser.Scene {
     }
 
     updateHUD() {
-        this.healthText.setText(`HULL: ${this.playerStats.health}/${this.playerStats.maxHealth}`);
-        this.shieldsText.setText(`SHIELDS: ${this.playerStats.shields}/${this.playerStats.maxShields}`);
         this.scoreText.setText(`SCORE: ${this.score}`);
         this.waveText.setText(`WAVE: ${this.currentWave}`);
         this.multiplierText.setText(`MULTIPLIER: x${this.scoreMultiplier.toFixed(1)}`);
         this.podsText.setText(`PODS: ${this.podsRescued}`);
-        this.updateHealthBar();
+        this.updatePlayerShieldBar(); // Update shield bar above player ship
+        this.updatePlayerHealthBar(); // Update health bar above player ship
     }
 
     // Method for taking damage (to be used when enemies are implemented)
@@ -887,6 +1164,9 @@ class Level1Scene extends Phaser.Scene {
         this.playSound('hit');
         
         if (this.playerStats.shields > 0) {
+            // Show shield impact effect before taking damage
+            this.showShieldImpact();
+            
             this.playerStats.shields -= amount;
             if (this.playerStats.shields < 0) {
                 const overflow = Math.abs(this.playerStats.shields);
@@ -907,12 +1187,69 @@ class Level1Scene extends Phaser.Scene {
         }
     }
     
+    showShieldImpact() {
+        // Create a shield impact bubble around the player ship
+        const shieldBubble = this.add.circle(
+            this.player.x, 
+            this.player.y, 
+            SHIELD_IMPACT.radius, 
+            SHIELD_IMPACT.color, 
+            0
+        );
+        shieldBubble.setStrokeStyle(
+            SHIELD_IMPACT.strokeWidth, 
+            SHIELD_IMPACT.color, 
+            SHIELD_IMPACT.strokeAlpha
+        );
+        shieldBubble.setDepth(10); // Render above player
+        
+        // Animate the shield bubble expanding and fading out
+        this.tweens.add({
+            targets: shieldBubble,
+            scaleX: SHIELD_IMPACT.scale,
+            scaleY: SHIELD_IMPACT.scale,
+            alpha: 0,
+            duration: SHIELD_IMPACT.duration,
+            ease: 'Power2.easeOut',
+            onComplete: () => {
+                shieldBubble.destroy();
+            }
+        });
+    }
+    
+    showShieldImpactAt(x, y) {
+        // Create a shield impact bubble at specified position
+        const shieldBubble = this.add.circle(
+            x, 
+            y, 
+            SHIELD_IMPACT.radius, 
+            SHIELD_IMPACT.color, 
+            0
+        );
+        shieldBubble.setStrokeStyle(
+            SHIELD_IMPACT.strokeWidth, 
+            SHIELD_IMPACT.color, 
+            SHIELD_IMPACT.strokeAlpha
+        );
+        shieldBubble.setDepth(10); // Render above other objects
+        
+        // Animate the shield bubble expanding and fading out
+        this.tweens.add({
+            targets: shieldBubble,
+            scaleX: SHIELD_IMPACT.scale,
+            scaleY: SHIELD_IMPACT.scale,
+            alpha: 0,
+            duration: SHIELD_IMPACT.duration,
+            ease: 'Power2.easeOut',
+            onComplete: () => {
+                shieldBubble.destroy();
+            }
+        });
+    }
+    
     setupCollisions() {
         // Player bullets vs enemies
         this.physics.add.overlap(this.bullets, this.enemies, this.hitEnemy, null, this);
-        
-        // Player bullets vs boss components (generators and turrets)
-        this.physics.add.overlap(this.bullets, this.bossComponents, this.hitBossComponent, null, this);
         
         // Enemy bullets vs player
         this.physics.add.overlap(this.player, this.enemyBullets, this.playerHit, null, this);
@@ -922,6 +1259,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Enemy bullets vs escape pods
         this.physics.add.overlap(this.enemyBullets, this.escapePods, this.podHit, null, this);
+        
+        // Enemy bullets vs enemies (for asteroid blocking)
+        this.physics.add.overlap(this.enemyBullets, this.enemies, this.enemyBulletHitAsteroid, null, this);
         
         // Enemies vs escape pods
         this.physics.add.overlap(this.enemies, this.escapePods, this.podHitByEnemy, null, this);
@@ -934,6 +1274,13 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitEnemy(bullet, enemy) {
+        // Asteroids are invincible - bullets stop but asteroids take no damage
+        if (enemy.enemyType === 'asteroid') {
+            // Disable bullet (it stops at the asteroid)
+            this.disableBulletPhysics(bullet);
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (enemy.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
@@ -942,13 +1289,37 @@ class Level1Scene extends Phaser.Scene {
         // Disable bullet using helper function
         this.disableBulletPhysics(bullet);
         
-        enemy.health -= 10; // Bullet damage
+        // Calculate damage - quantum torpedoes do more damage
+        let damage = 1 // Default bullet damage
+        if (bullet.isQuantumTorpedo) {
+            damage = bullet.damage // Torpedoes use configured damage value
+        }
+        
+        // Apply damage to shields first, then health
+        if (enemy.shields > 0) {
+            // Show shield impact effect
+            this.showShieldImpactAt(enemy.x, enemy.y);
+            
+            enemy.shields -= damage;
+            if (enemy.shields < 0) {
+                // Overflow damage goes to health
+                const overflow = Math.abs(enemy.shields);
+                enemy.shields = 0;
+                enemy.health -= overflow;
+            }
+        } else {
+            // No shields, damage health directly
+            enemy.health -= damage;
+        }
         
         // Set invincibility after taking damage
         enemy.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
         // Play hit sound when enemy is damaged
         this.playSound('hit');
+        
+        // Update health bar
+        this.updateHealthBar(enemy);
         
         if (enemy.health <= 0) {
             this.destroyEnemy(enemy);
@@ -960,20 +1331,278 @@ class Level1Scene extends Phaser.Scene {
         this.addScore(enemy.points);
         this.enemiesKilled++;
         
-        // Play explosion sound
-        this.playSound('explosion');
+        // Clean up health bar
+        this.destroyHealthBar(enemy);
         
-        // Spawn explosion
-        this.createExplosion(enemy.x, enemy.y);
+        // Check if this is a boss-type enemy (with null check)
+        const isBossType = enemy.enemyType && BOSS_TYPE_ENEMIES.includes(enemy.enemyType);
         
-        // Chance to drop power-up
-        if (Math.random() < PowerUpConfig.spawnChance) {
-            this.spawnPowerUp(enemy.x, enemy.y);
+        if (isBossType) {
+            // Boss-type enemies get massive explosion sequence
+            const enemyX = enemy.x;
+            const enemyY = enemy.y;
+            
+            // Disable physics body immediately to prevent post-defeat collisions
+            if (enemy.body) {
+                enemy.body.checkCollision.none = true;
+            }
+            
+            // Hide enemy immediately but don't destroy yet
+            enemy.setVisible(false);
+            enemy.setActive(false);
+            
+            // Play explosion sound
+            this.playSound('explosion');
+            
+            // Multiple explosions over time
+            const explosionCount = enemy.enemyType === 'battleship' ? 5 : 10;
+            const explosionRange = enemy.enemyType === 'battleship' ? 60 : 100;
+            
+            for (let i = 0; i < explosionCount; i++) {
+                this.time.delayedCall(i * 200, () => {
+                    const x = enemyX + Phaser.Math.Between(-explosionRange, explosionRange);
+                    const y = enemyY + Phaser.Math.Between(-explosionRange, explosionRange);
+                    this.createExplosion(x, y);
+                });
+            }
+            
+            // Boss-type enemies have higher chance to drop power-up
+            const bossPowerUpChance = 0.75; // 75% chance for bosses
+            if (Math.random() < bossPowerUpChance) {
+                this.spawnPowerUp(enemyX, enemyY);
+            }
+            
+            // Destroy enemy after explosions complete
+            this.time.delayedCall(explosionCount * 200 + 500, () => {
+                if (enemy) {
+                    enemy.destroy();
+                }
+                
+                // Check victory condition after boss-type enemy is fully destroyed
+                this.checkVictoryCondition();
+            });
+        } else {
+            // Regular enemy - simple explosion
+            this.playSound('explosion');
+            this.createExplosion(enemy.x, enemy.y);
+            
+            // Chance to drop power-up
+            if (Math.random() < PowerUpConfig.spawnChance) {
+                this.spawnPowerUp(enemy.x, enemy.y);
+            }
+            
+            enemy.setActive(false);
+            enemy.setVisible(false);
+            enemy.destroy();
+            
+            // Check if victory condition is met after destroying enemy
+            this.checkVictoryCondition();
+        }
+    }
+    
+    enemyBulletHitAsteroid(bullet, enemy) {
+        // Only asteroids should block enemy bullets
+        // Other enemies should not block each other's fire
+        if (enemy.enemyType === 'asteroid') {
+            // Disable bullet (it stops at the asteroid)
+            this.disableBulletPhysics(bullet);
+        }
+    }
+    
+    createHealthBar(enemy) {
+        // Don't create health bars for asteroids
+        if (enemy.enemyType === 'asteroid') {
+            return;
         }
         
-        enemy.setActive(false);
-        enemy.setVisible(false);
-        enemy.destroy();
+        // Get enemy configuration to determine max health
+        const config = EnemyConfig[enemy.enemyType];
+        if (!config) {
+            return; // Skip if enemy type is not recognized
+        }
+        
+        // Create health bar graphics
+        const healthBar = this.add.graphics();
+        
+        // Store reference to the health bar
+        this.enemyHealthBars.set(enemy, healthBar);
+        
+        // Initial draw
+        this.updateHealthBar(enemy);
+    }
+    
+    updateHealthBar(enemy) {
+        const healthBar = this.enemyHealthBars.get(enemy);
+        if (!healthBar || !enemy.active) {
+            return;
+        }
+        
+        // Get enemy configuration
+        const config = EnemyConfig[enemy.enemyType];
+        if (!config) {
+            return; // Skip if enemy type is not recognized
+        }
+        
+        const maxHealth = config.health + (config.shields || 0);
+        const currentHealth = enemy.health + (enemy.shields || 0);
+        
+        // Validate maxHealth to prevent division by zero
+        if (maxHealth <= 0) {
+            return;
+        }
+        
+        // Health bar dimensions
+        const barWidth = ENEMY_HEALTH_BAR.width;
+        const barHeight = ENEMY_HEALTH_BAR.height;
+        const barX = enemy.x - barWidth / 2;
+        const barY = enemy.y - enemy.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset; // Position above enemy
+        
+        // Clear previous drawing
+        healthBar.clear();
+        
+        // Draw background (black)
+        healthBar.fillStyle(0x000000, 0.8);
+        healthBar.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Calculate health percentage
+        const healthPercent = currentHealth / maxHealth;
+        
+        // Choose color based on health percentage
+        let healthColor;
+        if (healthPercent > 0.6) {
+            healthColor = 0x00ff00; // Green
+        } else if (healthPercent > 0.3) {
+            healthColor = 0xffff00; // Yellow
+        } else {
+            healthColor = 0xff0000; // Red
+        }
+        
+        // Draw health bar (colored based on health)
+        healthBar.fillStyle(healthColor, 1);
+        healthBar.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+        
+        // Draw border (white)
+        healthBar.lineStyle(1, 0xffffff, 0.8);
+        healthBar.strokeRect(barX, barY, barWidth, barHeight);
+    }
+    
+    destroyHealthBar(enemy) {
+        const healthBar = this.enemyHealthBars.get(enemy);
+        if (healthBar) {
+            healthBar.destroy();
+            this.enemyHealthBars.delete(enemy);
+        }
+    }
+    
+    updatePlayerShieldBar() {
+        if (!this.playerShieldBar || !this.player || !this.player.active) {
+            return;
+        }
+        
+        // Calculate shield bar dimensions and position
+        const barWidth = PLAYER_HEALTH_BAR.width; // Same width as health bar
+        const barHeight = PLAYER_HEALTH_BAR.height;
+        const barX = this.player.x - barWidth / 2;
+        // Position shield bar above health bar (health bar offset + bar height + small gap)
+        const barY = this.player.y - this.player.displayHeight / 2 - PLAYER_HEALTH_BAR.yOffset - 5 - barHeight - 2;
+        
+        // Clear previous drawing
+        this.playerShieldBar.clear();
+        
+        // Draw background (black)
+        this.playerShieldBar.fillStyle(0x000000, 0.8);
+        this.playerShieldBar.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Calculate segments
+        const maxSegments = this.playerStats.maxShields;
+        const currentSegments = this.playerStats.shields;
+        const segmentWidth = (barWidth - (maxSegments - 1) * PLAYER_HEALTH_BAR.segmentGap) / maxSegments;
+        
+        // Calculate shield percentage for color
+        const shieldPercent = currentSegments / maxSegments;
+        
+        // Choose color based on shield percentage (cyan/blue theme for shields)
+        let shieldColor;
+        if (shieldPercent > 0.5) {
+            shieldColor = 0x00FFFF; // Cyan - full shields
+        } else if (shieldPercent > 0.25) {
+            shieldColor = 0x9999FF; // Light blue - medium shields
+        } else {
+            shieldColor = 0xFF00FF; // Magenta - low shields
+        }
+        
+        // Draw filled segments
+        this.playerShieldBar.fillStyle(shieldColor, 1);
+        for (let i = 0; i < currentSegments; i++) {
+            const segmentX = barX + i * (segmentWidth + PLAYER_HEALTH_BAR.segmentGap);
+            this.playerShieldBar.fillRect(segmentX, barY, segmentWidth, barHeight);
+        }
+        
+        // Draw segment dividers
+        this.playerShieldBar.lineStyle(1, 0xffffff, 0.5);
+        for (let i = 1; i < maxSegments; i++) {
+            const dividerX = barX + i * (segmentWidth + PLAYER_HEALTH_BAR.segmentGap) - PLAYER_HEALTH_BAR.segmentGap / 2;
+            this.playerShieldBar.lineBetween(dividerX, barY, dividerX, barY + barHeight);
+        }
+        
+        // Draw border (white)
+        this.playerShieldBar.lineStyle(1, 0xffffff, 0.8);
+        this.playerShieldBar.strokeRect(barX, barY, barWidth, barHeight);
+    }
+    
+    updatePlayerHealthBar() {
+        if (!this.playerHealthBar || !this.player || !this.player.active) {
+            return;
+        }
+        
+        // Calculate health bar dimensions and position
+        const barWidth = PLAYER_HEALTH_BAR.width;
+        const barHeight = PLAYER_HEALTH_BAR.height;
+        const barX = this.player.x - barWidth / 2;
+        const barY = this.player.y - this.player.displayHeight / 2 - PLAYER_HEALTH_BAR.yOffset - 5; // Extra offset above player
+        
+        // Clear previous drawing
+        this.playerHealthBar.clear();
+        
+        // Draw background (black)
+        this.playerHealthBar.fillStyle(0x000000, 0.8);
+        this.playerHealthBar.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Calculate segments
+        const maxSegments = this.playerStats.maxHealth;
+        const currentSegments = this.playerStats.health;
+        const segmentWidth = (barWidth - (maxSegments - 1) * PLAYER_HEALTH_BAR.segmentGap) / maxSegments;
+        
+        // Calculate health percentage for color
+        const healthPercent = currentSegments / maxSegments;
+        
+        // Choose color based on health percentage
+        let healthColor;
+        if (healthPercent > 0.5) {
+            healthColor = 0x00ff00; // Green
+        } else if (healthPercent > 0.25) {
+            healthColor = 0xffff00; // Yellow
+        } else {
+            healthColor = 0xff0000; // Red
+        }
+        
+        // Draw filled segments
+        this.playerHealthBar.fillStyle(healthColor, 1);
+        for (let i = 0; i < currentSegments; i++) {
+            const segmentX = barX + i * (segmentWidth + PLAYER_HEALTH_BAR.segmentGap);
+            this.playerHealthBar.fillRect(segmentX, barY, segmentWidth, barHeight);
+        }
+        
+        // Draw segment dividers
+        this.playerHealthBar.lineStyle(1, 0xffffff, 0.5);
+        for (let i = 1; i < maxSegments; i++) {
+            const dividerX = barX + i * (segmentWidth + PLAYER_HEALTH_BAR.segmentGap) - PLAYER_HEALTH_BAR.segmentGap / 2;
+            this.playerHealthBar.lineBetween(dividerX, barY, dividerX, barY + barHeight);
+        }
+        
+        // Draw border (white)
+        this.playerHealthBar.lineStyle(1, 0xffffff, 0.8);
+        this.playerHealthBar.strokeRect(barX, barY, barWidth, barHeight);
     }
     
     playerHit(player, bullet) {
@@ -1065,19 +1694,17 @@ class Level1Scene extends Phaser.Scene {
                 this.activePowerUps.push({
                     type: type,
                     effect: config.effect,
-                    endTime: this.time.now + config.duration,
-                    originalValue: this.playerStats.fireRate
+                    endTime: this.time.now + config.duration
                 });
-                this.playerStats.fireRate = this.playerStats.fireRate * (1 - config.amount);
+                this.playerStats.fireRate = this.baseFireRate * (1 - config.amount);
                 break;
             case 'increase_speed':
                 this.activePowerUps.push({
                     type: type,
                     effect: config.effect,
-                    endTime: this.time.now + config.duration,
-                    originalValue: this.playerStats.speed
+                    endTime: this.time.now + config.duration
                 });
-                this.playerStats.speed = this.playerStats.speed * config.amount;
+                this.playerStats.speed = this.baseSpeed * config.amount;
                 break;
             case 'score_multiplier':
                 this.activePowerUps.push({
@@ -1145,23 +1772,50 @@ class Level1Scene extends Phaser.Scene {
     startNextWave() {
         this.currentWave++;
         const waveKey = `wave${this.currentWave}`;
-        const waveConfig = WaveConfig.level1[waveKey];
+        const levelKey = `level${this.levelNumber}`
+        const levelConfig = WaveConfig[levelKey]
+        
+        if (!levelConfig) {
+            console.warn(`No wave config found for ${levelKey}`)
+            this.victory()
+            return
+        }
+        
+        const waveConfig = levelConfig[waveKey];
         
         if (!waveConfig) {
-            // Check for boss wave
-            if (this.currentWave > WaveConfig.level1.bossWave.threshold) {
-                this.startBossFight();
+            // Check for boss wave - spawn boss as regular enemy
+            if (levelConfig.bossWave && this.currentWave > levelConfig.bossWave.threshold) {
+                this.spawnBossAsEnemy(levelConfig.bossWave.type);
                 return;
             }
-            // No more waves, victory
-            this.victory();
+            // No more waves - mark this as the final wave
+            // Victory will trigger when all enemies are defeated
+            this.isFinalWave = true;
+            this.checkVictoryCondition();
             return;
         }
         
         this.isWaveActive = true;
         this.enemiesSpawned = 0;
         
-        console.log(`Starting Wave ${this.currentWave}`);
+        // Initialize wave spawn pool based on shipCounts
+        this.waveSpawnPool = [];
+        if (waveConfig.shipCounts) {
+            // Build spawn pool from shipCounts specification
+            for (const [shipType, count] of Object.entries(waveConfig.shipCounts)) {
+                for (let i = 0; i < count; i++) {
+                    this.waveSpawnPool.push(shipType);
+                }
+            }
+            // Shuffle the spawn pool for variety
+            Phaser.Utils.Array.Shuffle(this.waveSpawnPool);
+        } else {
+            // Fallback to old behavior if shipCounts not specified
+            this.waveSpawnPool = null;
+        }
+        
+        console.log(`Starting Wave ${this.currentWave}`, waveConfig.shipCounts || waveConfig.enemyTypes);
         
         // Spawn enemies for this wave
         this.waveTimer = this.time.addEvent({
@@ -1177,14 +1831,16 @@ class Level1Scene extends Phaser.Scene {
             loop: true
         });
         
-        // Spawn escape pods during wave
-        this.podTimer = this.time.addEvent({
-            delay: PodConfig.spawnRate,
-            callback: () => {
-                this.spawnEscapePod();
-            },
-            loop: true
-        });
+        // Spawn escape pods during wave (except for level 11 - testing level)
+        if (this.levelNumber !== 11) {
+            this.podTimer = this.time.addEvent({
+                delay: PodConfig.spawnRate,
+                callback: () => {
+                    this.spawnEscapePod();
+                },
+                loop: true
+            });
+        }
         
         // End wave after duration
         this.time.delayedCall(waveConfig.duration, () => {
@@ -1202,16 +1858,64 @@ class Level1Scene extends Phaser.Scene {
             this.podTimer.remove();
         }
         
+        // Don't start next wave if this is the final wave (boss wave)
+        // Boss waves end when all enemies are defeated, not by timer
+        // checkVictoryCondition() will trigger victory() when all enemies are gone
+        if (this.isFinalWave) {
+            this.checkVictoryCondition();
+            return; // Prevent scheduling another wave
+        }
+        
         // Short break before next wave
-        this.time.delayedCall(3000, () => {
+        this.time.delayedCall(WaveConfig.betweenWaveDelay, () => {
             this.startNextWave();
         });
     }
     
+    skipToNextWave() {
+        console.log('Level1Scene: Skipping to next wave (testing feature)');
+        
+        // Clear all enemies and enemy bullets
+        this.enemies.clear(true, true);
+        this.enemyBullets.clear(true, true);
+        
+        // Clear escape pods
+        this.escapePods.clear(true, true);
+        
+        // Clear power-ups
+        this.powerUps.clear(true, true);
+        
+        // Clear wave timers
+        if (this.waveTimer) {
+            this.waveTimer.remove();
+            this.waveTimer = null;
+        }
+        if (this.podTimer) {
+            this.podTimer.remove();
+            this.podTimer = null;
+        }
+        
+        // End current wave and immediately start next wave
+        this.isWaveActive = false;
+        this.startNextWave();
+    }
+    
     spawnEnemy(waveConfig) {
-        // Pick random enemy type from wave config
-        const enemyType = Phaser.Utils.Array.GetRandom(waveConfig.enemyTypes);
+        // Pick enemy type from spawn pool if available, otherwise random from enemyTypes
+        let enemyType;
+        if (this.waveSpawnPool && this.waveSpawnPool.length > 0) {
+            enemyType = this.waveSpawnPool.pop();
+        } else {
+            enemyType = Phaser.Utils.Array.GetRandom(waveConfig.enemyTypes);
+        }
+        
         const config = EnemyConfig[enemyType];
+        
+        // Special handling for scout formations
+        if (enemyType === 'scout') {
+            this.spawnScoutFormation(config);
+            return;
+        }
         
         // Random spawn position at top
         const x = Phaser.Math.Between(50, this.cameraWidth - 50);
@@ -1220,6 +1924,9 @@ class Level1Scene extends Phaser.Scene {
         let texture = 'enemy-fighter';
         if (enemyType === 'cruiser') texture = 'enemy-cruiser';
         if (enemyType === 'battleship') texture = 'enemy-battleship';
+        if (enemyType === 'weaponPlatform') texture = 'weapon-platform';
+        if (enemyType === 'asteroid') texture = 'asteroid';
+        if (enemyType === 'crystalNode') texture = 'crystal-node';
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -1228,6 +1935,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.setVisible(true);
             enemy.enemyType = enemyType;
             enemy.health = config.health;
+            enemy.shields = config.shields || 0; // Initialize shields
             enemy.points = config.points;
             enemy.fireRate = config.fireRate;
             enemy.lastFired = 0;
@@ -1237,11 +1945,190 @@ class Level1Scene extends Phaser.Scene {
             enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
+            // Scale enemy sprites to correct size while maintaining aspect ratio
+            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid' || enemyType === 'crystalNode') && enemy.width > 0) {
+                let targetWidth = config.size.width;
+                
+                // For asteroids, randomly assign a size variant (small, medium, large)
+                // This overrides the base config values (health: 3, points: 10) to provide variety
+                if (enemyType === 'asteroid') {
+                    const sizeType = Phaser.Utils.Array.GetRandom(['small', 'medium', 'large']);
+                    enemy.asteroidSize = sizeType;
+                    
+                    // Set size-based properties
+                    switch (sizeType) {
+                        case 'small':
+                            targetWidth = 25; // Small asteroids
+                            enemy.health = 1;
+                            enemy.points = 5;
+                            break;
+                        case 'medium':
+                            targetWidth = 40; // Medium asteroids (base config size)
+                            enemy.health = 3;
+                            enemy.points = 10;
+                            break;
+                        case 'large':
+                            targetWidth = 60; // Large asteroids
+                            enemy.health = 5;
+                            enemy.points = 20;
+                            break;
+                    }
+                }
+                
+                // Scale sprites to their configured target width
+                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px
+                // WeaponPlatform: 1227x1219px → 40px
+                // Asteroids: Size variant determines width (small: 25px, medium: 40px, large: 60px)
+                const scale = targetWidth / enemy.width;
+                enemy.setScale(scale);
+            }
+            
+            // Add rotation for asteroids
+            if (enemyType === 'asteroid') {
+                enemy.rotationSpeed = Phaser.Math.FloatBetween(-0.5, 0.5); // Random rotation speed
+            }
+            
             // Set initial velocity so enemy moves onto screen
-            enemy.body.setVelocity(0, config.speed);
+            // For stationary enemies (speed=0), use a default scroll speed so they enter the screen
+            const verticalSpeed = config.speed > 0 ? config.speed : DEFAULT_VERTICAL_SCROLL_SPEED;
+            enemy.body.setVelocity(0, verticalSpeed);
             
             // Disable collision detection initially - will be enabled when enemy enters screen
             enemy.body.checkCollision.none = true;
+            
+            // Create health bar for this enemy (excludes asteroids)
+            this.createHealthBar(enemy);
+        }
+    }
+    
+    spawnBossAsEnemy(bossType = 'boss') {
+        // Mark as final wave since boss spawns after all waves
+        this.isFinalWave = true;
+        
+        // Play boss alert sound
+        this.playSound('boss');
+        
+        // Get boss config
+        const config = EnemyConfig[bossType];
+        
+        // Spawn position - top center
+        const x = this.cameraWidth / 2;
+        const y = -100;
+        
+        // Use appropriate texture for boss type
+        let texture = 'boss-core';
+        if (bossType === 'crystalNode') {
+            texture = 'crystal-node';
+        }
+        
+        const boss = this.enemies.get(x, y, texture);
+        
+        if (boss) {
+            boss.setActive(true);
+            boss.setVisible(true);
+            boss.enemyType = bossType;
+            boss.health = config.health;
+            boss.shields = config.shields || 0;
+            boss.points = config.points;
+            boss.fireRate = config.fireRate;
+            boss.lastFired = 0;
+            boss.invincibleUntil = 0;
+            boss.movementPattern = config.movementPattern;
+            boss.patternOffset = Math.random() * Math.PI * 2;
+            boss.hasEnteredScreen = false;
+            boss.initialSpeed = config.speed;
+            
+            // Scale boss sprite to correct size
+            if (boss.width > 0) {
+                const targetWidth = config.size.width;
+                const scale = targetWidth / boss.width;
+                boss.setScale(scale);
+            }
+            
+            // Set initial velocity - boss enters from top
+            boss.body.setVelocity(0, config.speed);
+            
+            // Disable collision detection initially - will be enabled when boss enters screen
+            boss.body.checkCollision.none = true;
+            
+            // Create health bar for boss
+            this.createHealthBar(boss);
+            
+            // Move boss into position with tween animation
+            this.tweens.add({
+                targets: boss,
+                y: 150,
+                duration: 3000,
+                ease: 'Power2'
+            });
+        }
+    }
+    
+    spawnScoutFormation(config) {
+        // Spawn scouts in a formation with consistent horizontal position
+        const formationSize = config.formationSize || 3;
+        const formationSpacing = config.formationSpacing || 30;
+        const x = Phaser.Math.Between(50, this.cameraWidth - 50);
+        
+        // Choose one diagonal direction for the entire formation
+        const formationDiagonalDirection = Math.random() < 0.5 ? -1 : 1;
+        
+        // Get unique formation ID for this group
+        const formationId = this.scoutFormationId++;
+        
+        // Store formation members for efficient communication
+        const formationMembers = [];
+        
+        for (let i = 0; i < formationSize; i++) {
+            const y = -50 - (i * formationSpacing); // Each scout spawns slightly above the previous one
+            const scout = this.enemies.get(x, y, 'enemy-fighter'); // Use fighter texture
+            
+            if (scout) {
+                scout.setActive(true);
+                scout.setVisible(true);
+                scout.enemyType = 'scout';
+                scout.health = config.health;
+                scout.shields = config.shields || 0;
+                scout.points = config.points;
+                scout.fireRate = config.fireRate;
+                scout.lastFired = 0;
+                scout.invincibleUntil = 0;
+                scout.movementPattern = config.movementPattern;
+                scout.patternOffset = Math.random() * Math.PI * 2;
+                scout.hasEnteredScreen = false;
+                scout.initialSpeed = config.speed;
+                scout.formationIndex = i; // Track position in formation
+                scout.formationId = formationId; // Unique ID for this formation group
+                
+                // Scout formation flight phases
+                scout.formationPhase = 'straight'; // 'straight', 'circle', 'diagonal'
+                scout.circleStartAngle = 0;
+                scout.circleCenter = { x: 0, y: 0 };
+                scout.circleRadius = 50;
+                scout.diagonalDirection = formationDiagonalDirection; // Shared direction for entire formation
+                scout.leaderCircleStartY = undefined; // Will be set by the formation leader
+                scout.formationMembers = formationMembers; // Reference to all members in formation
+                scout.hasNotifiedFollowers = false; // Track if leader has notified followers
+                
+                // Scale scout to half the size of fighter
+                if (scout.width > 0) {
+                    const targetWidth = config.size.width;
+                    const scale = targetWidth / scout.width;
+                    scout.setScale(scale);
+                }
+                
+                // Set initial velocity
+                scout.body.setVelocity(0, config.speed);
+                
+                // Disable collision detection initially
+                scout.body.checkCollision.none = true;
+                
+                // Create health bar for this scout
+                this.createHealthBar(scout);
+                
+                // Add to formation members array
+                formationMembers.push(scout);
+            }
         }
     }
     
@@ -1254,17 +2141,10 @@ class Level1Scene extends Phaser.Scene {
         if (pod) {
             pod.setActive(true);
             pod.setVisible(true);
+            pod.setScale(PodConfig.scale);
+            pod.setAlpha(1); // Fully visible at all times
             pod.health = PodConfig.health;
             pod.body.setVelocity(0, PodConfig.speed);
-            
-            // Flashing effect
-            this.tweens.add({
-                targets: pod,
-                alpha: 0.3,
-                duration: PodConfig.flashRate,
-                yoyo: true,
-                repeat: -1
-            });
         }
     }
     
@@ -1305,18 +2185,47 @@ class Level1Scene extends Phaser.Scene {
                 }
             }
             
+            // Rotate asteroids
+            if (enemy.enemyType === 'asteroid' && enemy.rotationSpeed) {
+                enemy.rotation += enemy.rotationSpeed * ASTEROID_ROTATION_FACTOR;
+            }
+            
+            // Pulsing effect for crystalNode
+            if (enemy.enemyType === 'crystalNode') {
+                if (enemy.pulseScale === undefined) {
+                    enemy.pulseScale = 1.0;
+                    enemy.pulseDirection = 1;
+                    enemy.baseScale = enemy.scaleX || 1.0; // Store base scale from spawn
+                }
+                
+                // Update pulse scale with boundary checking
+                const newScale = enemy.pulseScale + (enemy.pulseDirection * CRYSTAL_PULSE.speed);
+                if (newScale >= CRYSTAL_PULSE.maxScale) {
+                    enemy.pulseScale = CRYSTAL_PULSE.maxScale;
+                    enemy.pulseDirection = -1;
+                } else if (newScale <= CRYSTAL_PULSE.minScale) {
+                    enemy.pulseScale = CRYSTAL_PULSE.minScale;
+                    enemy.pulseDirection = 1;
+                } else {
+                    enemy.pulseScale = newScale;
+                }
+                
+                // Apply pulse as a multiplier on the base scale
+                enemy.setScale(enemy.baseScale * enemy.pulseScale);
+            }
+            
             // Update movement pattern
             this.updateEnemyMovement(enemy);
             
-            // Enemy shooting - only if on screen
-            if (enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
+            // Enemy shooting - only if on screen and has weapons (scouts and asteroids don't shoot)
+            if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
                 this.enemyFire(enemy);
                 enemy.lastFired = time;
             }
             
-            // Target escape pods - only if on screen
+            // Target escape pods - only if on screen and has weapons
             const nearestPod = this.findNearestPod(enemy);
-            if (enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
+            if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.fireRate && enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
                 // Shoot at pod only if fire rate allows
                 if (time > enemy.lastFired + enemy.fireRate) {
                     const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y);
@@ -1335,11 +2244,107 @@ class Level1Scene extends Phaser.Scene {
                     }
                 }
             }
+            
+            // Update health bar position
+            this.updateHealthBar(enemy);
         });
+    }
+    
+    findNearbyAsteroids(enemy, searchRadius = 150) {
+        // Only check for asteroid avoidance if this is not an asteroid itself
+        if (enemy.enemyType === 'asteroid') {
+            return [];
+        }
+        
+        const nearbyAsteroids = [];
+        this.enemies.children.each((other) => {
+            if (!other.active || other.enemyType !== 'asteroid') return;
+            
+            const distance = Phaser.Math.Distance.Between(enemy.x, enemy.y, other.x, other.y);
+            
+            // Adjust search radius based on asteroid size
+            let effectiveSearchRadius = searchRadius;
+            if (other.asteroidSize === 'large') {
+                effectiveSearchRadius = searchRadius * 1.3;
+            } else if (other.asteroidSize === 'small') {
+                effectiveSearchRadius = searchRadius * 0.8;
+            }
+            
+            if (distance < effectiveSearchRadius) {
+                nearbyAsteroids.push({
+                    asteroid: other,
+                    distance: distance,
+                    angle: Phaser.Math.Angle.Between(enemy.x, enemy.y, other.x, other.y),
+                    size: other.asteroidSize || 'medium'
+                });
+            }
+        });
+        
+        return nearbyAsteroids;
+    }
+    
+    applyAsteroidAvoidance(enemy) {
+        // Skip avoidance for asteroids themselves and scouts in formation phase
+        if (enemy.enemyType === 'asteroid') return;
+        if (enemy.enemyType === 'scout' && enemy.formationPhase && enemy.formationPhase !== 'straight') return;
+        
+        const nearbyAsteroids = this.findNearbyAsteroids(enemy, ASTEROID_AVOIDANCE_RADIUS);
+        
+        if (nearbyAsteroids.length > 0) {
+            // Store the original speed magnitude
+            const currentVelX = enemy.body.velocity.x;
+            const currentVelY = enemy.body.velocity.y;
+            const originalSpeed = Math.sqrt(currentVelX * currentVelX + currentVelY * currentVelY);
+            
+            // Calculate avoidance vector by summing repulsion from all nearby asteroids
+            let avoidanceX = 0;
+            let avoidanceY = 0;
+            
+            nearbyAsteroids.forEach(({ asteroid, distance, angle, size }) => {
+                // Stronger avoidance for closer asteroids
+                let baseStrength = (ASTEROID_AVOIDANCE_RADIUS - distance) / ASTEROID_AVOIDANCE_RADIUS;
+                
+                // Adjust avoidance strength based on asteroid size
+                if (size === 'large') {
+                    baseStrength *= 1.5; // Larger asteroids have stronger avoidance
+                } else if (size === 'small') {
+                    baseStrength *= 0.7; // Smaller asteroids have weaker avoidance
+                }
+                
+                const avoidAngle = angle + Math.PI; // Opposite direction
+                
+                avoidanceX += Math.cos(avoidAngle) * baseStrength * ASTEROID_AVOIDANCE_FORCE;
+                avoidanceY += Math.sin(avoidAngle) * baseStrength * ASTEROID_AVOIDANCE_FORCE;
+            });
+            
+            // Apply avoidance to velocity
+            const newVelX = currentVelX + avoidanceX;
+            const newVelY = currentVelY + avoidanceY;
+            
+            // Normalize the new velocity to maintain the original speed
+            const newSpeed = Math.sqrt(newVelX * newVelX + newVelY * newVelY);
+            if (originalSpeed === 0) {
+                // Enemy was stationary, keep it stationary despite avoidance forces
+                enemy.body.setVelocity(0, 0);
+            } else if (newSpeed > 0) {
+                // Scale the velocity to match the original speed
+                const scale = originalSpeed / newSpeed;
+                enemy.body.setVelocity(
+                    newVelX * scale,
+                    newVelY * scale
+                );
+            } else {
+                // New velocity is zero but original wasn't - maintain original direction
+                enemy.body.setVelocity(currentVelX, currentVelY);
+            }
+        }
     }
     
     updateEnemyMovement(enemy) {
         const config = EnemyConfig[enemy.enemyType];
+        
+        // Apply asteroid avoidance before normal movement pattern
+        this.applyAsteroidAvoidance(enemy);
         
         switch (enemy.movementPattern) {
             case 'straight':
@@ -1362,35 +2367,197 @@ class Level1Scene extends Phaser.Scene {
                 break;
             case 'horizontal':
                 // Move horizontally at top of screen
-                if (enemy.y < 100) {
+                // Once battleship reaches or passes y=100, stop vertical movement and start horizontal pattern
+                if (enemy.y >= 100) {
                     enemy.body.setVelocityY(0);
-                    if (enemy.x < 100 || enemy.x > this.cameraWidth - 100) {
+                    // Bounce off edges: reverse direction only when at edge AND moving toward it
+                    if ((enemy.x < 100 && enemy.body.velocity.x < 0) || 
+                        (enemy.x > this.cameraWidth - 100 && enemy.body.velocity.x > 0)) {
                         enemy.body.setVelocityX(-enemy.body.velocity.x);
                     }
                     if (enemy.body.velocity.x === 0) {
                         enemy.body.setVelocityX(config.speed);
                     }
                 }
+                // Otherwise, let it continue moving down (velocity already set in spawn)
+                break;
+            case 'stationary':
+                // Weapon platform - stays in place horizontally, moves down with screen scroll only
+                enemy.body.setVelocityX(0);
+                // Keep default downward velocity for scrolling effect
+                break;
+            case 'formation':
+                // Scouts fly in formation with three phases
+                // Phase 1: Straight down until 1/3 of screen
+                // Phase 2: Circle pattern once
+                // Phase 3: Diagonal towards bottom
+                
+                if (enemy.formationPhase === 'straight') {
+                    // Keep moving straight down
+                    enemy.body.setVelocityX(0);
+                    
+                    // Leader (formationIndex = 0) triggers transition for the formation
+                    if (enemy.formationIndex === 0 && enemy.y >= this.cameraHeight / SCOUT_CIRCLE_TRIGGER_FRACTION) {
+                        // Leader initiates circle transition
+                        enemy.formationPhase = 'circle';
+                        // Set circle center so current position is at the top of the circle
+                        enemy.circleCenter.x = enemy.x;
+                        enemy.circleCenter.y = enemy.y + enemy.circleRadius;
+                        
+                        // Store the leader's Y position when starting circle for followers
+                        enemy.leaderCircleStartY = enemy.y;
+                        
+                        // Calculate starting angle based on current position relative to center
+                        // Since we're moving down, we want to start from the top of the circle
+                        enemy.circleCurrentAngle = -Math.PI / 2;
+                        
+                        // Zero out velocity so body.reset works smoothly
+                        enemy.body.setVelocity(0, 0);
+                        
+                        // Notify other scouts in formation (only once)
+                        if (!enemy.hasNotifiedFollowers && enemy.formationMembers) {
+                            enemy.hasNotifiedFollowers = true; // Set flag first for idempotency
+                            enemy.formationMembers.forEach((member) => {
+                                if (member.active && member !== enemy) {
+                                    member.leaderCircleStartY = enemy.leaderCircleStartY;
+                                }
+                            });
+                        }
+                    } else if (enemy.formationIndex > 0 && enemy.leaderCircleStartY !== undefined) {
+                        // Follower scouts transition when they reach the same Y position where leader started
+                        if (enemy.y >= enemy.leaderCircleStartY) {
+                            enemy.formationPhase = 'circle';
+                            // Set circle center so current position is at the top of the circle
+                            enemy.circleCenter.x = enemy.x;
+                            enemy.circleCenter.y = enemy.y + enemy.circleRadius;
+                            
+                            // Start at top of circle for smooth continuation
+                            enemy.circleCurrentAngle = -Math.PI / 2;
+                            
+                            // Zero out velocity so body.reset works smoothly
+                            enemy.body.setVelocity(0, 0);
+                        }
+                    }
+                } else if (enemy.formationPhase === 'circle') {
+                    // Fly in a circle once with smooth movement
+                    const angularSpeed = 0.03; // Slower for smoother movement
+                    enemy.circleCurrentAngle += angularSpeed;
+                    
+                    // Calculate position on circle
+                    const newX = enemy.circleCenter.x + Math.cos(enemy.circleCurrentAngle) * enemy.circleRadius;
+                    const newY = enemy.circleCenter.y + Math.sin(enemy.circleCurrentAngle) * enemy.circleRadius;
+                    
+                    // Update physics body position to maintain proper collision detection
+                    enemy.body.reset(newX, newY);
+                    
+                    // Check if completed one full circle (from -PI/2 to 3*PI/2)
+                    if (enemy.circleCurrentAngle >= Math.PI * 1.5) {
+                        // Transition to diagonal phase
+                        enemy.formationPhase = 'diagonal';
+                    }
+                } else if (enemy.formationPhase === 'diagonal') {
+                    // Fly diagonally towards bottom of screen
+                    // Use the shared diagonal direction for the whole formation
+                    const diagonalSpeed = config.speed;
+                    const horizontalSpeed = diagonalSpeed * 0.5 * enemy.diagonalDirection;
+                    enemy.body.setVelocity(horizontalSpeed, diagonalSpeed);
+                }
                 break;
         }
     }
     
     enemyFire(enemy) {
-        const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+        const config = EnemyConfig[enemy.enemyType];
         
-        if (bullet) {
-            bullet.setActive(true);
-            bullet.setVisible(true);
+        // Check if this enemy has burst attack ability
+        if (config.burstCount) {
+            const burstCount = config.burstCount;
+            const burstDelay = config.burstDelay || 200;
             
-            // Re-enable physics body if it was disabled
-            if (bullet.body) {
-                bullet.body.enable = true;
+            // Fire multiple bullets with delays (burst attack)
+            for (let burst = 0; burst < burstCount; burst++) {
+                this.time.delayedCall(burst * burstDelay, () => {
+                    // Check if enemy is still active before firing
+                    if (!enemy || !enemy.active) return;
+                    
+                    // Fire single bullet straight down
+                    const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+                    if (bullet) {
+                        bullet.setActive(true);
+                        bullet.setVisible(true);
+                        // Re-enable physics body if it was disabled
+                        if (bullet.body) {
+                            bullet.body.enable = true;
+                            bullet.body.setVelocity(0, config.bulletSpeed);
+                        }
+                    }
+                });
             }
+            return;
+        }
+        
+        // Check if this enemy has spread shot ability
+        if (config.spreadShot) {
+            const spreadCount = config.spreadCount || 5;
+            const halfSpread = Math.floor(spreadCount / 2);
             
-            // Aim at player
-            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-            const speed = EnemyConfig[enemy.enemyType].bulletSpeed;
-            bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+            for (let i = -halfSpread; i <= halfSpread; i++) {
+                const angle = Math.PI / 2 + (i * 0.2);
+                const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+                if (bullet) {
+                    bullet.setActive(true);
+                    bullet.setVisible(true);
+                    // Re-enable physics body if it was disabled
+                    if (bullet.body) {
+                        bullet.body.enable = true;
+                        bullet.body.setVelocity(Math.cos(angle) * config.bulletSpeed, Math.sin(angle) * config.bulletSpeed);
+                    }
+                }
+            }
+            return;
+        }
+        
+        // Check if this enemy has scattershot ability
+        if (config.scattershot) {
+            // Fire bullets in all directions (360 degrees)
+            const bulletCount = config.scattershotCount || 6;
+            const angleStep = (Math.PI * 2) / bulletCount;
+            
+            for (let i = 0; i < bulletCount; i++) {
+                const angle = angleStep * i;
+                const bullet = this.enemyBullets.get(enemy.x, enemy.y, 'enemy-bullet');
+                
+                if (bullet) {
+                    bullet.setActive(true);
+                    bullet.setVisible(true);
+                    
+                    // Re-enable physics body if it was disabled
+                    if (bullet.body) {
+                        bullet.body.enable = true;
+                    }
+                    
+                    const speed = config.bulletSpeed;
+                    bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                }
+            }
+        } else {
+            // Standard targeting fire
+            const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+            
+            if (bullet) {
+                bullet.setActive(true);
+                bullet.setVisible(true);
+                
+                // Re-enable physics body if it was disabled
+                if (bullet.body) {
+                    bullet.body.enable = true;
+                }
+                
+                // Aim at player
+                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+                const speed = config.bulletSpeed;
+                bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+            }
         }
     }
     
@@ -1498,6 +2665,11 @@ class Level1Scene extends Phaser.Scene {
     }
     
     completePodRescue(pod) {
+        // CRITICAL: Deactivate immediately to prevent further updates in the same frame
+        // This prevents race conditions when rescuing pods at the safe zone boundary
+        pod.setActive(false);
+        pod.setVisible(false);
+        
         // Complete the rescue
         this.podsRescued++;
         this.addScore(PodConfig.points);
@@ -1517,8 +2689,6 @@ class Level1Scene extends Phaser.Scene {
         this.podRescueTracking.delete(pod);
         
         // Remove the pod
-        pod.setActive(false);
-        pod.setVisible(false);
         pod.destroy();
         
         console.log('Pod rescued!');
@@ -1531,10 +2701,24 @@ class Level1Scene extends Phaser.Scene {
                 // Revert effect
                 switch (powerUp.effect) {
                     case 'increase_fire_rate':
-                        this.playerStats.fireRate = powerUp.originalValue;
+                        // Check if there are other active fire rate power-ups
+                        const otherFireRatePowerUps = this.activePowerUps.filter(
+                            p => p.effect === 'increase_fire_rate' && p !== powerUp
+                        );
+                        if (otherFireRatePowerUps.length === 0) {
+                            // No other fire rate power-ups, reset to base
+                            this.playerStats.fireRate = this.baseFireRate;
+                        }
                         break;
                     case 'increase_speed':
-                        this.playerStats.speed = powerUp.originalValue;
+                        // Check if there are other active speed power-ups
+                        const otherSpeedPowerUps = this.activePowerUps.filter(
+                            p => p.effect === 'increase_speed' && p !== powerUp
+                        );
+                        if (otherSpeedPowerUps.length === 0) {
+                            // No other speed power-ups, reset to base
+                            this.playerStats.speed = this.baseSpeed;
+                        }
                         break;
                     case 'score_multiplier':
                         this.scoreMultiplier /= powerUp.multiplierAmount;
@@ -1565,6 +2749,7 @@ class Level1Scene extends Phaser.Scene {
         // Clean up off-screen enemies
         this.enemies.children.each((enemy) => {
             if (enemy.active && enemy.y > this.cameraHeight + 50) {
+                this.destroyHealthBar(enemy);
                 enemy.setActive(false);
                 enemy.setVisible(false);
                 enemy.destroy();
@@ -1643,448 +2828,26 @@ class Level1Scene extends Phaser.Scene {
         
         this.updateHUD();
         
-        // Jump to boss fight
+        // Jump to boss wave
         this.currentWave = 5;
-        this.startBossFight();
+        this.isWaveActive = false;
+        this.startNextWave();
     }
     
-    startBossFight() {
-        // Prevent duplicate boss spawns
-        if (this.isBossFight && this.boss) {
+    
+    checkVictoryCondition() {
+        // Only check victory if we're in the final wave
+        if (!this.isFinalWave) {
             return;
         }
         
-        this.isBossFight = true;
+        // Count active enemies (enemies that are alive and visible)
+        const activeEnemies = this.enemies.getChildren().filter(enemy => enemy.active).length;
         
-        // Play boss alert sound
-        this.playSound('boss');
-        
-        // Spawn boss
-        const x = this.cameraWidth / 2;
-        const y = -100;
-        
-        this.boss = this.physics.add.sprite(x, y, 'boss');
-        this.boss.setActive(true);
-        this.boss.setVisible(true);
-        // Ensure boss is rendered behind its components (generators/turrets)
-        this.boss.setDepth(RENDER_DEPTH.BOSS);
-        
-        // Initialize boss stats
-        this.boss.phase = 0;
-        this.boss.maxHealth = EnemyConfig.boss.health;
-        this.boss.health = EnemyConfig.boss.health;
-        this.boss.phaseHealth = EnemyConfig.boss.phases[0].health;
-        this.boss.invincibleUntil = 0; // Initialize invincibility timer
-        this.boss.generators = [];
-        this.boss.turrets = [];
-        this.boss.lastAttack = 0;
-        this.boss.attackRate = 2000;
-        this.boss.moveDirection = 1;
-        
-        // Move boss into position
-        this.tweens.add({
-            targets: this.boss,
-            y: 150,
-            duration: 3000,
-            ease: 'Power2'
-        });
-        
-        // Add collision - but boss should only be hittable in phase 3
-        this.physics.add.overlap(this.bullets, this.boss, this.hitBoss, null, this);
-        this.physics.add.overlap(this.player, this.boss, this.playerHitByBoss, null, this);
-        
-        // Start Phase 1: Shield Generators
-        this.time.delayedCall(3000, () => {
-            this.startBossPhase1();
-        });
-    }
-    
-    startBossPhase1() {
-        console.log('Boss Phase 1: Shield Generators');
-        this.boss.phase = 1;
-        
-        // Spawn shield generators around boss
-        const positions = [
-            { x: -60, y: -60 },
-            { x: 60, y: -60 },
-            { x: -60, y: 60 },
-            { x: 60, y: 60 }
-        ];
-        
-        positions.forEach((pos) => {
-            const generator = this.bossComponents.get(
-                this.boss.x + pos.x,
-                this.boss.y + pos.y,
-                'enemy-cruiser'
-            );
-            
-            if (generator) {
-                generator.setActive(true);
-                generator.setVisible(true);
-                generator.setScale(0.5);
-                generator.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
-                generator.health = EnemyConfig.boss.phases[0].generatorHealth;
-                generator.invincibleUntil = 0; // Initialize invincibility timer
-                generator.isBossComponent = true;
-                generator.isGenerator = true; // Mark as generator for collision routing
-                
-                // Ensure physics body is properly configured
-                if (generator.body) {
-                    generator.body.enable = true;
-                    generator.body.checkCollision.none = false;
-                }
-                
-                this.boss.generators.push(generator);
-            }
-        });
-    }
-    
-    startBossPhase2() {
-        console.log('Boss Phase 2: Turrets');
-        this.boss.phase = 2;
-        this.boss.phaseHealth = EnemyConfig.boss.phases[1].health;
-        
-        // Spawn turrets
-        const turretCount = 6;
-        for (let i = 0; i < turretCount; i++) {
-            const angle = (i / turretCount) * Math.PI * 2;
-            const radius = 100;
-            const turret = this.bossComponents.get(
-                this.boss.x + Math.cos(angle) * radius,
-                this.boss.y + Math.sin(angle) * radius,
-                'enemy-fighter'
-            );
-            
-            if (turret) {
-                turret.setActive(true);
-                turret.setVisible(true);
-                turret.setScale(0.7);
-                turret.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
-                turret.health = EnemyConfig.boss.phases[1].turretHealth;
-                turret.invincibleUntil = 0; // Initialize invincibility timer
-                turret.isBossComponent = true;
-                turret.isTurret = true; // Mark as turret for collision routing
-                turret.angle = angle;
-                
-                // Ensure physics body is properly configured
-                if (turret.body) {
-                    turret.body.enable = true;
-                    turret.body.checkCollision.none = false;
-                }
-                
-                this.boss.turrets.push(turret);
-            }
-        }
-    }
-    
-    startBossPhase3() {
-        console.log('Boss Phase 3: Core Exposed');
-        this.boss.phase = 3;
-        this.boss.phaseHealth = EnemyConfig.boss.phases[2].health;
-        
-        // Boss becomes more aggressive
-        this.boss.attackRate = 1000;
-    }
-    
-    updateBoss(time) {
-        if (!this.boss || !this.boss.active) return;
-        
-        // Boss horizontal movement
-        this.boss.x += this.boss.moveDirection * 2;
-        if (this.boss.x < 150 || this.boss.x > this.cameraWidth - 150) {
-            this.boss.moveDirection *= -1;
-        }
-        
-        // Update generators positions
-        if (this.boss.generators.length > 0) {
-            const positions = [
-                { x: -60, y: -60 },
-                { x: 60, y: -60 },
-                { x: -60, y: 60 },
-                { x: 60, y: 60 }
-            ];
-            this.boss.generators.forEach((gen, i) => {
-                if (gen && gen.active) {
-                    gen.x = this.boss.x + positions[i].x;
-                    gen.y = this.boss.y + positions[i].y;
-                }
-            });
-        }
-        
-        // Update turrets positions
-        if (this.boss.turrets.length > 0) {
-            this.boss.turrets.forEach((turret, i) => {
-                if (turret && turret.active) {
-                    const radius = 100;
-                    turret.x = this.boss.x + Math.cos(turret.angle) * radius;
-                    turret.y = this.boss.y + Math.sin(turret.angle) * radius;
-                }
-            });
-        }
-        
-        // Boss attacks
-        if (time > this.boss.lastAttack + this.boss.attackRate) {
-            this.bossAttack();
-            this.boss.lastAttack = time;
-        }
-    }
-    
-    bossAttack() {
-        if (this.boss.phase === 1 || this.boss.phase === 3) {
-            // Beam attack - spread of bullets
-            for (let i = -2; i <= 2; i++) {
-                const angle = Math.PI / 2 + (i * 0.2);
-                const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
-                if (bullet) {
-                    bullet.setActive(true);
-                    bullet.setVisible(true);
-                    // Re-enable physics body if it was disabled
-                    if (bullet.body) {
-                        bullet.body.enable = true;
-                    }
-                    bullet.body.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
-                }
-            }
-        }
-        
-        if (this.boss.phase === 2 || this.boss.phase === 3) {
-            // Rapid fire from turrets
-            this.boss.turrets.forEach((turret) => {
-                if (turret && turret.active) {
-                    const angle = Phaser.Math.Angle.Between(turret.x, turret.y, this.player.x, this.player.y);
-                    const bullet = this.enemyBullets.get(turret.x, turret.y, 'enemy-bullet');
-                    if (bullet) {
-                        bullet.setActive(true);
-                        bullet.setVisible(true);
-                        // Re-enable physics body if it was disabled
-                        if (bullet.body) {
-                            bullet.body.enable = true;
-                        }
-                        bullet.body.setVelocity(Math.cos(angle) * 250, Math.sin(angle) * 250);
-                    }
-                }
-            });
-        }
-        
-        if (this.boss.phase === 2) {
-            // Spawn minions based on config chance
-            const phase2Config = EnemyConfig.boss.phases[1];
-            if (Math.random() < phase2Config.minionSpawnChance) {
-                this.spawnEnemy({
-                    enemyTypes: ['fighter'],
-                    difficulty: 2
-                });
-            }
-        }
-    }
-    
-    hitBossComponent(bullet, component) {
-        // Route to appropriate handler based on component type
-        if (component.isGenerator) {
-            this.hitBossGenerator(bullet, component);
-        } else if (component.isTurret) {
-            this.hitBossTurret(bullet, component);
-        }
-    }
-    
-    hitBoss(bullet, boss) {
-        // Check if bullet is already inactive (already processed by another collision handler)
-        if (!bullet.active) {
-            return;
-        }
-        
-        // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < (boss.invincibleUntil || 0)) {
-            return; // Still invincible, ignore damage
-        }
-        
-        // Disable bullet using helper function
-        this.disableBulletPhysics(bullet);
-        
-        // Only damage in phase 3 (core exposed)
-        if (boss.phase === 3) {
-            boss.health -= 10;
-            boss.phaseHealth -= 10;
-            
-            // Set invincibility after taking damage
-            boss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
-            
-            if (boss.phaseHealth <= 0 || boss.health <= 0) {
-                this.defeatBoss();
-            }
-        }
-    }
-    
-    hitBossGenerator(bullet, generator) {
-        // Check if bullet is already inactive (already processed by another collision handler)
-        if (!bullet.active) {
-            return;
-        }
-        
-        // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < (generator.invincibleUntil || 0)) {
-            return; // Still invincible, ignore damage
-        }
-        
-        // Disable bullet using helper function
-        this.disableBulletPhysics(bullet);
-        
-        generator.health -= 10;
-        
-        // Set invincibility after taking damage
-        generator.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
-        
-        if (generator.health <= 0) {
-            this.createExplosion(generator.x, generator.y);
-            generator.setActive(false);
-            generator.setVisible(false);
-            generator.destroy();
-            
-            // Remove from array
-            const index = this.boss.generators.indexOf(generator);
-            if (index > -1) {
-                this.boss.generators.splice(index, 1);
-            }
-            
-            // Check if all generators destroyed
-            if (this.boss.generators.length === 0) {
-                this.startBossPhase2();
-            }
-        }
-    }
-    
-    hitBossTurret(bullet, turret) {
-        // Check if bullet is already inactive (already processed by another collision handler)
-        if (!bullet.active) {
-            return;
-        }
-        
-        // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < (turret.invincibleUntil || 0)) {
-            return; // Still invincible, ignore damage
-        }
-        
-        // Only allow damage to turrets if in phase 2 or later (generators must be destroyed first)
-        if (this.boss.phase < 2) {
-            // Disable bullet but don't damage turret
-            this.disableBulletPhysics(bullet);
-            return;
-        }
-        
-        // Disable bullet using helper function
-        this.disableBulletPhysics(bullet);
-        
-        turret.health -= 10;
-        
-        // Set invincibility after taking damage
-        turret.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
-        
-        if (turret.health <= 0) {
-            this.createExplosion(turret.x, turret.y);
-            turret.setActive(false);
-            turret.setVisible(false);
-            turret.destroy();
-            
-            // Remove from array
-            const index = this.boss.turrets.indexOf(turret);
-            if (index > -1) {
-                this.boss.turrets.splice(index, 1);
-            }
-            
-            // Check if all turrets destroyed
-            if (this.boss.turrets.length === 0) {
-                this.startBossPhase3();
-            }
-        }
-    }
-    
-    playerHitByBoss(player, boss) {
-        this.takeDamage(1);
-    }
-    
-    defeatBoss() {
-        console.log('Boss defeated!');
-        
-        // Defensive check - should always exist but guard anyway
-        if (!this.boss) {
-            console.warn('defeatBoss called but boss does not exist');
-            return;
-        }
-        
-        // Mark boss as defeated to stop updates
-        this.isBossFight = false;
-        
-        // Capture boss position for explosion effects
-        const bossX = this.boss.x;
-        const bossY = this.boss.y;
-        
-        // Disable physics body immediately to prevent post-defeat collisions
-        if (this.boss.body) {
-            this.boss.body.checkCollision.none = true;
-        }
-        
-        // First, destroy any remaining components (turrets and generators) with staggered timing
-        let componentDelay = 0;
-        const componentExplosionInterval = 150;
-        
-        // Destroy remaining generators first
-        if (this.boss.generators && this.boss.generators.length > 0) {
-            this.boss.generators.forEach((generator) => {
-                if (generator && generator.active) {
-                    this.time.delayedCall(componentDelay, () => {
-                        this.createExplosion(generator.x, generator.y);
-                        generator.setActive(false);
-                        generator.setVisible(false);
-                        generator.destroy();
-                    });
-                    componentDelay += componentExplosionInterval;
-                }
-            });
-            this.boss.generators = [];
-        }
-        
-        // Then destroy remaining turrets
-        if (this.boss.turrets && this.boss.turrets.length > 0) {
-            this.boss.turrets.forEach((turret) => {
-                if (turret && turret.active) {
-                    this.time.delayedCall(componentDelay, () => {
-                        this.createExplosion(turret.x, turret.y);
-                        turret.setActive(false);
-                        turret.setVisible(false);
-                        turret.destroy();
-                    });
-                    componentDelay += componentExplosionInterval;
-                }
-            });
-            this.boss.turrets = [];
-        }
-        
-        // Finally, destroy boss body with massive explosions AFTER components
-        const bossExplosionStart = componentDelay + 200; // Small delay after last component
-        
-        // Hide boss immediately but don't destroy yet (for proper cleanup)
-        this.boss.setVisible(false);
-        
-        // Massive explosion using captured position - starts after components are destroyed
-        for (let i = 0; i < 10; i++) {
-            this.time.delayedCall(bossExplosionStart + (i * 200), () => {
-                const x = bossX + Phaser.Math.Between(-100, 100);
-                const y = bossY + Phaser.Math.Between(-100, 100);
-                this.createExplosion(x, y);
-            });
-        }
-        
-        // Award points
-        this.addScore(EnemyConfig.boss.points);
-        
-        // Destroy boss and transition to victory after all explosions
-        const totalExplosionTime = bossExplosionStart + 2000;
-        this.time.delayedCall(totalExplosionTime, () => {
-            if (this.boss) {
-                this.boss.destroy();
-            }
+        // Victory condition: final wave AND no active enemies
+        if (activeEnemies === 0) {
             this.victory();
-        });
+        }
     }
     
     victory() {
@@ -2097,13 +2860,294 @@ class Level1Scene extends Phaser.Scene {
         // Save high score before transitioning
         this.saveHighScore();
         
-        // Transition to victory scene
-        this.scene.start('VictoryScene', {
-            score: this.score,
-            wave: this.currentWave,
-            podsRescued: this.podsRescued,
-            enemiesKilled: this.enemiesKilled
+        // Award and save session points (roguelite style)
+        const saveData = ProgressConfig.loadProgress();
+        const pointsEarned = ProgressConfig.addSessionPoints(
+            this.score,
+            this.podsRescued,
+            this.currentWave,
+            saveData
+        );
+        
+        // Check for level outro dialog
+        if (DialogConfig.hasDialog(this.levelNumber, 'outro')) {
+            // Show outro dialog before transitioning to victory scene
+            this.showCommunication('outro', () => {
+                this.scene.start('VictoryScene', {
+                    score: this.score,
+                    wave: this.currentWave,
+                    podsRescued: this.podsRescued,
+                    enemiesKilled: this.enemiesKilled,
+                    levelNumber: this.levelNumber,
+                    pointsEarned: pointsEarned
+                });
+            });
+        } else {
+            // Transition to victory scene immediately if no dialog
+            this.scene.start('VictoryScene', {
+                score: this.score,
+                wave: this.currentWave,
+                podsRescued: this.podsRescued,
+                enemiesKilled: this.enemiesKilled,
+                levelNumber: this.levelNumber,
+                pointsEarned: pointsEarned
+            });
+        }
+    }
+
+    applyUpgrades() {
+        console.log('Applying upgrades...', this.saveData.upgrades)
+        
+        // Apply Primary Phasers upgrade (fire rate)
+        const phasersLevel = this.saveData.upgrades.primaryPhasers || 0
+        if (phasersLevel > 0) {
+            const phasersStats = UpgradesConfig.getUpgradeStats('primaryPhasers', phasersLevel)
+            this.playerStats.fireRate = phasersStats.fireRate
+        }
+        
+        // Apply Primary Shields upgrade
+        const shieldsLevel = this.saveData.upgrades.primaryShields || 0
+        if (shieldsLevel > 0) {
+            const shieldsStats = UpgradesConfig.getUpgradeStats('primaryShields', shieldsLevel)
+            this.playerStats.shields = shieldsStats.shields
+            this.playerStats.maxShields = shieldsStats.shields
+        }
+        
+        // Apply Ablative Armor upgrade
+        const armorLevel = this.saveData.upgrades.ablativeArmor || 0
+        if (armorLevel > 0) {
+            const armorStats = UpgradesConfig.getUpgradeStats('ablativeArmor', armorLevel)
+            this.playerStats.health = armorStats.health
+            this.playerStats.maxHealth = armorStats.health
+        }
+        
+        // Apply Impulse Engines upgrade
+        const enginesLevel = this.saveData.upgrades.impulseEngines || 0
+        if (enginesLevel > 0) {
+            const enginesStats = UpgradesConfig.getUpgradeStats('impulseEngines', enginesLevel)
+            this.playerStats.speed = enginesStats.speed
+        }
+        
+        // Initialize weapon systems
+        this.initializeWeaponSystems()
+    }
+    
+    initializeWeaponSystems() {
+        // Pulse Cannons
+        const pulseCannonsLevel = this.saveData.upgrades.pulseCannons || 0
+        this.pulseCannonsStats = UpgradesConfig.getUpgradeStats('pulseCannons', pulseCannonsLevel)
+        this.pulseCannonsReady = true
+        // Initialize to allow immediate firing if enabled
+        if (this.pulseCannonsStats && this.pulseCannonsStats.enabled) {
+            this.pulseCannonsLastFired = -this.pulseCannonsStats.cooldown
+        } else {
+            this.pulseCannonsLastFired = 0
+        }
+        
+        // Quantum Torpedos
+        const torpedosLevel = this.saveData.upgrades.quantumTorpedos || 0
+        this.quantumTorpedosStats = UpgradesConfig.getUpgradeStats('quantumTorpedos', torpedosLevel)
+        this.quantumTorpedosReady = true
+        // Initialize to allow immediate firing if enabled
+        if (this.quantumTorpedosStats && this.quantumTorpedosStats.enabled) {
+            this.quantumTorpedosLastFired = -this.quantumTorpedosStats.cooldown
+        } else {
+            this.quantumTorpedosLastFired = 0
+        }
+        
+        // Point Defense
+        const pointDefenseLevel = this.saveData.upgrades.pointDefense || 0
+        this.pointDefenseStats = UpgradesConfig.getUpgradeStats('pointDefense', pointDefenseLevel)
+        this.pointDefenseReady = true
+        // Initialize to allow immediate firing if enabled
+        if (this.pointDefenseStats && this.pointDefenseStats.enabled) {
+            this.pointDefenseLastFired = -this.pointDefenseStats.cooldown
+        } else {
+            this.pointDefenseLastFired = 0
+        }
+    }
+
+    // ========================================
+    // PAUSE MENU SYSTEM
+    // ========================================
+
+    togglePause() {
+        if (this.isPaused) {
+            this.resumeGame();
+        } else {
+            this.pauseGame();
+        }
+    }
+
+    pauseGame() {
+        if (this.isPaused) return;
+        
+        this.isPaused = true;
+        
+        // Pause physics
+        this.physics.pause();
+        
+        // Create pause menu overlay
+        this.createPauseMenu();
+        
+        console.log('Level1Scene: Game paused');
+    }
+
+    resumeGame() {
+        if (!this.isPaused) return;
+        
+        this.isPaused = false;
+        
+        // Resume physics
+        this.physics.resume();
+        
+        // Clean up pause menu
+        this.cleanupPauseMenu();
+        
+        console.log('Level1Scene: Game resumed');
+    }
+
+    createPauseMenu() {
+        this.pauseMenu = [];
+        this.pauseMenuButtons = []; // Store button references for cleanup
+        
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        
+        // Semi-transparent overlay
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(10000);
+        this.pauseMenu.push(overlay);
+        
+        // Title with LCARS styling
+        const title = this.add.text(width / 2, height / 2 - 80, 'PAUSED', {
+            fontSize: '48px',
+            color: '#FF9900',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
         });
+        title.setOrigin(0.5);
+        title.setScrollFactor(0);
+        title.setDepth(10001);
+        this.pauseMenu.push(title);
+        
+        // Continue button
+        const continueButtonBg = this.add.graphics();
+        continueButtonBg.fillStyle(0x333333, 0.9);
+        continueButtonBg.fillRoundedRect(width / 2 - 100, height / 2 - 20, 200, 50, 5);
+        continueButtonBg.lineStyle(3, 0x00FF00, 1);
+        continueButtonBg.strokeRoundedRect(width / 2 - 100, height / 2 - 20, 200, 50, 5);
+        continueButtonBg.setScrollFactor(0);
+        continueButtonBg.setDepth(10001);
+        this.pauseMenu.push(continueButtonBg);
+        
+        const continueButton = this.add.text(width / 2, height / 2 + 5, '[ CONTINUE ]', {
+            fontSize: '24px',
+            color: '#00FF00',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        });
+        continueButton.setOrigin(0.5);
+        continueButton.setScrollFactor(0);
+        continueButton.setDepth(10002);
+        continueButton.setInteractive({ useHandCursor: true });
+        
+        // Use .once() for click to prevent duplicate triggers
+        // Use .on() for hover effects which are cleaned up in cleanupPauseMenu()
+        continueButton.once('pointerdown', () => {
+            this.resumeGame();
+        });
+        
+        continueButton.on('pointerover', () => {
+            continueButton.setColor('#00FFFF');
+            continueButton.setScale(1.05);
+        });
+        
+        continueButton.on('pointerout', () => {
+            continueButton.setColor('#00FF00');
+            continueButton.setScale(1.0);
+        });
+        
+        this.pauseMenu.push(continueButton);
+        this.pauseMenuButtons.push(continueButton);
+        
+        // Quit button
+        const quitButtonBg = this.add.graphics();
+        quitButtonBg.fillStyle(0x333333, 0.9);
+        quitButtonBg.fillRoundedRect(width / 2 - 100, height / 2 + 50, 200, 50, 5);
+        quitButtonBg.lineStyle(3, 0xFF0000, 1);
+        quitButtonBg.strokeRoundedRect(width / 2 - 100, height / 2 + 50, 200, 50, 5);
+        quitButtonBg.setScrollFactor(0);
+        quitButtonBg.setDepth(10001);
+        this.pauseMenu.push(quitButtonBg);
+        
+        const quitButton = this.add.text(width / 2, height / 2 + 75, '[ QUIT TO MENU ]', {
+            fontSize: '24px',
+            color: '#FF0000',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        });
+        quitButton.setOrigin(0.5);
+        quitButton.setScrollFactor(0);
+        quitButton.setDepth(10002);
+        quitButton.setInteractive({ useHandCursor: true });
+        
+        // Use .once() for click to prevent duplicate triggers
+        // Use .on() for hover effects which are cleaned up in cleanupPauseMenu()
+        quitButton.once('pointerdown', () => {
+            // Clean up and return to main menu
+            this.quitToMainMenu();
+        });
+        
+        quitButton.on('pointerover', () => {
+            quitButton.setColor('#FF6666');
+            quitButton.setScale(1.05);
+        });
+        
+        quitButton.on('pointerout', () => {
+            quitButton.setColor('#FF0000');
+            quitButton.setScale(1.0);
+        });
+        
+        this.pauseMenu.push(quitButton);
+        this.pauseMenuButtons.push(quitButton);
+    }
+
+    cleanupPauseMenu() {
+        // Remove event listeners from buttons before destroying
+        if (this.pauseMenuButtons) {
+            this.pauseMenuButtons.forEach(button => {
+                button.off('pointerover');
+                button.off('pointerout');
+            });
+            this.pauseMenuButtons = [];
+        }
+        
+        // Destroy menu elements
+        if (this.pauseMenu) {
+            this.pauseMenu.forEach(element => element.destroy());
+            this.pauseMenu = null;
+        }
+    }
+
+    quitToMainMenu() {
+        // Stop all timers and tweens
+        if (this.waveTimer) this.waveTimer.remove();
+        if (this.podTimer) this.podTimer.remove();
+        this.time.removeAllEvents();
+        this.tweens.killAll();
+        
+        // Clean up pause menu
+        this.cleanupPauseMenu();
+        
+        // Resume physics before transitioning (so next scene starts normally)
+        this.physics.resume();
+        
+        // Return to main menu
+        this.scene.start('MainMenuScene');
+        
+        console.log('Level1Scene: Quit to main menu');
     }
 
     gameOver() {
@@ -2116,11 +3160,410 @@ class Level1Scene extends Phaser.Scene {
         // Save high score before transitioning
         this.saveHighScore();
         
+        // Award and save session points (roguelite style - earn points even on death!)
+        const saveData = ProgressConfig.loadProgress();
+        const pointsEarned = ProgressConfig.addSessionPoints(
+            this.score,
+            this.podsRescued,
+            this.currentWave,
+            saveData
+        );
+        
         // Transition to game over scene
         this.scene.start('GameOverScene', {
             score: this.score,
             wave: this.currentWave,
-            podsRescued: this.podsRescued
+            podsRescued: this.podsRescued,
+            levelNumber: this.levelNumber,
+            pointsEarned: pointsEarned
+        });
+    }
+
+    // ========================================
+    // COMMUNICATION SYSTEM
+    // ========================================
+
+    showCommunication(trigger, onComplete) {
+        console.log(`Showing communication dialog: ${trigger} for level ${this.levelNumber}`);
+        
+        const dialogData = DialogConfig.getDialog(this.levelNumber, trigger);
+        if (!dialogData) {
+            console.warn(`No dialog found for level ${this.levelNumber}, trigger: ${trigger}`);
+            if (onComplete) onComplete();
+            return;
+        }
+
+        // Pause game during communication
+        this.physics.pause();
+        
+        // Store original player ship scale
+        if (this.playerShip) {
+            this.originalPlayerScaleX = this.playerShip.scaleX;
+            this.originalPlayerScaleY = this.playerShip.scaleY;
+            
+            // Scale player ship to 2x size
+            this.tweens.add({
+                targets: this.playerShip,
+                scaleX: DialogConfig.playerShip.communicationScale,
+                scaleY: DialogConfig.playerShip.communicationScale,
+                duration: DialogConfig.playerShip.scaleDuration,
+                ease: 'Sine.easeInOut'
+            });
+            
+            // Center camera on player if configured
+            if (DialogConfig.camera.focusOnPlayer) {
+                this.cameras.main.pan(
+                    this.playerShip.x,
+                    this.playerShip.y,
+                    DialogConfig.camera.panDuration,
+                    'Sine.easeInOut'
+                );
+            }
+        }
+        
+        // Initialize communication state
+        this.communicationState = {
+            dialogData: dialogData,
+            currentIndex: 0,
+            onComplete: onComplete,
+            isTyping: false,
+            skipPressed: false,
+            hudElements: null
+        };
+        
+        // Show first message after player ship scaling
+        this.time.delayedCall(DialogConfig.playerShip.scaleDuration, () => {
+            this.showNextMessage();
+        });
+    }
+
+    showNextMessage() {
+        const state = this.communicationState;
+        if (!state || state.currentIndex >= state.dialogData.sequence.length) {
+            this.closeCommunication();
+            return;
+        }
+
+        const message = state.dialogData.sequence[state.currentIndex];
+        this.displayCommunicationHUD(message);
+    }
+
+    displayCommunicationHUD(message) {
+        // Clear previous HUD elements if any
+        this.clearCommunicationHUD();
+
+        const isMobile = this.cameraWidth < 600 || this.cameraHeight < 600;
+        const config = DialogConfig.hud;
+        
+        // Calculate dimensions based on device
+        const hudWidth = isMobile ? config.mobileWidth : config.width;
+        const hudHeight = isMobile ? config.mobileHeight : config.height;
+        const portraitSize = isMobile ? config.mobilePortraitSize : config.portraitSize;
+        const speakerFontSize = isMobile ? config.mobileSpeakerFontSize : config.speakerFontSize;
+        const textFontSize = isMobile ? config.mobileTextFontSize : config.textFontSize;
+        const lineHeight = isMobile ? config.mobileLineHeight : config.lineHeight;
+        
+        // Calculate HUD position - center horizontally on mobile for better visibility
+        // Use Math.max to prevent negative positioning on very small screens
+        // Fallback to camera.main.width if cameraWidth not set (defensive)
+        const cameraWidth = this.cameraWidth || this.cameras.main.width;
+        const hudX = isMobile ? Math.max(0, (cameraWidth - hudWidth) / 2) : config.x;
+        const hudY = config.y;
+        
+        // Create container for all HUD elements
+        const hudElements = {
+            graphics: [],
+            texts: [],
+            images: []
+        };
+
+        // Background panel
+        const bg = this.add.graphics();
+        bg.setScrollFactor(0);
+        bg.setDepth(1000);
+        bg.fillStyle(config.backgroundColor, config.backgroundAlpha);
+        bg.fillRect(hudX, hudY, hudWidth, hudHeight);
+        bg.lineStyle(config.borderWidth, config.borderColor, 1);
+        bg.strokeRect(hudX, hudY, hudWidth, hudHeight);
+        hudElements.graphics.push(bg);
+
+        // Title bar
+        const titleBg = this.add.graphics();
+        titleBg.setScrollFactor(0);
+        titleBg.setDepth(1000);
+        titleBg.fillStyle(config.borderColor, 0.3);
+        titleBg.fillRect(hudX, hudY - 25, hudWidth, 25);
+        hudElements.graphics.push(titleBg);
+
+        const titleText = this.add.text(
+            hudX + hudWidth / 2,
+            hudY - 12,
+            this.communicationState.dialogData.title || 'COMMUNICATION',
+            {
+                fontSize: '12px',
+                color: config.borderColor,
+                fontFamily: 'Courier New, monospace',
+                fontStyle: 'bold'
+            }
+        );
+        titleText.setOrigin(0.5);
+        titleText.setScrollFactor(0);
+        titleText.setDepth(1001);
+        hudElements.texts.push(titleText);
+
+        // Portrait/Ship image (left side)
+        const portraitKey = DialogConfig.portraits[message.portrait];
+        if (portraitKey && this.textures.exists(portraitKey)) {
+            const portrait = this.add.image(
+                hudX + config.portraitPadding + portraitSize / 2,
+                hudY + hudHeight / 2,
+                portraitKey
+            );
+            // Preserve aspect ratio by scaling to fit within portraitSize bounds
+            const texture = portrait.texture;
+            const frame = portrait.frame;
+            const aspectRatio = frame.width / frame.height;
+            
+            if (aspectRatio > 1) {
+                // Wider than tall
+                portrait.setDisplaySize(portraitSize, portraitSize / aspectRatio);
+            } else {
+                // Taller than wide or square
+                portrait.setDisplaySize(portraitSize * aspectRatio, portraitSize);
+            }
+            
+            portrait.setScrollFactor(0);
+            portrait.setDepth(1001);
+            hudElements.images.push(portrait);
+        } else {
+            // Fallback: simple colored circle if image not found
+            const portraitCircle = this.add.graphics();
+            portraitCircle.setScrollFactor(0);
+            portraitCircle.setDepth(1001);
+            portraitCircle.fillStyle(0x00FFFF, 0.5);
+            portraitCircle.fillCircle(
+                hudX + config.portraitPadding + portraitSize / 2,
+                hudY + hudHeight / 2,
+                portraitSize / 2
+            );
+            hudElements.graphics.push(portraitCircle);
+        }
+
+        // Text area (right side)
+        const textX = hudX + config.portraitPadding * 2 + portraitSize + config.textPadding;
+        const textWidth = hudWidth - portraitSize - config.portraitPadding * 2 - config.textPadding * 2;
+
+        // Speaker name and ship
+        const speakerLabel = `${message.speaker}${message.ship ? ` - ${message.ship}` : ''}`;
+        const speakerText = this.add.text(
+            textX,
+            hudY + config.textPadding,
+            speakerLabel,
+            {
+                fontSize: speakerFontSize,
+                color: config.speakerColor,
+                fontFamily: config.fontFamily || 'Arial, sans-serif',
+                fontStyle: 'bold',
+                wordWrap: { width: textWidth }
+            }
+        );
+        speakerText.setScrollFactor(0);
+        speakerText.setDepth(1001);
+        hudElements.texts.push(speakerText);
+
+        // Dialog text (will be shown with typewriter effect)
+        // Add proper gap between speaker name and dialog text
+        const speakerTextGap = isMobile ? (config.mobileSpeakerTextGap || 6) : (config.speakerTextGap || 8);
+        const dialogTextY = hudY + config.textPadding + lineHeight + speakerTextGap;
+        const dialogText = this.add.text(
+            textX,
+            dialogTextY,
+            '',
+            {
+                fontSize: textFontSize,
+                color: config.textColor,
+                fontFamily: config.fontFamily || 'Arial, sans-serif',
+                wordWrap: { width: textWidth },
+                lineSpacing: 4
+            }
+        );
+        dialogText.setScrollFactor(0);
+        dialogText.setDepth(1001);
+        hudElements.texts.push(dialogText);
+
+        // Advance prompt
+        const advanceText = isMobile ? config.mobileAdvanceText : config.advanceText;
+        const advancePrompt = this.add.text(
+            hudX + hudWidth - config.textPadding,
+            hudY + hudHeight - config.textPadding,
+            advanceText,
+            {
+                fontSize: config.advanceFontSize,
+                color: config.advanceColor,
+                fontFamily: 'Courier New, monospace'
+            }
+        );
+        advancePrompt.setOrigin(1, 1);
+        advancePrompt.setScrollFactor(0);
+        advancePrompt.setDepth(1001);
+        advancePrompt.setAlpha(0); // Hidden until typewriter is done
+        hudElements.texts.push(advancePrompt);
+
+        // Store elements
+        this.communicationState.hudElements = hudElements;
+        this.communicationState.dialogText = dialogText;
+        this.communicationState.advancePrompt = advancePrompt;
+        this.communicationState.fullText = message.text;
+
+        // Start typewriter effect
+        this.startTypewriterEffect(message.text, dialogText, advancePrompt);
+
+        // Setup input for advancing
+        this.setupCommunicationInput();
+    }
+
+    startTypewriterEffect(fullText, textObject, advancePrompt) {
+        this.communicationState.isTyping = true;
+        this.communicationState.skipPressed = false;
+        
+        let currentChar = 0;
+        const typewriterSpeed = DialogConfig.hud.typewriterSpeed;
+
+        const typeNextChar = () => {
+            if (this.communicationState.skipPressed || currentChar >= fullText.length) {
+                // Show full text immediately
+                textObject.setText(fullText);
+                this.communicationState.isTyping = false;
+                advancePrompt.setAlpha(1);
+                
+                // Make advance prompt blink
+                this.tweens.add({
+                    targets: advancePrompt,
+                    alpha: 0.3,
+                    duration: 500,
+                    yoyo: true,
+                    repeat: -1
+                });
+                return;
+            }
+
+            textObject.setText(fullText.substring(0, currentChar + 1));
+            currentChar++;
+
+            this.time.delayedCall(typewriterSpeed, typeNextChar);
+        };
+
+        typeNextChar();
+    }
+
+    setupCommunicationInput() {
+        // Remove previous input listeners if any
+        if (this.communicationSpaceKey) {
+            this.communicationSpaceKey.off('down');
+        }
+        if (this.communicationInputZone) {
+            this.communicationInputZone.destroy();
+        }
+
+        // Space key to advance/skip
+        this.communicationSpaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.communicationSpaceKey.on('down', () => {
+            this.handleCommunicationAdvance();
+        });
+
+        // Touch/click anywhere to advance/skip
+        this.communicationInputZone = this.add.rectangle(
+            0, 0,
+            this.cameraWidth,
+            this.cameraHeight,
+            0x000000,
+            0
+        );
+        this.communicationInputZone.setOrigin(0, 0);
+        this.communicationInputZone.setScrollFactor(0);
+        this.communicationInputZone.setDepth(999);
+        this.communicationInputZone.setInteractive();
+        this.communicationInputZone.on('pointerdown', () => {
+            this.handleCommunicationAdvance();
+        });
+    }
+
+    handleCommunicationAdvance() {
+        if (!this.communicationState) return;
+
+        if (this.communicationState.isTyping) {
+            // Skip typewriter effect
+            this.communicationState.skipPressed = true;
+        } else {
+            // Advance to next message
+            this.communicationState.currentIndex++;
+            this.showNextMessage();
+        }
+    }
+
+    clearCommunicationHUD() {
+        if (!this.communicationState || !this.communicationState.hudElements) return;
+
+        const elements = this.communicationState.hudElements;
+        
+        // Destroy all graphics
+        elements.graphics.forEach(g => g.destroy());
+        
+        // Destroy all texts
+        elements.texts.forEach(t => t.destroy());
+        
+        // Destroy all images
+        elements.images.forEach(i => i.destroy());
+
+        this.communicationState.hudElements = null;
+    }
+
+    closeCommunication() {
+        console.log('Closing communication dialog');
+
+        // Clear HUD
+        this.clearCommunicationHUD();
+
+        // Clean up input listeners
+        if (this.communicationSpaceKey) {
+            this.communicationSpaceKey.off('down');
+            this.communicationSpaceKey = null;
+        }
+        if (this.communicationInputZone) {
+            this.communicationInputZone.destroy();
+            this.communicationInputZone = null;
+        }
+
+        // Restore player ship scale
+        if (this.playerShip && this.originalPlayerScaleX !== undefined) {
+            this.tweens.add({
+                targets: this.playerShip,
+                scaleX: this.originalPlayerScaleX,
+                scaleY: this.originalPlayerScaleY,
+                duration: DialogConfig.playerShip.scaleDuration,
+                ease: 'Sine.easeInOut'
+            });
+        }
+
+        // Reset camera to center of screen
+        this.cameras.main.pan(
+            this.cameraWidth / 2,
+            this.cameraHeight / 2,
+            DialogConfig.camera.panDuration,
+            'Sine.easeInOut'
+        );
+
+        // Resume game after player ship restoration
+        this.time.delayedCall(DialogConfig.playerShip.scaleDuration, () => {
+            this.physics.resume();
+            
+            // Call completion callback
+            const onComplete = this.communicationState.onComplete;
+            this.communicationState = null;
+            
+            if (onComplete) {
+                onComplete();
+            }
         });
     }
 }

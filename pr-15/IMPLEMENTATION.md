@@ -1,4 +1,4 @@
-# Star Trek Adventures - Implementation Summary
+# Star Trek Aurora - Implementation Summary
 
 ## Project Complete! ✅
 
@@ -27,7 +27,7 @@ All three tasks from the problem statement have been successfully implemented.
 - **Wave configuration** in JSON format (`config/waveConfig.js`)
 - Ready for **Level2+ extension** - just create new scene classes
 
-## Task 3: Player Ship (USS Defiant) ✅
+## Task 3: Player Ship (USS Aurora) ✅
 
 ### Completed Features:
 - **Player ship sprite** (blue triangle placeholder, ready for sprite replacement)
