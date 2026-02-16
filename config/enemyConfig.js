@@ -157,5 +157,20 @@ const EnemyConfig = {
         movementPattern: 'horizontal',
         launchesFighters: true, // Special flag to indicate fighter launching behavior
         size: { width: 140, height: 140 }
+    },
+    
+    // Mine - Proximity mine that chases player when close
+    mine: {
+        health: 1,
+        shields: 0,
+        speed: 0, // Stationary horizontally until triggered
+        chaseSpeed: 220, // Speed when chasing player (slightly faster than player's 200)
+        proximityDistance: 150, // Distance at which mine activates and chases
+        fireRate: null, // Mines don't fire weapons
+        bulletSpeed: null,
+        damage: 1, // Explosion damage on impact
+        points: 75,
+        movementPattern: 'mine', // Custom movement pattern
+        size: { width: 10, height: 16 } // Same size as escape pod
     }
 };

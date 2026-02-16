@@ -227,6 +227,14 @@ const WaveConfig = {
             spawnRate: 2000, 
             difficulty: 1,
             duration: 10000
+        },
+        wave8: { 
+            enemyCount: 3, 
+            enemyTypes: ['mine'],
+            shipCounts: { mine: 3 },
+            spawnRate: 2000, 
+            difficulty: 1,
+            duration: 10000
         }
     }
 };
