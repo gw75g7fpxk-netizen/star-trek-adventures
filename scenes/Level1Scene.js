@@ -1899,18 +1899,7 @@ class Level1Scene extends Phaser.Scene {
         }
         
         // Clear any active communication dialogue
-        if (this.communicationState) {
-            this.clearCommunicationHUD();
-            if (this.communicationSpaceKey) {
-                this.communicationSpaceKey.off('down');
-                this.communicationSpaceKey = null;
-            }
-            if (this.communicationInputZone) {
-                this.communicationInputZone.destroy();
-                this.communicationInputZone = null;
-            }
-            this.communicationState = null;
-        }
+        this.cleanupCommunicationState();
         
         // End current wave and immediately start next wave
         this.isWaveActive = false;
@@ -2887,18 +2876,7 @@ class Level1Scene extends Phaser.Scene {
         );
         
         // Clear any lingering communication state before showing outro
-        if (this.communicationState) {
-            this.clearCommunicationHUD();
-            if (this.communicationSpaceKey) {
-                this.communicationSpaceKey.off('down');
-                this.communicationSpaceKey = null;
-            }
-            if (this.communicationInputZone) {
-                this.communicationInputZone.destroy();
-                this.communicationInputZone = null;
-            }
-            this.communicationState = null;
-        }
+        this.cleanupCommunicationState();
         
         // Check for level outro dialog
         if (DialogConfig.hasDialog(this.levelNumber, 'outro')) {
@@ -3572,6 +3550,22 @@ class Level1Scene extends Phaser.Scene {
         elements.images.forEach(i => i.destroy());
 
         this.communicationState.hudElements = null;
+    }
+
+    cleanupCommunicationState() {
+        // Helper method to clean up any lingering communication state
+        if (this.communicationState) {
+            this.clearCommunicationHUD();
+            if (this.communicationSpaceKey) {
+                this.communicationSpaceKey.off('down');
+                this.communicationSpaceKey = null;
+            }
+            if (this.communicationInputZone) {
+                this.communicationInputZone.destroy();
+                this.communicationInputZone = null;
+            }
+            this.communicationState = null;
+        }
     }
 
     closeCommunication() {
