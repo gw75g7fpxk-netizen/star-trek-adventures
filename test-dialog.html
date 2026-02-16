@@ -330,8 +330,17 @@
                 if (!this.communicationState || !this.communicationState.hudElements) return;
 
                 const elements = this.communicationState.hudElements;
+                
+                // Destroy all graphics
                 elements.graphics.forEach(g => g.destroy());
-                elements.texts.forEach(t => t.destroy());
+                
+                // Destroy all texts - kill any active tweens first
+                elements.texts.forEach(t => {
+                    this.tweens.killTweensOf(t);
+                    t.destroy();
+                });
+                
+                // Destroy all images
                 elements.images.forEach(i => i.destroy());
 
                 this.communicationState.hudElements = null;

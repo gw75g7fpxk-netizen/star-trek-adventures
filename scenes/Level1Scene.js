@@ -1898,6 +1898,9 @@ class Level1Scene extends Phaser.Scene {
             this.podTimer = null;
         }
         
+        // Clear any active communication dialogue
+        this.cleanupCommunicationState();
+        
         // End current wave and immediately start next wave
         this.isWaveActive = false;
         this.startNextWave();
@@ -2872,6 +2875,9 @@ class Level1Scene extends Phaser.Scene {
             saveData
         );
         
+        // Clear any lingering communication state before showing outro
+        this.cleanupCommunicationState();
+        
         // Check for level outro dialog
         if (DialogConfig.hasDialog(this.levelNumber, 'outro')) {
             // Show outro dialog before transitioning to victory scene
@@ -3534,13 +3540,32 @@ class Level1Scene extends Phaser.Scene {
         // Destroy all graphics
         elements.graphics.forEach(g => g.destroy());
         
-        // Destroy all texts
-        elements.texts.forEach(t => t.destroy());
+        // Destroy all texts - kill any active tweens first
+        elements.texts.forEach(t => {
+            this.tweens.killTweensOf(t);
+            t.destroy();
+        });
         
         // Destroy all images
         elements.images.forEach(i => i.destroy());
 
         this.communicationState.hudElements = null;
+    }
+
+    cleanupCommunicationState() {
+        // Helper method to clean up any lingering communication state
+        if (this.communicationState) {
+            this.clearCommunicationHUD();
+            if (this.communicationSpaceKey) {
+                this.communicationSpaceKey.off('down');
+                this.communicationSpaceKey = null;
+            }
+            if (this.communicationInputZone) {
+                this.communicationInputZone.destroy();
+                this.communicationInputZone = null;
+            }
+            this.communicationState = null;
+        }
     }
 
     closeCommunication() {
