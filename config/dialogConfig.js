@@ -59,7 +59,7 @@ const DialogConfig = {
     
     // Player ship scale settings during communications
     playerShip: {
-        normalScale: 1.0,
+        normalScale: 1.0,           // Default scale (for reference)
         communicationScale: 2.0,    // Scale player ship to 2x size during comms
         scaleDuration: 800          // milliseconds for scale transition
     },

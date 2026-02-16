@@ -3389,7 +3389,8 @@ class Level1Scene extends Phaser.Scene {
         
         // Store original player ship scale
         if (this.playerShip) {
-            this.originalPlayerScale = this.playerShip.scale;
+            this.originalPlayerScaleX = this.playerShip.scaleX;
+            this.originalPlayerScaleY = this.playerShip.scaleY;
             
             // Scale player ship to 2x size
             this.tweens.add({
@@ -3711,11 +3712,11 @@ class Level1Scene extends Phaser.Scene {
         }
 
         // Restore player ship scale
-        if (this.playerShip && this.originalPlayerScale) {
+        if (this.playerShip && this.originalPlayerScaleX !== undefined) {
             this.tweens.add({
                 targets: this.playerShip,
-                scaleX: this.originalPlayerScale,
-                scaleY: this.originalPlayerScale,
+                scaleX: this.originalPlayerScaleX,
+                scaleY: this.originalPlayerScaleY,
                 duration: DialogConfig.playerShip.scaleDuration,
                 ease: 'Sine.easeInOut'
             });
