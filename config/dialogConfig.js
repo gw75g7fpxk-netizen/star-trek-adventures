@@ -165,9 +165,9 @@ const DialogConfig = {
     
     // Get dialog sequence for a specific level and trigger
     getDialog(levelNumber, trigger = 'intro') {
-        const levelDialogs = this.levelDialogs[levelNumber]
-        if (levelDialogs && levelDialogs[trigger]) {
-            return levelDialogs[trigger]
+        const dialogsForLevel = this.levelDialogs[levelNumber]
+        if (dialogsForLevel && dialogsForLevel[trigger]) {
+            return dialogsForLevel[trigger]
         }
         return null
     },
