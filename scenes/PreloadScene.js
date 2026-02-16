@@ -138,7 +138,7 @@ class PreloadScene extends Phaser.Scene {
         
         // Create procedural mine texture (sphere with spikes)
         const mineGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        mineGraphics.fillStyle(0x333333, 1); // Dark gray/black body
+        mineGraphics.fillStyle(0x333333, 1); // Dark gray body
         mineGraphics.fillCircle(8, 8, 7); // Main sphere
         mineGraphics.fillStyle(0x666666, 1); // Lighter gray for spikes
         // Draw spikes around the mine

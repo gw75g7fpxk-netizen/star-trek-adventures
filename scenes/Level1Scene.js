@@ -2023,8 +2023,8 @@ class Level1Scene extends Phaser.Scene {
             // Add mine-specific properties
             if (enemyType === 'mine') {
                 enemy.isChasing = false; // Track if mine is currently chasing
-                enemy.chaseSpeed = config.chaseSpeed; // Store chase speed
-                enemy.proximityDistance = config.proximityDistance; // Store trigger distance
+                enemy.chaseSpeed = config.chaseSpeed || 220; // Store chase speed with fallback
+                enemy.proximityDistance = config.proximityDistance || 150; // Store trigger distance with fallback
             }
             
             // Set initial velocity so enemy moves onto screen
