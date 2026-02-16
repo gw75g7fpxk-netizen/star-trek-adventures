@@ -80,7 +80,8 @@ const ENEMY_HEALTH_BAR = {
 const PLAYER_HEALTH_BAR = {
     width: 40,            // Health bar width in pixels
     height: 4,            // Health bar height in pixels
-    segmentGap: 1         // Gap between segments in pixels
+    segmentGap: 1,        // Gap between segments in pixels
+    yOffset: 8            // Distance above player sprite (same as enemy for consistency)
 };
 
 class Level1Scene extends Phaser.Scene {
@@ -1425,7 +1426,7 @@ class Level1Scene extends Phaser.Scene {
         const barHeight = PLAYER_HEALTH_BAR.height;
         const barX = this.player.x - barWidth / 2;
         // Position shield bar above health bar (health bar offset + bar height + small gap)
-        const barY = this.player.y - this.player.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset - 5 - barHeight - 2;
+        const barY = this.player.y - this.player.displayHeight / 2 - PLAYER_HEALTH_BAR.yOffset - 5 - barHeight - 2;
         
         // Clear previous drawing
         this.playerShieldBar.clear();
@@ -1480,7 +1481,7 @@ class Level1Scene extends Phaser.Scene {
         const barWidth = PLAYER_HEALTH_BAR.width;
         const barHeight = PLAYER_HEALTH_BAR.height;
         const barX = this.player.x - barWidth / 2;
-        const barY = this.player.y - this.player.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset - 5; // Extra offset above player
+        const barY = this.player.y - this.player.displayHeight / 2 - PLAYER_HEALTH_BAR.yOffset - 5; // Extra offset above player
         
         // Clear previous drawing
         this.playerHealthBar.clear();
