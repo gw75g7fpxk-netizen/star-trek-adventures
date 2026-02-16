@@ -1955,6 +1955,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemyType === 'weaponPlatform') texture = 'weapon-platform';
         if (enemyType === 'asteroid') texture = 'asteroid';
         if (enemyType === 'crystalNode') texture = 'crystal-node';
+        if (enemyType === 'destroyer') texture = 'enemy-cruiser'; // Use cruiser texture for now
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -1974,7 +1975,8 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid' || enemyType === 'crystalNode') && enemy.width > 0) {
+            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'destroyer'];
+            if (scalableEnemies.includes(enemyType) && enemy.width > 0) {
                 let targetWidth = config.size.width;
                 
                 // For asteroids, randomly assign a size variant (small, medium, large)
@@ -2570,8 +2572,11 @@ class Level1Scene extends Phaser.Scene {
                     bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
                 }
             }
-        } else {
-            // Standard targeting fire
+            return;
+        }
+        
+        // Check if this enemy fires straight down (like player's bullets)
+        if (config.straightFire) {
             const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
             
             if (bullet) {
@@ -2583,11 +2588,28 @@ class Level1Scene extends Phaser.Scene {
                     bullet.body.enable = true;
                 }
                 
-                // Aim at player
-                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-                const speed = config.bulletSpeed;
-                bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                // Fire straight down (no targeting)
+                bullet.body.setVelocity(0, config.bulletSpeed);
             }
+            return;
+        }
+        
+        // Standard targeting fire (for enemies without special firing modes)
+        const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+        
+        if (bullet) {
+            bullet.setActive(true);
+            bullet.setVisible(true);
+            
+            // Re-enable physics body if it was disabled
+            if (bullet.body) {
+                bullet.body.enable = true;
+            }
+            
+            // Aim at player
+            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+            const speed = config.bulletSpeed;
+            bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
         }
     }
     
