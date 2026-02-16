@@ -1882,14 +1882,23 @@ class Level1Scene extends Phaser.Scene {
                 if (enemy.pulseScale === undefined) {
                     enemy.pulseScale = 1.0;
                     enemy.pulseDirection = 1;
+                    enemy.baseScale = enemy.scaleX || 1.0; // Store base scale from spawn
                 }
-                enemy.pulseScale += enemy.pulseDirection * CRYSTAL_PULSE.speed;
-                if (enemy.pulseScale >= CRYSTAL_PULSE.maxScale) {
+                
+                // Update pulse scale with boundary checking
+                const newScale = enemy.pulseScale + (enemy.pulseDirection * CRYSTAL_PULSE.speed);
+                if (newScale >= CRYSTAL_PULSE.maxScale) {
+                    enemy.pulseScale = CRYSTAL_PULSE.maxScale;
                     enemy.pulseDirection = -1;
-                } else if (enemy.pulseScale <= CRYSTAL_PULSE.minScale) {
+                } else if (newScale <= CRYSTAL_PULSE.minScale) {
+                    enemy.pulseScale = CRYSTAL_PULSE.minScale;
                     enemy.pulseDirection = 1;
+                } else {
+                    enemy.pulseScale = newScale;
                 }
-                enemy.setScale(enemy.pulseScale);
+                
+                // Apply pulse as a multiplier on the base scale
+                enemy.setScale(enemy.baseScale * enemy.pulseScale);
             }
             
             // Update movement pattern
@@ -2558,11 +2567,15 @@ class Level1Scene extends Phaser.Scene {
         
         // Crystal node pulsing effect
         if (this.currentBossType === 'crystalNode' && this.boss.pulseScale !== undefined) {
-            this.boss.pulseScale += this.boss.pulseDirection * CRYSTAL_PULSE.speed;
-            if (this.boss.pulseScale >= CRYSTAL_PULSE.maxScale) {
+            const newScale = this.boss.pulseScale + (this.boss.pulseDirection * CRYSTAL_PULSE.speed);
+            if (newScale >= CRYSTAL_PULSE.maxScale) {
+                this.boss.pulseScale = CRYSTAL_PULSE.maxScale;
                 this.boss.pulseDirection = -1;
-            } else if (this.boss.pulseScale <= CRYSTAL_PULSE.minScale) {
+            } else if (newScale <= CRYSTAL_PULSE.minScale) {
+                this.boss.pulseScale = CRYSTAL_PULSE.minScale;
                 this.boss.pulseDirection = 1;
+            } else {
+                this.boss.pulseScale = newScale;
             }
             this.boss.setScale(this.boss.pulseScale);
         }
