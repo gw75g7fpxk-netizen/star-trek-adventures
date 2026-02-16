@@ -181,8 +181,8 @@ const WaveConfig = {
     level11: {
         wave1: { 
             enemyCount: 1, 
-            enemyTypes: ['fighter'],
-            shipCounts: { fighter: 1 },
+            enemyTypes: ['crystalNode'],
+            shipCounts: { crystalNode: 1 },
             spawnRate: 2000, 
             difficulty: 1,
             duration: 10000
