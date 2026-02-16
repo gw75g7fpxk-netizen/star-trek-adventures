@@ -396,8 +396,14 @@ class Level1Scene extends Phaser.Scene {
         this.player.body.setMaxVelocity(this.playerStats.speed, this.playerStats.speed);
         this.player.body.setDrag(200, 200); // Smooth movement
         
+        // Create shield bar above player ship
+        this.playerShieldBar = this.add.graphics();
+        
         // Create health bar above player ship (like enemy health bars)
         this.playerHealthBar = this.add.graphics();
+        
+        // Update both bars
+        this.updatePlayerShieldBar();
         this.updatePlayerHealthBar();
         
         console.log(`Level1Scene: USS Aurora created at (${startX}, ${startY})`);
@@ -1219,6 +1225,7 @@ class Level1Scene extends Phaser.Scene {
         this.podsText.setText(`PODS: ${this.podsRescued}`);
         this.updateHealthBar();
         this.updateShieldsBar();
+        this.updatePlayerShieldBar(); // Update shield bar above player ship
         this.updatePlayerHealthBar(); // Update health bar above player ship
     }
 
@@ -1508,6 +1515,47 @@ class Level1Scene extends Phaser.Scene {
             healthBar.destroy();
             this.enemyHealthBars.delete(enemy);
         }
+    }
+    
+    updatePlayerShieldBar() {
+        if (!this.playerShieldBar || !this.player || !this.player.active) {
+            return;
+        }
+        
+        // Calculate shield bar dimensions and position
+        const barWidth = 40; // Same width as health bar
+        const barHeight = ENEMY_HEALTH_BAR.height;
+        const barX = this.player.x - barWidth / 2;
+        // Position shield bar above health bar (health bar offset + bar height + small gap)
+        const barY = this.player.y - this.player.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset - 5 - barHeight - 2;
+        
+        // Clear previous drawing
+        this.playerShieldBar.clear();
+        
+        // Draw background (black)
+        this.playerShieldBar.fillStyle(0x000000, 0.8);
+        this.playerShieldBar.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Calculate shield percentage
+        const shieldPercent = this.playerStats.shields / this.playerStats.maxShields;
+        
+        // Choose color based on shield percentage (cyan/blue theme for shields)
+        let shieldColor;
+        if (shieldPercent > 0.5) {
+            shieldColor = 0x00FFFF; // Cyan - full shields
+        } else if (shieldPercent > 0.25) {
+            shieldColor = 0x9999FF; // Light blue - medium shields
+        } else {
+            shieldColor = 0xFF00FF; // Magenta - low shields
+        }
+        
+        // Draw shield bar (colored based on shield strength)
+        this.playerShieldBar.fillStyle(shieldColor, 1);
+        this.playerShieldBar.fillRect(barX, barY, barWidth * shieldPercent, barHeight);
+        
+        // Draw border (white)
+        this.playerShieldBar.lineStyle(1, 0xffffff, 0.8);
+        this.playerShieldBar.strokeRect(barX, barY, barWidth, barHeight);
     }
     
     updatePlayerHealthBar() {
