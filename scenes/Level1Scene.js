@@ -3561,11 +3561,32 @@ class Level1Scene extends Phaser.Scene {
         if (this.communicationState.isAdvancing) return;
 
         if (this.communicationState.isTyping) {
-            // Skip typewriter effect - cancel the typewriter timer immediately
+            // Skip typewriter effect - cancel the typewriter timer and complete immediately
             this.communicationState.skipPressed = true;
+            
+            // Cancel any pending typewriter timer
             if (this.communicationState.typewriterTimer) {
                 this.communicationState.typewriterTimer.remove();
                 this.communicationState.typewriterTimer = null;
+            }
+            
+            // Manually complete the typewriter effect
+            if (this.communicationState.dialogText && this.communicationState.fullText) {
+                this.communicationState.dialogText.setText(this.communicationState.fullText);
+            }
+            
+            this.communicationState.isTyping = false;
+            
+            // Show and animate advance prompt
+            if (this.communicationState.advancePrompt) {
+                this.communicationState.advancePrompt.setAlpha(1);
+                this.tweens.add({
+                    targets: this.communicationState.advancePrompt,
+                    alpha: 0.3,
+                    duration: 500,
+                    yoyo: true,
+                    repeat: -1
+                });
             }
         } else {
             // Advance to next message
