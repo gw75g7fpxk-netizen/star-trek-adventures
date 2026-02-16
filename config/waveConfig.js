@@ -219,6 +219,14 @@ const WaveConfig = {
             spawnRate: 2000, 
             difficulty: 1,
             duration: 10000
+        },
+        wave7: { 
+            enemyCount: 1, 
+            enemyTypes: ['carrier'],
+            shipCounts: { carrier: 1 },
+            spawnRate: 2000, 
+            difficulty: 1,
+            duration: 10000
         }
     }
 };

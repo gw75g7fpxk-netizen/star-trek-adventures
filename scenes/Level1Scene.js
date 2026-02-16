@@ -1956,6 +1956,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemyType === 'asteroid') texture = 'asteroid';
         if (enemyType === 'crystalNode') texture = 'crystal-node';
         if (enemyType === 'destroyer') texture = 'enemy-cruiser'; // Use cruiser texture for now
+        if (enemyType === 'carrier') texture = 'enemy-battleship'; // Use battleship texture for now
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -1975,7 +1976,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'destroyer'];
+            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'destroyer', 'carrier'];
             if (scalableEnemies.includes(enemyType) && enemy.width > 0) {
                 let targetWidth = config.size.width;
                 
@@ -2250,7 +2251,11 @@ class Level1Scene extends Phaser.Scene {
             this.updateEnemyMovement(enemy);
             
             // Enemy shooting - only if on screen and has weapons (scouts and asteroids don't shoot)
-            if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
+            // Carrier launches fighters instead of shooting
+            if (enemy.enemyType === 'carrier' && enemy.fireRate && enemy.y < this.cameraHeight && enemy.hasEnteredScreen && time > enemy.lastFired + enemy.fireRate) {
+                this.launchFighters(enemy);
+                enemy.lastFired = time;
+            } else if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.enemyType !== 'carrier' && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
                 this.enemyFire(enemy);
                 enemy.lastFired = time;
             }
@@ -2611,6 +2616,58 @@ class Level1Scene extends Phaser.Scene {
             const speed = config.bulletSpeed;
             bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
         }
+    }
+    
+    launchFighters(carrier) {
+        // Launch two fighters, one from each side of the carrier
+        const carrierHalfWidth = carrier.displayWidth / 2;
+        
+        // Launch fighters from left and right sides
+        this.launchFighterFromCarrier(carrier.x - carrierHalfWidth - 10, carrier.y);
+        this.launchFighterFromCarrier(carrier.x + carrierHalfWidth + 10, carrier.y);
+    }
+    
+    launchFighterFromCarrier(x, y) {
+        const config = EnemyConfig.fighter;
+        const fighter = this.enemies.get(x, y, 'enemy-fighter');
+        
+        if (!fighter) {
+            console.warn('Unable to launch fighter from carrier - enemy pool exhausted');
+            return;
+        }
+        
+        fighter.setActive(true);
+        fighter.setVisible(true);
+        fighter.enemyType = 'fighter';
+        fighter.health = config.health;
+        fighter.shields = config.shields || 0;
+        fighter.points = config.points;
+        fighter.fireRate = config.fireRate;
+        fighter.lastFired = 0;
+        fighter.invincibleUntil = 0;
+        fighter.movementPattern = config.movementPattern;
+        fighter.patternOffset = Math.random() * Math.PI * 2;
+        fighter.hasEnteredScreen = true; // Already on screen
+        fighter.initialSpeed = config.speed;
+        
+        // Scale fighter to correct size
+        if (fighter.width > 0) {
+            const scale = config.size.width / fighter.width;
+            fighter.setScale(scale);
+        }
+        
+        // Set initial velocity - diagonal towards player's current position
+        if (this.player && this.player.active) {
+            const angleToPlayer = Phaser.Math.Angle.Between(fighter.x, fighter.y, this.player.x, this.player.y);
+            fighter.body.setVelocity(Math.cos(angleToPlayer) * config.speed, Math.sin(angleToPlayer) * config.speed);
+        } else {
+            // If no player, fly straight down
+            fighter.body.setVelocity(0, config.speed);
+        }
+        fighter.body.checkCollision.none = false;
+        
+        // Create health bar
+        this.createHealthBar(fighter);
     }
     
     findNearestPod(enemy) {
