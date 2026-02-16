@@ -1279,8 +1279,8 @@ class Level1Scene extends Phaser.Scene {
         // Clean up health bar
         this.destroyHealthBar(enemy);
         
-        // Check if this is a boss-type enemy
-        const isBossType = BOSS_TYPE_ENEMIES.includes(enemy.enemyType);
+        // Check if this is a boss-type enemy (with null check)
+        const isBossType = enemy.enemyType && BOSS_TYPE_ENEMIES.includes(enemy.enemyType);
         
         if (isBossType) {
             // Boss-type enemies get massive explosion sequence
@@ -1309,6 +1309,12 @@ class Level1Scene extends Phaser.Scene {
                     const y = enemyY + Phaser.Math.Between(-explosionRange, explosionRange);
                     this.createExplosion(x, y);
                 });
+            }
+            
+            // Boss-type enemies have higher chance to drop power-up
+            const bossPowerUpChance = 0.75; // 75% chance for bosses
+            if (Math.random() < bossPowerUpChance) {
+                this.spawnPowerUp(enemyX, enemyY);
             }
             
             // Destroy enemy after explosions complete
