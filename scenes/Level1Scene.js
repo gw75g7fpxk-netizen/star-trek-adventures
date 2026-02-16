@@ -1878,6 +1878,28 @@ class Level1Scene extends Phaser.Scene {
     skipToNextWave() {
         console.log('Level1Scene: Skipping to next wave (testing feature)');
         
+        // Special handling for boss wave - destroy the boss to trigger victory
+        if (this.isFinalWave) {
+            console.log('Level1Scene: On boss wave - destroying all enemies to trigger victory');
+            // Destroy all enemies which will trigger checkVictoryCondition
+            this.enemies.clear(true, true);
+            this.enemyBullets.clear(true, true);
+            
+            // Clear timers
+            if (this.waveTimer) {
+                this.waveTimer.remove();
+                this.waveTimer = null;
+            }
+            if (this.podTimer) {
+                this.podTimer.remove();
+                this.podTimer = null;
+            }
+            
+            // Check victory condition immediately
+            this.checkVictoryCondition();
+            return;
+        }
+        
         // Clear all enemies and enemy bullets
         this.enemies.clear(true, true);
         this.enemyBullets.clear(true, true);
@@ -3454,17 +3476,37 @@ class Level1Scene extends Phaser.Scene {
     }
 
     startTypewriterEffect(fullText, textObject, advancePrompt) {
+        // Mark that we haven't manually completed this typewriter
+        this.communicationState.typewriterCompleted = false;
         this.communicationState.isTyping = true;
         this.communicationState.skipPressed = false;
+        
+        // Cancel any existing typewriter timer
+        if (this.communicationState.typewriterTimer) {
+            this.communicationState.typewriterTimer.remove();
+            this.communicationState.typewriterTimer = null;
+        }
         
         let currentChar = 0;
         const typewriterSpeed = DialogConfig.hud.typewriterSpeed;
 
         const typeNextChar = () => {
+            // Safety check - ensure communication state still exists
+            if (!this.communicationState) {
+                return;
+            }
+            
+            // If typewriter was manually completed, don't continue
+            if (this.communicationState.typewriterCompleted) {
+                return;
+            }
+            
             if (this.communicationState.skipPressed || currentChar >= fullText.length) {
                 // Show full text immediately
                 textObject.setText(fullText);
                 this.communicationState.isTyping = false;
+                this.communicationState.typewriterTimer = null;
+                this.communicationState.typewriterCompleted = true;
                 advancePrompt.setAlpha(1);
                 
                 // Make advance prompt blink
@@ -3481,7 +3523,8 @@ class Level1Scene extends Phaser.Scene {
             textObject.setText(fullText.substring(0, currentChar + 1));
             currentChar++;
 
-            this.time.delayedCall(typewriterSpeed, typeNextChar);
+            // Store the timer reference so we can cancel it if needed
+            this.communicationState.typewriterTimer = this.time.delayedCall(typewriterSpeed, typeNextChar);
         };
 
         typeNextChar();
@@ -3521,14 +3564,50 @@ class Level1Scene extends Phaser.Scene {
 
     handleCommunicationAdvance() {
         if (!this.communicationState) return;
+        
+        // Prevent duplicate/simultaneous advances
+        if (this.communicationState.isAdvancing) return;
 
         if (this.communicationState.isTyping) {
-            // Skip typewriter effect
+            // Skip typewriter effect - cancel the typewriter timer and complete immediately
             this.communicationState.skipPressed = true;
+            this.communicationState.typewriterCompleted = true; // Prevent any queued callbacks from running
+            
+            // Cancel any pending typewriter timer
+            if (this.communicationState.typewriterTimer) {
+                this.communicationState.typewriterTimer.remove();
+                this.communicationState.typewriterTimer = null;
+            }
+            
+            // Manually complete the typewriter effect
+            if (this.communicationState.dialogText && this.communicationState.fullText) {
+                this.communicationState.dialogText.setText(this.communicationState.fullText);
+            }
+            
+            this.communicationState.isTyping = false;
+            
+            // Show and animate advance prompt
+            if (this.communicationState.advancePrompt) {
+                this.communicationState.advancePrompt.setAlpha(1);
+                this.tweens.add({
+                    targets: this.communicationState.advancePrompt,
+                    alpha: 0.3,
+                    duration: 500,
+                    yoyo: true,
+                    repeat: -1
+                });
+            }
         } else {
             // Advance to next message
+            this.communicationState.isAdvancing = true;
             this.communicationState.currentIndex++;
             this.showNextMessage();
+            // Reset the flag after a short delay to allow the next message to setup
+            this.time.delayedCall(DialogConfig.hud.advanceResetDelay, () => {
+                if (this.communicationState) {
+                    this.communicationState.isAdvancing = false;
+                }
+            });
         }
     }
 
@@ -3536,6 +3615,12 @@ class Level1Scene extends Phaser.Scene {
         if (!this.communicationState || !this.communicationState.hudElements) return;
 
         const elements = this.communicationState.hudElements;
+        
+        // Cancel any active typewriter timer
+        if (this.communicationState.typewriterTimer) {
+            this.communicationState.typewriterTimer.remove();
+            this.communicationState.typewriterTimer = null;
+        }
         
         // Destroy all graphics
         elements.graphics.forEach(g => g.destroy());
@@ -3607,8 +3692,8 @@ class Level1Scene extends Phaser.Scene {
         this.time.delayedCall(DialogConfig.playerShip.scaleDuration, () => {
             this.physics.resume();
             
-            // Call completion callback
-            const onComplete = this.communicationState.onComplete;
+            // Call completion callback - save reference before clearing state
+            const onComplete = this.communicationState?.onComplete;
             this.communicationState = null;
             
             if (onComplete) {
