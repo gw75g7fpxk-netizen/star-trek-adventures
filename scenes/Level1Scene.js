@@ -2734,8 +2734,9 @@ class Level1Scene extends Phaser.Scene {
     bossAttack() {
         // CrystalNode fires bursts of 3 shots
         if (this.currentBossType === 'crystalNode') {
-            const burstCount = 3;
-            const burstDelay = 200; // 200ms between each shot in the burst
+            const config = EnemyConfig.crystalNode;
+            const burstCount = config.burstCount || 3;
+            const burstDelay = config.burstDelay || 200;
             
             for (let burst = 0; burst < burstCount; burst++) {
                 this.time.delayedCall(burst * burstDelay, () => {
@@ -2752,8 +2753,8 @@ class Level1Scene extends Phaser.Scene {
                             // Re-enable physics body if it was disabled
                             if (bullet.body) {
                                 bullet.body.enable = true;
+                                bullet.body.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
                             }
-                            bullet.body.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
                         }
                     }
                 });

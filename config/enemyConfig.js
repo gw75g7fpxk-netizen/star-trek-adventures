@@ -120,10 +120,12 @@ const EnemyConfig = {
         health: 100,
         shields: 0,
         speed: 40,
-        fireRate: 1250, // Fires twice as fast (was 2500ms)
+        fireRate: 1250, // Base fire rate (scene uses this for attackRate)
         bulletSpeed: 200,
         damage: 2,
         movementPattern: 'horizontal', // Moves like battleships
+        burstCount: 3, // Number of shots per burst attack
+        burstDelay: 200, // Milliseconds between shots in a burst
         phases: [
             {
                 name: 'core',
