@@ -213,7 +213,7 @@ const DialogConfig = {
                         speaker: 'Communications Officer',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
-                        text: 'Captain, we\'re receiving a priority distress call from the Federation colony on New Horizon!',
+                        text: "Captain, we're receiving a priority distress call from the Federation colony on New Horizon!",
                         audio: null
                     },
                     {
@@ -234,7 +234,7 @@ const DialogConfig = {
                         speaker: 'Science Officer',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
-                        text: 'Detecting multiple evacuation pods launching from the surface. They\'re evacuating civilians, Captain.',
+                        text: "Detecting multiple evacuation pods launching from the surface. They're evacuating civilians, Captain.",
                         audio: null
                     }
                 ]
