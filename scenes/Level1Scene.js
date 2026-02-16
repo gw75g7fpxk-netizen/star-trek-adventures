@@ -84,6 +84,9 @@ const PLAYER_HEALTH_BAR = {
     yOffset: 8            // Distance above player sprite (same as enemy for consistency)
 };
 
+// Boss-type enemies that get special explosion effects
+const BOSS_TYPE_ENEMIES = ['boss', 'crystalNode', 'battleship'];
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -106,7 +109,6 @@ class Level1Scene extends Phaser.Scene {
         this.enemiesKilled = 0;
         this.podsRescued = 0;
         this.isWaveActive = false;
-        this.isBossFight = false;
         this.isFinalWave = false;
         
         // Power-up effects
@@ -178,7 +180,6 @@ class Level1Scene extends Phaser.Scene {
         this.enemiesKilled = 0;
         this.podsRescued = 0;
         this.isWaveActive = false;
-        this.isBossFight = false;
         this.isFinalWave = false;
         this.activePowerUps = [];
         this.podRescueTracking = new Map();
@@ -238,13 +239,6 @@ class Level1Scene extends Phaser.Scene {
         
         // Setup power-up system
         this.powerUps = this.physics.add.group({
-            classType: Phaser.Physics.Arcade.Sprite,
-            maxSize: 20,
-            runChildUpdate: true
-        });
-        
-        // Setup boss components group (generators and turrets)
-        this.bossComponents = this.physics.add.group({
             classType: Phaser.Physics.Arcade.Sprite,
             maxSize: 20,
             runChildUpdate: true
@@ -417,19 +411,16 @@ class Level1Scene extends Phaser.Scene {
         // Cheat code: N key to skip to next wave (for testing)
         this.nextWaveKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.N);
         this.nextWaveKey.on('down', () => {
-            if (!this.isBossFight) {
-                console.log('Cheat code activated: Skipping to next wave!');
-                this.skipToNextWave();
-            }
+            console.log('Cheat code activated: Skipping to next wave!');
+            this.skipToNextWave();
         });
         
         // Boss fight cheat code disabled (no boss in level 1 currently)
         // this.bossKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
         // this.bossKey.on('down', () => {
-        //     if (!this.isBossFight && !this.boss) {
-        //         console.log('Cheat code activated: Jumping to boss fight!');
-        //         this.skipToBossFight();
-        //     }
+        //     console.log('Cheat code activated: Jumping to boss fight!');
+        //     this.skipToBossFight();
+        // });
         // });
         
         // Mobile controls
@@ -661,9 +652,7 @@ class Level1Scene extends Phaser.Scene {
         
         // Skip wave button click handler
         this.skipWaveButton.on('pointerdown', () => {
-            if (!this.isBossFight) {
-                this.skipToNextWave();
-            }
+            this.skipToNextWave();
         });
         
         // Add hover effect for skip button
@@ -839,11 +828,6 @@ class Level1Scene extends Phaser.Scene {
         
         // Update enemies
         this.updateEnemies(time);
-        
-        // Update boss
-        if (this.isBossFight) {
-            this.updateBoss(time);
-        }
         
         // Update escape pods
         this.updateEscapePods();
@@ -1051,11 +1035,6 @@ class Level1Scene extends Phaser.Scene {
                 target = enemy
             }
         })
-        
-        // Also check boss if active
-        if (this.boss && this.boss.active && this.boss.visible && this.boss.health > maxHealth) {
-            target = this.boss
-        }
         
         if (!target) return // No enemies to target
         
@@ -1297,26 +1276,73 @@ class Level1Scene extends Phaser.Scene {
         this.addScore(enemy.points);
         this.enemiesKilled++;
         
-        // Play explosion sound
-        this.playSound('explosion');
-        
-        // Spawn explosion
-        this.createExplosion(enemy.x, enemy.y);
-        
-        // Chance to drop power-up
-        if (Math.random() < PowerUpConfig.spawnChance) {
-            this.spawnPowerUp(enemy.x, enemy.y);
-        }
-        
         // Clean up health bar
         this.destroyHealthBar(enemy);
         
-        enemy.setActive(false);
-        enemy.setVisible(false);
-        enemy.destroy();
+        // Check if this is a boss-type enemy (with null check)
+        const isBossType = enemy.enemyType && BOSS_TYPE_ENEMIES.includes(enemy.enemyType);
         
-        // Check if victory condition is met after destroying enemy
-        this.checkVictoryCondition();
+        if (isBossType) {
+            // Boss-type enemies get massive explosion sequence
+            const enemyX = enemy.x;
+            const enemyY = enemy.y;
+            
+            // Disable physics body immediately to prevent post-defeat collisions
+            if (enemy.body) {
+                enemy.body.checkCollision.none = true;
+            }
+            
+            // Hide enemy immediately but don't destroy yet
+            enemy.setVisible(false);
+            enemy.setActive(false);
+            
+            // Play explosion sound
+            this.playSound('explosion');
+            
+            // Multiple explosions over time
+            const explosionCount = enemy.enemyType === 'battleship' ? 5 : 10;
+            const explosionRange = enemy.enemyType === 'battleship' ? 60 : 100;
+            
+            for (let i = 0; i < explosionCount; i++) {
+                this.time.delayedCall(i * 200, () => {
+                    const x = enemyX + Phaser.Math.Between(-explosionRange, explosionRange);
+                    const y = enemyY + Phaser.Math.Between(-explosionRange, explosionRange);
+                    this.createExplosion(x, y);
+                });
+            }
+            
+            // Boss-type enemies have higher chance to drop power-up
+            const bossPowerUpChance = 0.75; // 75% chance for bosses
+            if (Math.random() < bossPowerUpChance) {
+                this.spawnPowerUp(enemyX, enemyY);
+            }
+            
+            // Destroy enemy after explosions complete
+            this.time.delayedCall(explosionCount * 200 + 500, () => {
+                if (enemy) {
+                    enemy.destroy();
+                }
+                
+                // Check victory condition after boss-type enemy is fully destroyed
+                this.checkVictoryCondition();
+            });
+        } else {
+            // Regular enemy - simple explosion
+            this.playSound('explosion');
+            this.createExplosion(enemy.x, enemy.y);
+            
+            // Chance to drop power-up
+            if (Math.random() < PowerUpConfig.spawnChance) {
+                this.spawnPowerUp(enemy.x, enemy.y);
+            }
+            
+            enemy.setActive(false);
+            enemy.setVisible(false);
+            enemy.destroy();
+            
+            // Check if victory condition is met after destroying enemy
+            this.checkVictoryCondition();
+        }
     }
     
     enemyBulletHitAsteroid(bullet, enemy) {
@@ -1703,9 +1729,9 @@ class Level1Scene extends Phaser.Scene {
         const waveConfig = levelConfig[waveKey];
         
         if (!waveConfig) {
-            // Check for boss wave
+            // Check for boss wave - spawn boss as regular enemy
             if (levelConfig.bossWave && this.currentWave > levelConfig.bossWave.threshold) {
-                this.startBossFight(levelConfig.bossWave.type);
+                this.spawnBossAsEnemy(levelConfig.bossWave.type);
                 return;
             }
             // No more waves - mark this as the final wave
@@ -1796,17 +1822,6 @@ class Level1Scene extends Phaser.Scene {
         // Clear power-ups
         this.powerUps.clear(true, true);
         
-        // Clear boss components if any
-        if (this.bossComponents) {
-            this.bossComponents.clear(true, true);
-        }
-        
-        // Clear boss if in boss fight
-        if (this.boss) {
-            this.boss.destroy();
-            this.boss = null;
-        }
-        
         // Clear wave timers
         if (this.waveTimer) {
             this.waveTimer.remove();
@@ -1816,9 +1831,6 @@ class Level1Scene extends Phaser.Scene {
             this.podTimer.remove();
             this.podTimer = null;
         }
-        
-        // Reset boss fight flag
-        this.isBossFight = false;
         
         // End current wave and immediately start next wave
         this.isWaveActive = false;
@@ -1923,6 +1935,69 @@ class Level1Scene extends Phaser.Scene {
             
             // Create health bar for this enemy (excludes asteroids)
             this.createHealthBar(enemy);
+        }
+    }
+    
+    spawnBossAsEnemy(bossType = 'boss') {
+        // Mark as final wave since boss spawns after all waves
+        this.isFinalWave = true;
+        
+        // Play boss alert sound
+        this.playSound('boss');
+        
+        // Get boss config
+        const config = EnemyConfig[bossType];
+        
+        // Spawn position - top center
+        const x = this.cameraWidth / 2;
+        const y = -100;
+        
+        // Use appropriate texture for boss type
+        let texture = 'boss-core';
+        if (bossType === 'crystalNode') {
+            texture = 'crystal-node';
+        }
+        
+        const boss = this.enemies.get(x, y, texture);
+        
+        if (boss) {
+            boss.setActive(true);
+            boss.setVisible(true);
+            boss.enemyType = bossType;
+            boss.health = config.health;
+            boss.shields = config.shields || 0;
+            boss.points = config.points;
+            boss.fireRate = config.fireRate;
+            boss.lastFired = 0;
+            boss.invincibleUntil = 0;
+            boss.movementPattern = config.movementPattern;
+            boss.patternOffset = Math.random() * Math.PI * 2;
+            boss.hasEnteredScreen = false;
+            boss.initialSpeed = config.speed;
+            
+            // Scale boss sprite to correct size
+            if (boss.width > 0) {
+                const targetWidth = config.size.width;
+                const scale = targetWidth / boss.width;
+                boss.setScale(scale);
+            }
+            
+            // Set initial velocity - boss enters from top
+            boss.body.setVelocity(0, config.speed);
+            
+            // Disable collision detection initially - will be enabled when boss enters screen
+            boss.body.checkCollision.none = true;
+            
+            // Create health bar for boss
+            this.createHealthBar(boss);
+            
+            // Move boss into position with tween animation
+            this.tweens.add({
+                targets: boss,
+                y: 150,
+                duration: 3000,
+                ease: 'Power2'
+            });
         }
     }
     
@@ -2331,6 +2406,54 @@ class Level1Scene extends Phaser.Scene {
     enemyFire(enemy) {
         const config = EnemyConfig[enemy.enemyType];
         
+        // Check if this enemy has burst attack ability
+        if (config.burstCount) {
+            const burstCount = config.burstCount;
+            const burstDelay = config.burstDelay || 200;
+            
+            // Fire multiple bullets with delays (burst attack)
+            for (let burst = 0; burst < burstCount; burst++) {
+                this.time.delayedCall(burst * burstDelay, () => {
+                    // Check if enemy is still active before firing
+                    if (!enemy || !enemy.active) return;
+                    
+                    // Fire single bullet straight down
+                    const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+                    if (bullet) {
+                        bullet.setActive(true);
+                        bullet.setVisible(true);
+                        // Re-enable physics body if it was disabled
+                        if (bullet.body) {
+                            bullet.body.enable = true;
+                            bullet.body.setVelocity(0, config.bulletSpeed);
+                        }
+                    }
+                });
+            }
+            return;
+        }
+        
+        // Check if this enemy has spread shot ability
+        if (config.spreadShot) {
+            const spreadCount = config.spreadCount || 5;
+            const halfSpread = Math.floor(spreadCount / 2);
+            
+            for (let i = -halfSpread; i <= halfSpread; i++) {
+                const angle = Math.PI / 2 + (i * 0.2);
+                const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+                if (bullet) {
+                    bullet.setActive(true);
+                    bullet.setVisible(true);
+                    // Re-enable physics body if it was disabled
+                    if (bullet.body) {
+                        bullet.body.enable = true;
+                        bullet.body.setVelocity(Math.cos(angle) * config.bulletSpeed, Math.sin(angle) * config.bulletSpeed);
+                    }
+                }
+            }
+            return;
+        }
+        
         // Check if this enemy has scattershot ability
         if (config.scattershot) {
             // Fire bullets in all directions (360 degrees)
@@ -2642,238 +2765,12 @@ class Level1Scene extends Phaser.Scene {
         
         this.updateHUD();
         
-        // Jump to boss fight
+        // Jump to boss wave
         this.currentWave = 5;
-        this.startBossFight();
+        this.isWaveActive = false;
+        this.startNextWave();
     }
     
-    startBossFight(bossType = 'boss') {
-        // Prevent duplicate boss spawns
-        if (this.isBossFight && this.boss) {
-            return;
-        }
-        
-        this.isBossFight = true;
-        this.currentBossType = bossType;
-        
-        // Play boss alert sound
-        this.playSound('boss');
-        
-        // Get boss config
-        const bossConfig = EnemyConfig[bossType];
-        
-        // Spawn boss
-        const x = this.cameraWidth / 2;
-        const y = -100;
-        
-        // Use appropriate texture for boss type
-        let bossTexture = 'boss-core';
-        if (bossType === 'crystalNode') {
-            bossTexture = 'crystal-node';
-        }
-        
-        this.boss = this.physics.add.sprite(x, y, bossTexture);
-        this.boss.setActive(true);
-        this.boss.setVisible(true);
-        this.boss.setDepth(RENDER_DEPTH.BOSS);
-        
-        // Configure physics body for boss
-        if (this.boss.body) {
-            this.boss.body.enable = true;
-            this.boss.body.setSize(bossConfig.size.width, bossConfig.size.height);
-            this.boss.body.checkCollision.none = false;
-        }
-        
-        // Initialize boss stats (simplified - no phases)
-        this.boss.maxHealth = bossConfig.health;
-        this.boss.health = bossConfig.health;
-        this.boss.invincibleUntil = 0; // Initialize invincibility timer
-        this.boss.lastAttack = 0;
-        this.boss.attackRate = bossConfig.fireRate; // Use fireRate from config
-        this.boss.moveDirection = 1;
-        
-        // Add pulsing effect for crystal node
-        if (bossType === 'crystalNode') {
-            this.boss.pulseScale = 1.0;
-            this.boss.pulseDirection = 1;
-        }
-        
-        // Move boss into position
-        this.tweens.add({
-            targets: this.boss,
-            y: 150,
-            duration: 3000,
-            ease: 'Power2'
-        });
-        
-        // Add collision
-        this.physics.add.overlap(this.bullets, this.boss, this.hitBoss, null, this);
-        this.physics.add.overlap(this.player, this.boss, this.playerHitByBoss, null, this);
-    }
-    
-    updateBoss(time) {
-        if (!this.boss || !this.boss.active) return;
-        
-        // Crystal node pulsing effect
-        if (this.currentBossType === 'crystalNode' && this.boss.pulseScale !== undefined) {
-            const newScale = this.boss.pulseScale + (this.boss.pulseDirection * CRYSTAL_PULSE.speed);
-            if (newScale >= CRYSTAL_PULSE.maxScale) {
-                this.boss.pulseScale = CRYSTAL_PULSE.maxScale;
-                this.boss.pulseDirection = -1;
-            } else if (newScale <= CRYSTAL_PULSE.minScale) {
-                this.boss.pulseScale = CRYSTAL_PULSE.minScale;
-                this.boss.pulseDirection = 1;
-            } else {
-                this.boss.pulseScale = newScale;
-            }
-            this.boss.setScale(this.boss.pulseScale);
-        }
-        
-        // Boss horizontal movement
-        // Use config speed for movement
-        const moveSpeed = EnemyConfig[this.currentBossType]?.speed || DEFAULT_BOSS_MOVEMENT_SPEED;
-        this.boss.x += this.boss.moveDirection * (moveSpeed / CONFIG_SPEED_TO_PIXELS_DIVISOR);
-        if (this.boss.x < 150 || this.boss.x > this.cameraWidth - 150) {
-            this.boss.moveDirection *= -1;
-        }
-        
-        // Boss attacks
-        if (time > this.boss.lastAttack + this.boss.attackRate) {
-            this.bossAttack();
-            this.boss.lastAttack = time;
-        }
-    }
-    
-    bossAttack() {
-        // CrystalNode fires bursts of 3 shots straight down
-        if (this.currentBossType === 'crystalNode') {
-            const config = EnemyConfig.crystalNode;
-            const burstCount = config.burstCount || 3;
-            const burstDelay = config.burstDelay || 200;
-            
-            // Fire 3 bullets straight down with spacing (similar to pulse cannons)
-            for (let burst = 0; burst < burstCount; burst++) {
-                this.time.delayedCall(burst * burstDelay, () => {
-                    // Check if boss is still active before firing
-                    if (!this.boss || !this.boss.active) return;
-                    
-                    // Fire single bullet straight down
-                    const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
-                    if (bullet) {
-                        bullet.setActive(true);
-                        bullet.setVisible(true);
-                        // Re-enable physics body if it was disabled
-                        if (bullet.body) {
-                            bullet.body.enable = true;
-                            bullet.body.setVelocity(0, config.bulletSpeed);
-                        }
-                    }
-                });
-            }
-            return;
-        }
-        
-        // Regular boss fires spread shot (5 bullets in a spread pattern)
-        const config = EnemyConfig.boss;
-        const spreadCount = config.spreadCount || 5;
-        const halfSpread = Math.floor(spreadCount / 2);
-        
-        for (let i = -halfSpread; i <= halfSpread; i++) {
-            const angle = Math.PI / 2 + (i * 0.2);
-            const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
-            if (bullet) {
-                bullet.setActive(true);
-                bullet.setVisible(true);
-                // Re-enable physics body if it was disabled
-                if (bullet.body) {
-                    bullet.body.enable = true;
-                    bullet.body.setVelocity(Math.cos(angle) * config.bulletSpeed, Math.sin(angle) * config.bulletSpeed);
-                }
-            }
-        }
-    }
-    
-    hitBoss(bullet, boss) {
-        // Check if bullet is already inactive (already processed by another collision handler)
-        if (!bullet.active) {
-            return;
-        }
-        
-        // FIX: Use this.boss instead of the boss parameter
-        // The collision callback parameter may not preserve custom properties reliably
-        const actualBoss = this.boss;
-        
-        // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < (actualBoss.invincibleUntil || 0)) {
-            return; // Still invincible, ignore damage
-        }
-        
-        // Disable bullet using helper function
-        this.disableBulletPhysics(bullet);
-        
-        // Boss is always damageable (no phase system)
-        actualBoss.health -= 10;
-        
-        // Play hit sound effect
-        this.playSound('hit');
-        
-        // Set invincibility after taking damage
-        actualBoss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
-        
-        if (actualBoss.health <= 0) {
-            this.defeatBoss();
-        }
-    }
-    
-    playerHitByBoss(player, boss) {
-        this.takeDamage(1);
-    }
-    
-    defeatBoss() {
-        console.log('Boss defeated!');
-        
-        // Defensive check - should always exist but guard anyway
-        if (!this.boss) {
-            console.warn('defeatBoss called but boss does not exist');
-            return;
-        }
-        
-        // Mark boss as defeated to stop updates
-        this.isBossFight = false;
-        
-        // Capture boss position for explosion effects
-        const bossX = this.boss.x;
-        const bossY = this.boss.y;
-        
-        // Disable physics body immediately to prevent post-defeat collisions
-        if (this.boss.body) {
-            this.boss.body.checkCollision.none = true;
-        }
-        
-        // Hide boss immediately but don't destroy yet (for proper cleanup)
-        this.boss.setVisible(false);
-        
-        // Massive explosion sequence
-        for (let i = 0; i < 10; i++) {
-            this.time.delayedCall(i * 200, () => {
-                const x = bossX + Phaser.Math.Between(-100, 100);
-                const y = bossY + Phaser.Math.Between(-100, 100);
-                this.createExplosion(x, y);
-            });
-        }
-        
-        // Award points based on boss type
-        const bossConfig = EnemyConfig[this.currentBossType];
-        this.addScore(bossConfig.points);
-        
-        // Destroy boss and transition to victory after all explosions
-        this.time.delayedCall(2000, () => {
-            if (this.boss) {
-                this.boss.destroy();
-            }
-            this.victory();
-        });
-    }
     
     checkVictoryCondition() {
         // Only check victory if we're in the final wave
