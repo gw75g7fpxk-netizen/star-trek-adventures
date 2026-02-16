@@ -66,6 +66,7 @@ const ASTEROID_ROTATION_FACTOR = 0.01; // Rotation speed multiplier for asteroid
 
 // Asteroid avoidance constants
 const ASTEROID_AVOIDANCE_RADIUS = 100; // Distance at which enemies start avoiding asteroids (in pixels)
+const ASTEROID_AVOIDANCE_FORCE = 80; // Force multiplier for asteroid avoidance vector
 
 // Crystal node boss animation constants
 const CRYSTAL_PULSE = {
@@ -1737,6 +1738,7 @@ class Level1Scene extends Phaser.Scene {
                 let targetWidth = config.size.width;
                 
                 // For asteroids, randomly assign a size variant (small, medium, large)
+                // This overrides the base config values (health: 3, points: 10) to provide variety
                 if (enemyType === 'asteroid') {
                     const sizeType = Phaser.Utils.Array.GetRandom(['small', 'medium', 'large']);
                     enemy.asteroidSize = sizeType;
@@ -1749,7 +1751,7 @@ class Level1Scene extends Phaser.Scene {
                             enemy.points = 5;
                             break;
                         case 'medium':
-                            targetWidth = 40; // Medium asteroids (original size)
+                            targetWidth = 40; // Medium asteroids (base config size)
                             enemy.health = 3;
                             enemy.points = 10;
                             break;
@@ -1998,8 +2000,8 @@ class Level1Scene extends Phaser.Scene {
                 
                 const avoidAngle = angle + Math.PI; // Opposite direction
                 
-                avoidanceX += Math.cos(avoidAngle) * baseStrength * 80;
-                avoidanceY += Math.sin(avoidAngle) * baseStrength * 80;
+                avoidanceX += Math.cos(avoidAngle) * baseStrength * ASTEROID_AVOIDANCE_FORCE;
+                avoidanceY += Math.sin(avoidAngle) * baseStrength * ASTEROID_AVOIDANCE_FORCE;
             });
             
             // Apply avoidance to velocity
