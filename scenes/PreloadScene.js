@@ -121,6 +121,30 @@ class PreloadScene extends Phaser.Scene {
         // Load escape pod sprite
         this.load.image('escape-pod', 'assets/images/escape-pod.png');
         
+        // Create procedural asteroid texture
+        const asteroidGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        asteroidGraphics.fillStyle(0x888888, 1); // Gray color
+        asteroidGraphics.fillCircle(20, 20, 20); // Main circle
+        asteroidGraphics.fillStyle(0x666666, 1); // Darker gray for crater
+        asteroidGraphics.fillCircle(15, 15, 7);
+        asteroidGraphics.fillCircle(25, 18, 5);
+        asteroidGraphics.fillStyle(0x555555, 1); // Even darker
+        asteroidGraphics.fillCircle(20, 25, 4);
+        asteroidGraphics.generateTexture('asteroid', 40, 40);
+        asteroidGraphics.destroy();
+        
+        // Create crystal node boss texture (pulsing crystal for Level 2 boss)
+        const crystalNodeGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        crystalNodeGraphics.fillStyle(0x00FFFF, 1); // Cyan crystal
+        crystalNodeGraphics.fillCircle(60, 60, 60); // Main body
+        crystalNodeGraphics.fillStyle(0x00CCCC, 1); // Darker cyan
+        crystalNodeGraphics.fillCircle(60, 60, 45);
+        crystalNodeGraphics.fillStyle(0xFFFFFF, 1); // White highlights
+        crystalNodeGraphics.fillCircle(50, 50, 20);
+        crystalNodeGraphics.fillCircle(70, 55, 15);
+        crystalNodeGraphics.generateTexture('crystal-node', 120, 120);
+        crystalNodeGraphics.destroy();
+        
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
         

@@ -71,6 +71,20 @@ const EnemyConfig = {
         size: { width: 40, height: 40 }
     },
     
+    // Asteroid - Passive obstacle in asteroid field
+    asteroid: {
+        health: 3,
+        shields: 0,
+        speed: 0, // Stationary horizontally (moves vertically with screen scroll)
+        fireRate: null, // Asteroids don't fire weapons
+        bulletSpeed: null,
+        damage: 1, // Collision damage
+        points: 10, // Small points for destroying obstacles
+        movementPattern: 'stationary',
+        size: { width: 40, height: 40 },
+        rotation: true // Asteroids slowly rotate
+    },
+    
     // Boss - Massive Crystalis Battleship
     boss: {
         health: 1000,
@@ -99,5 +113,21 @@ const EnemyConfig = {
         ],
         size: { width: 200, height: 200 },
         points: 5000
+    },
+    
+    // Crystal Node - Mid-boss for Level 2 (Communication Jammer)
+    crystalNode: {
+        health: 600,
+        speed: 20,
+        phases: [
+            {
+                name: 'core',
+                health: 600,
+                attacks: ['pulse_wave', 'energy_bolts']
+            }
+        ],
+        size: { width: 120, height: 120 },
+        points: 2500,
+        pulsing: true // Visual effect - node pulses periodically
     }
 };

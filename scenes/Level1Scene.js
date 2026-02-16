@@ -1547,11 +1547,11 @@ class Level1Scene extends Phaser.Scene {
         const waveConfig = levelConfig[waveKey];
         
         if (!waveConfig) {
-            // Boss wave disabled - skip directly to victory after all waves
-            // if (levelConfig.bossWave && this.currentWave > levelConfig.bossWave.threshold) {
-            //     this.startBossFight();
-            //     return;
-            // }
+            // Check for boss wave
+            if (levelConfig.bossWave && this.currentWave > levelConfig.bossWave.threshold) {
+                this.startBossFight(levelConfig.bossWave.type);
+                return;
+            }
             // No more waves - mark this as the final wave
             // Victory will trigger when all enemies are defeated
             this.isFinalWave = true;
@@ -1700,6 +1700,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemyType === 'cruiser') texture = 'enemy-cruiser';
         if (enemyType === 'battleship') texture = 'enemy-battleship';
         if (enemyType === 'weaponPlatform') texture = 'weapon-platform';
+        if (enemyType === 'asteroid') texture = 'asteroid';
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -1719,12 +1720,17 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform') && enemy.width > 0) {
+            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid') && enemy.width > 0) {
                 // Scale enemy sprites to their configured target width
-                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 40px
+                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 40px, Asteroid: 40x40px → 40px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
+            }
+            
+            // Add rotation for asteroids
+            if (enemyType === 'asteroid') {
+                enemy.rotationSpeed = Phaser.Math.FloatBetween(-0.5, 0.5); // Random rotation speed
             }
             
             // Set initial velocity so enemy moves onto screen
@@ -1855,18 +1861,23 @@ class Level1Scene extends Phaser.Scene {
                 }
             }
             
+            // Rotate asteroids
+            if (enemy.enemyType === 'asteroid' && enemy.rotationSpeed) {
+                enemy.rotation += enemy.rotationSpeed * 0.01;
+            }
+            
             // Update movement pattern
             this.updateEnemyMovement(enemy);
             
-            // Enemy shooting - only if on screen and has weapons (scouts don't shoot)
-            if (enemy.enemyType !== 'scout' && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
+            // Enemy shooting - only if on screen and has weapons (scouts and asteroids don't shoot)
+            if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
                 this.enemyFire(enemy);
                 enemy.lastFired = time;
             }
             
             // Target escape pods - only if on screen and has weapons
             const nearestPod = this.findNearestPod(enemy);
-            if (enemy.enemyType !== 'scout' && enemy.fireRate && enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
+            if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.fireRate && enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
                 // Shoot at pod only if fire rate allows
                 if (time > enemy.lastFired + enemy.fireRate) {
                     const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y);
@@ -2327,39 +2338,49 @@ class Level1Scene extends Phaser.Scene {
         this.startBossFight();
     }
     
-    startBossFight() {
+    startBossFight(bossType = 'boss') {
         // Prevent duplicate boss spawns
         if (this.isBossFight && this.boss) {
             return;
         }
         
         this.isBossFight = true;
+        this.currentBossType = bossType;
         
         // Play boss alert sound
         this.playSound('boss');
+        
+        // Get boss config
+        const bossConfig = EnemyConfig[bossType];
         
         // Spawn boss
         const x = this.cameraWidth / 2;
         const y = -100;
         
-        this.boss = this.physics.add.sprite(x, y, 'boss-core');
+        // Use appropriate texture for boss type
+        let bossTexture = 'boss-core';
+        if (bossType === 'crystalNode') {
+            bossTexture = 'crystal-node';
+        }
+        
+        this.boss = this.physics.add.sprite(x, y, bossTexture);
         this.boss.setActive(true);
-        this.boss.setVisible(true); // Boss core is now always visible
+        this.boss.setVisible(true);
         // Ensure boss is rendered behind its components (generators/turrets)
         this.boss.setDepth(RENDER_DEPTH.BOSS);
         
         // Configure physics body for boss
         if (this.boss.body) {
             this.boss.body.enable = true;
-            this.boss.body.setSize(200, 200); // Set body size to match core texture
+            this.boss.body.setSize(bossConfig.size.width, bossConfig.size.height);
             this.boss.body.checkCollision.none = false;
         }
         
         // Initialize boss stats
         this.boss.phase = 0;
-        this.boss.maxHealth = EnemyConfig.boss.health;
-        this.boss.health = EnemyConfig.boss.health;
-        this.boss.phaseHealth = EnemyConfig.boss.phases[0].health;
+        this.boss.maxHealth = bossConfig.health;
+        this.boss.health = bossConfig.health;
+        this.boss.phaseHealth = bossConfig.phases[0].health;
         this.boss.invincibleUntil = 0; // Initialize invincibility timer
         this.boss.generators = [];
         this.boss.turrets = [];
@@ -2375,13 +2396,17 @@ class Level1Scene extends Phaser.Scene {
             ease: 'Power2'
         });
         
-        // Add collision - but boss should only be hittable in phase 3
+        // Add collision
         this.physics.add.overlap(this.bullets, this.boss, this.hitBoss, null, this);
         this.physics.add.overlap(this.player, this.boss, this.playerHitByBoss, null, this);
         
-        // Start Phase 1: Shield Generators
+        // Start appropriate phase based on boss type
         this.time.delayedCall(3000, () => {
-            this.startBossPhase1();
+            if (bossType === 'crystalNode') {
+                this.startCrystalNodePhase();
+            } else {
+                this.startBossPhase1();
+            }
         });
     }
     
@@ -2483,8 +2508,38 @@ class Level1Scene extends Phaser.Scene {
         this.boss.attackRate = 1000;
     }
     
+    startCrystalNodePhase() {
+        console.log('Crystal Node Boss: Communication Jammer');
+        this.boss.phase = 1;
+        this.boss.phaseHealth = EnemyConfig.crystalNode.phases[0].health;
+        
+        // Crystal node is immediately damageable (no shield generators)
+        if (this.boss.body) {
+            this.boss.body.enable = true;
+            this.boss.body.checkCollision.none = false;
+        }
+        
+        // Add pulsing effect
+        this.boss.pulseScale = 1.0;
+        this.boss.pulseDirection = 1;
+        
+        // Less aggressive than main boss
+        this.boss.attackRate = 2500;
+    }
+    
     updateBoss(time) {
         if (!this.boss || !this.boss.active) return;
+        
+        // Crystal node pulsing effect
+        if (this.currentBossType === 'crystalNode' && this.boss.pulseScale !== undefined) {
+            this.boss.pulseScale += this.boss.pulseDirection * 0.002;
+            if (this.boss.pulseScale >= 1.1) {
+                this.boss.pulseDirection = -1;
+            } else if (this.boss.pulseScale <= 0.9) {
+                this.boss.pulseDirection = 1;
+            }
+            this.boss.setScale(this.boss.pulseScale);
+        }
         
         // Boss horizontal movement
         this.boss.x += this.boss.moveDirection * 2;
