@@ -2590,24 +2590,25 @@ class Level1Scene extends Phaser.Scene {
                 // Fire straight down (no targeting)
                 bullet.body.setVelocity(0, config.bulletSpeed);
             }
-        } else {
-            // Standard targeting fire
-            const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+            return;
+        }
+        
+        // Standard targeting fire (for enemies without special firing modes)
+        const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
+        
+        if (bullet) {
+            bullet.setActive(true);
+            bullet.setVisible(true);
             
-            if (bullet) {
-                bullet.setActive(true);
-                bullet.setVisible(true);
-                
-                // Re-enable physics body if it was disabled
-                if (bullet.body) {
-                    bullet.body.enable = true;
-                }
-                
-                // Aim at player
-                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-                const speed = config.bulletSpeed;
-                bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+            // Re-enable physics body if it was disabled
+            if (bullet.body) {
+                bullet.body.enable = true;
             }
+            
+            // Aim at player
+            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+            const speed = config.bulletSpeed;
+            bullet.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
         }
     }
     
