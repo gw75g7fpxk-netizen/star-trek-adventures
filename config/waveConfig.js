@@ -90,14 +90,59 @@ const WaveConfig = {
             type: 'crystalNode'
         }
     },
+    // Level 3: Siege of New Horizon - Orbital defense with heavier enemies
     level3: {
         wave1: { 
-            enemyCount: 5, 
-            enemyTypes: ['fighter'],
-            shipCounts: { fighter: 5 },
-            spawnRate: 2000, 
-            difficulty: 1,
-            duration: 20000
+            enemyCount: 12, 
+            enemyTypes: ['fighter', 'scout'],
+            shipCounts: { fighter: 8, scout: 4 },
+            spawnRate: 1800, 
+            difficulty: 1.4,
+            duration: 24000
+        },
+        wave2: { 
+            enemyCount: 16, 
+            enemyTypes: ['fighter', 'cruiser', 'scout'],
+            shipCounts: { fighter: 8, cruiser: 4, scout: 4 },
+            spawnRate: 1600, 
+            difficulty: 1.8,
+            duration: 28000
+        },
+        wave3: { 
+            enemyCount: 18, 
+            enemyTypes: ['fighter', 'cruiser', 'destroyer'],
+            shipCounts: { fighter: 8, cruiser: 6, destroyer: 4 },
+            spawnRate: 1500, 
+            difficulty: 2.2,
+            duration: 32000
+        },
+        wave4: {
+            enemyCount: 20,
+            enemyTypes: ['fighter', 'cruiser', 'destroyer', 'battleship'],
+            shipCounts: { fighter: 8, cruiser: 6, destroyer: 4, battleship: 2 },
+            spawnRate: 1400,
+            difficulty: 2.6,
+            duration: 35000
+        },
+        wave5: {
+            enemyCount: 24,
+            enemyTypes: ['fighter', 'cruiser', 'destroyer', 'battleship'],
+            shipCounts: { fighter: 10, cruiser: 6, destroyer: 4, battleship: 4 },
+            spawnRate: 1200,
+            difficulty: 3.2,
+            duration: 40000
+        },
+        wave6: {
+            enemyCount: 28,
+            enemyTypes: ['fighter', 'cruiser', 'destroyer', 'battleship'],
+            shipCounts: { fighter: 12, cruiser: 8, destroyer: 4, battleship: 4 },
+            spawnRate: 1000,
+            difficulty: 3.8,
+            duration: 45000
+        },
+        bossWave: {
+            threshold: 6, // Boss appears after wave 6
+            type: 'battleship'
         }
     },
     level4: {
