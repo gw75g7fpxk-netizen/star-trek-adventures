@@ -241,8 +241,16 @@ class Level1Scene extends Phaser.Scene {
         // Initialize shield recharge timer to current time
         this.lastShieldRecharge = this.time.now;
         
-        // Start first wave
-        this.startNextWave();
+        // Check for level intro dialog
+        if (DialogConfig.hasDialog(this.levelNumber, 'intro')) {
+            // Show intro dialog before starting waves
+            this.showCommunication('intro', () => {
+                this.startNextWave();
+            });
+        } else {
+            // Start first wave immediately if no dialog
+            this.startNextWave();
+        }
         
         console.log('Level1Scene: Level ready!');
     }
@@ -2900,15 +2908,30 @@ class Level1Scene extends Phaser.Scene {
             saveData
         );
         
-        // Transition to victory scene
-        this.scene.start('VictoryScene', {
-            score: this.score,
-            wave: this.currentWave,
-            podsRescued: this.podsRescued,
-            enemiesKilled: this.enemiesKilled,
-            levelNumber: this.levelNumber,
-            pointsEarned: pointsEarned
-        });
+        // Check for level outro dialog
+        if (DialogConfig.hasDialog(this.levelNumber, 'outro')) {
+            // Show outro dialog before transitioning to victory scene
+            this.showCommunication('outro', () => {
+                this.scene.start('VictoryScene', {
+                    score: this.score,
+                    wave: this.currentWave,
+                    podsRescued: this.podsRescued,
+                    enemiesKilled: this.enemiesKilled,
+                    levelNumber: this.levelNumber,
+                    pointsEarned: pointsEarned
+                });
+            });
+        } else {
+            // Transition to victory scene immediately if no dialog
+            this.scene.start('VictoryScene', {
+                score: this.score,
+                wave: this.currentWave,
+                podsRescued: this.podsRescued,
+                enemiesKilled: this.enemiesKilled,
+                levelNumber: this.levelNumber,
+                pointsEarned: pointsEarned
+            });
+        }
     }
 
     applyUpgrades() {
@@ -3010,6 +3033,368 @@ class Level1Scene extends Phaser.Scene {
             podsRescued: this.podsRescued,
             levelNumber: this.levelNumber,
             pointsEarned: pointsEarned
+        });
+    }
+
+    // ========================================
+    // COMMUNICATION SYSTEM
+    // ========================================
+
+    showCommunication(trigger, onComplete) {
+        console.log(`Showing communication dialog: ${trigger} for level ${this.levelNumber}`);
+        
+        const dialogData = DialogConfig.getDialog(this.levelNumber, trigger);
+        if (!dialogData) {
+            console.warn(`No dialog found for level ${this.levelNumber}, trigger: ${trigger}`);
+            if (onComplete) onComplete();
+            return;
+        }
+
+        // Pause game during communication
+        this.physics.pause();
+        
+        // Store original camera zoom
+        this.originalCameraZoom = this.cameras.main.zoom;
+        
+        // Apply camera zoom effect
+        this.cameras.main.zoomTo(
+            DialogConfig.camera.communicationZoom,
+            DialogConfig.camera.zoomDuration,
+            'Sine.easeInOut'
+        );
+        
+        // Center camera on player if configured
+        if (DialogConfig.camera.focusOnPlayer && this.playerShip) {
+            this.cameras.main.pan(
+                this.playerShip.x,
+                this.playerShip.y,
+                DialogConfig.camera.zoomDuration,
+                'Sine.easeInOut'
+            );
+        }
+        
+        // Initialize communication state
+        this.communicationState = {
+            dialogData: dialogData,
+            currentIndex: 0,
+            onComplete: onComplete,
+            isTyping: false,
+            skipPressed: false,
+            hudElements: null
+        };
+        
+        // Show first message after camera zoom
+        this.time.delayedCall(DialogConfig.camera.zoomDuration, () => {
+            this.showNextMessage();
+        });
+    }
+
+    showNextMessage() {
+        const state = this.communicationState;
+        if (!state || state.currentIndex >= state.dialogData.sequence.length) {
+            this.closeCommunication();
+            return;
+        }
+
+        const message = state.dialogData.sequence[state.currentIndex];
+        this.displayCommunicationHUD(message);
+    }
+
+    displayCommunicationHUD(message) {
+        // Clear previous HUD elements if any
+        this.clearCommunicationHUD();
+
+        const isMobile = this.cameraWidth < 600 || this.cameraHeight < 600;
+        const config = DialogConfig.hud;
+        
+        // Calculate dimensions based on device
+        const hudWidth = isMobile ? config.mobileWidth : config.width;
+        const hudHeight = isMobile ? config.mobileHeight : config.height;
+        const portraitSize = isMobile ? config.mobilePortraitSize : config.portraitSize;
+        const speakerFontSize = isMobile ? config.mobileSpeakerFontSize : config.speakerFontSize;
+        const textFontSize = isMobile ? config.mobileTextFontSize : config.textFontSize;
+        const lineHeight = isMobile ? config.mobileLineHeight : config.lineHeight;
+        
+        // Create container for all HUD elements
+        const hudElements = {
+            graphics: [],
+            texts: [],
+            images: []
+        };
+
+        // Background panel
+        const bg = this.add.graphics();
+        bg.fillStyle(config.backgroundColor, config.backgroundAlpha);
+        bg.fillRect(config.x, config.y, hudWidth, hudHeight);
+        bg.lineStyle(config.borderWidth, config.borderColor, 1);
+        bg.strokeRect(config.x, config.y, hudWidth, hudHeight);
+        bg.setScrollFactor(0);
+        bg.setDepth(1000);
+        hudElements.graphics.push(bg);
+
+        // Title bar
+        const titleBg = this.add.graphics();
+        titleBg.fillStyle(config.borderColor, 0.3);
+        titleBg.fillRect(config.x, config.y - 25, hudWidth, 25);
+        titleBg.setScrollFactor(0);
+        titleBg.setDepth(1000);
+        hudElements.graphics.push(titleBg);
+
+        const titleText = this.add.text(
+            config.x + hudWidth / 2,
+            config.y - 12,
+            this.communicationState.dialogData.title || 'COMMUNICATION',
+            {
+                fontSize: '12px',
+                color: config.borderColor,
+                fontFamily: 'Courier New, monospace',
+                fontStyle: 'bold'
+            }
+        );
+        titleText.setOrigin(0.5);
+        titleText.setScrollFactor(0);
+        titleText.setDepth(1001);
+        hudElements.texts.push(titleText);
+
+        // Portrait/Ship image (left side)
+        const portraitKey = DialogConfig.portraits[message.portrait];
+        if (portraitKey && this.textures.exists(portraitKey)) {
+            const portrait = this.add.image(
+                config.x + config.portraitPadding + portraitSize / 2,
+                config.y + hudHeight / 2,
+                portraitKey
+            );
+            portrait.setDisplaySize(portraitSize, portraitSize);
+            portrait.setScrollFactor(0);
+            portrait.setDepth(1001);
+            hudElements.images.push(portrait);
+        } else {
+            // Fallback: simple colored circle if image not found
+            const portraitCircle = this.add.graphics();
+            portraitCircle.fillStyle(0x00FFFF, 0.5);
+            portraitCircle.fillCircle(
+                config.x + config.portraitPadding + portraitSize / 2,
+                config.y + hudHeight / 2,
+                portraitSize / 2
+            );
+            portraitCircle.setScrollFactor(0);
+            portraitCircle.setDepth(1001);
+            hudElements.graphics.push(portraitCircle);
+        }
+
+        // Text area (right side)
+        const textX = config.x + config.portraitPadding * 2 + portraitSize + config.textPadding;
+        const textWidth = hudWidth - portraitSize - config.portraitPadding * 2 - config.textPadding * 2;
+
+        // Speaker name and ship
+        const speakerLabel = `${message.speaker}${message.ship ? ` - ${message.ship}` : ''}`;
+        const speakerText = this.add.text(
+            textX,
+            config.y + config.textPadding,
+            speakerLabel,
+            {
+                fontSize: speakerFontSize,
+                color: config.speakerColor,
+                fontFamily: 'Courier New, monospace',
+                fontStyle: 'bold',
+                wordWrap: { width: textWidth }
+            }
+        );
+        speakerText.setScrollFactor(0);
+        speakerText.setDepth(1001);
+        hudElements.texts.push(speakerText);
+
+        // Dialog text (will be shown with typewriter effect)
+        const dialogTextY = config.y + config.textPadding + lineHeight + 5;
+        const dialogText = this.add.text(
+            textX,
+            dialogTextY,
+            '',
+            {
+                fontSize: textFontSize,
+                color: config.textColor,
+                fontFamily: 'Courier New, monospace',
+                wordWrap: { width: textWidth },
+                lineSpacing: 3
+            }
+        );
+        dialogText.setScrollFactor(0);
+        dialogText.setDepth(1001);
+        hudElements.texts.push(dialogText);
+
+        // Advance prompt
+        const advanceText = isMobile ? config.mobileAdvanceText : config.advanceText;
+        const advancePrompt = this.add.text(
+            config.x + hudWidth - config.textPadding,
+            config.y + hudHeight - config.textPadding,
+            advanceText,
+            {
+                fontSize: config.advanceFontSize,
+                color: config.advanceColor,
+                fontFamily: 'Courier New, monospace'
+            }
+        );
+        advancePrompt.setOrigin(1, 1);
+        advancePrompt.setScrollFactor(0);
+        advancePrompt.setDepth(1001);
+        advancePrompt.setAlpha(0); // Hidden until typewriter is done
+        hudElements.texts.push(advancePrompt);
+
+        // Store elements
+        this.communicationState.hudElements = hudElements;
+        this.communicationState.dialogText = dialogText;
+        this.communicationState.advancePrompt = advancePrompt;
+        this.communicationState.fullText = message.text;
+
+        // Start typewriter effect
+        this.startTypewriterEffect(message.text, dialogText, advancePrompt);
+
+        // Setup input for advancing
+        this.setupCommunicationInput();
+    }
+
+    startTypewriterEffect(fullText, textObject, advancePrompt) {
+        this.communicationState.isTyping = true;
+        this.communicationState.skipPressed = false;
+        
+        let currentChar = 0;
+        const typewriterSpeed = DialogConfig.hud.typewriterSpeed;
+
+        const typeNextChar = () => {
+            if (this.communicationState.skipPressed || currentChar >= fullText.length) {
+                // Show full text immediately
+                textObject.setText(fullText);
+                this.communicationState.isTyping = false;
+                advancePrompt.setAlpha(1);
+                
+                // Make advance prompt blink
+                this.tweens.add({
+                    targets: advancePrompt,
+                    alpha: 0.3,
+                    duration: 500,
+                    yoyo: true,
+                    repeat: -1
+                });
+                return;
+            }
+
+            textObject.setText(fullText.substring(0, currentChar + 1));
+            currentChar++;
+
+            this.time.delayedCall(typewriterSpeed, typeNextChar);
+        };
+
+        typeNextChar();
+    }
+
+    setupCommunicationInput() {
+        // Remove previous input listeners if any
+        if (this.communicationSpaceKey) {
+            this.communicationSpaceKey.off('down');
+        }
+        if (this.communicationInputZone) {
+            this.communicationInputZone.destroy();
+        }
+
+        // Space key to advance/skip
+        this.communicationSpaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.communicationSpaceKey.on('down', () => {
+            this.handleCommunicationAdvance();
+        });
+
+        // Touch/click anywhere to advance/skip
+        this.communicationInputZone = this.add.rectangle(
+            0, 0,
+            this.cameraWidth,
+            this.cameraHeight,
+            0x000000,
+            0
+        );
+        this.communicationInputZone.setOrigin(0, 0);
+        this.communicationInputZone.setScrollFactor(0);
+        this.communicationInputZone.setDepth(999);
+        this.communicationInputZone.setInteractive();
+        this.communicationInputZone.on('pointerdown', () => {
+            this.handleCommunicationAdvance();
+        });
+    }
+
+    handleCommunicationAdvance() {
+        if (!this.communicationState) return;
+
+        if (this.communicationState.isTyping) {
+            // Skip typewriter effect
+            this.communicationState.skipPressed = true;
+        } else {
+            // Advance to next message
+            this.communicationState.currentIndex++;
+            this.showNextMessage();
+        }
+    }
+
+    clearCommunicationHUD() {
+        if (!this.communicationState || !this.communicationState.hudElements) return;
+
+        const elements = this.communicationState.hudElements;
+        
+        // Destroy all graphics
+        elements.graphics.forEach(g => g.destroy());
+        
+        // Destroy all texts
+        elements.texts.forEach(t => t.destroy());
+        
+        // Destroy all images
+        elements.images.forEach(i => i.destroy());
+
+        this.communicationState.hudElements = null;
+    }
+
+    closeCommunication() {
+        console.log('Closing communication dialog');
+
+        // Clear HUD
+        this.clearCommunicationHUD();
+
+        // Clean up input listeners
+        if (this.communicationSpaceKey) {
+            this.communicationSpaceKey.off('down');
+            this.communicationSpaceKey = null;
+        }
+        if (this.communicationInputZone) {
+            this.communicationInputZone.destroy();
+            this.communicationInputZone = null;
+        }
+
+        // Restore camera zoom and position
+        this.cameras.main.zoomTo(
+            this.originalCameraZoom || DialogConfig.camera.normalZoom,
+            DialogConfig.camera.zoomDuration,
+            'Sine.easeInOut'
+        );
+
+        // Reset camera to follow player
+        if (this.playerShip) {
+            this.cameras.main.stopFollow();
+            // Re-center on middle of screen
+            this.cameras.main.pan(
+                this.cameraWidth / 2,
+                this.cameraHeight / 2,
+                DialogConfig.camera.zoomDuration,
+                'Sine.easeInOut'
+            );
+        }
+
+        // Resume game after camera restoration
+        this.time.delayedCall(DialogConfig.camera.zoomDuration, () => {
+            this.physics.resume();
+            
+            // Call completion callback
+            const onComplete = this.communicationState.onComplete;
+            this.communicationState = null;
+            
+            if (onComplete) {
+                onComplete();
+            }
         });
     }
 }
