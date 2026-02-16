@@ -3582,7 +3582,19 @@ class Level1Scene extends Phaser.Scene {
                 hudY + hudHeight / 2,
                 portraitKey
             );
-            portrait.setDisplaySize(portraitSize, portraitSize);
+            // Preserve aspect ratio by scaling to fit within portraitSize bounds
+            const texture = portrait.texture;
+            const frame = portrait.frame;
+            const aspectRatio = frame.width / frame.height;
+            
+            if (aspectRatio > 1) {
+                // Wider than tall
+                portrait.setDisplaySize(portraitSize, portraitSize / aspectRatio);
+            } else {
+                // Taller than wide or square
+                portrait.setDisplaySize(portraitSize * aspectRatio, portraitSize);
+            }
+            
             portrait.setScrollFactor(0);
             portrait.setDepth(1001);
             hudElements.images.push(portrait);
@@ -3613,7 +3625,7 @@ class Level1Scene extends Phaser.Scene {
             {
                 fontSize: speakerFontSize,
                 color: config.speakerColor,
-                fontFamily: 'Courier New, monospace',
+                fontFamily: config.fontFamily || 'Arial, sans-serif',
                 fontStyle: 'bold',
                 wordWrap: { width: textWidth }
             }
@@ -3623,7 +3635,9 @@ class Level1Scene extends Phaser.Scene {
         hudElements.texts.push(speakerText);
 
         // Dialog text (will be shown with typewriter effect)
-        const dialogTextY = hudY + config.textPadding + lineHeight + 5;
+        // Add proper gap between speaker name and dialog text
+        const speakerTextGap = isMobile ? (config.mobileSpeakerTextGap || 6) : (config.speakerTextGap || 8);
+        const dialogTextY = hudY + config.textPadding + lineHeight + speakerTextGap;
         const dialogText = this.add.text(
             textX,
             dialogTextY,
@@ -3631,9 +3645,9 @@ class Level1Scene extends Phaser.Scene {
             {
                 fontSize: textFontSize,
                 color: config.textColor,
-                fontFamily: 'Courier New, monospace',
+                fontFamily: config.fontFamily || 'Arial, sans-serif',
                 wordWrap: { width: textWidth },
-                lineSpacing: 3
+                lineSpacing: 4
             }
         );
         dialogText.setScrollFactor(0);

@@ -7,22 +7,24 @@ const DialogConfig = {
         // Position in top-left corner
         x: 20,
         y: 60,
-        width: 450,
-        height: 140,
+        width: 500,
+        height: 160,
         
         // Mobile adjustments
-        mobileWidth: 280,
-        mobileHeight: 120,
+        mobileWidth: 320,
+        mobileHeight: 140,
         
         // Portrait/avatar section (left side)
         portraitSize: 100,
-        mobilePortraitSize: 80,
+        mobilePortraitSize: 70,
         portraitPadding: 10,
         
         // Text section (right side)
         textPadding: 15,
-        lineHeight: 20,
-        mobileLineHeight: 16,
+        lineHeight: 24,
+        mobileLineHeight: 20,
+        speakerTextGap: 8,          // Gap between speaker name and dialog text
+        mobileSpeakerTextGap: 6,
         
         // Colors
         backgroundColor: 0x000000,
@@ -33,11 +35,12 @@ const DialogConfig = {
         speakerColor: '#FFD700',    // Gold for speaker name
         textColor: '#FFFFFF',       // White for dialog text
         
-        // Font sizes
-        speakerFontSize: '18px',
-        textFontSize: '14px',
-        mobileSpeakerFontSize: '14px',
+        // Font sizes - improved readability
+        speakerFontSize: '16px',
+        textFontSize: '15px',
+        mobileSpeakerFontSize: '13px',
         mobileTextFontSize: '12px',
+        fontFamily: 'Arial, sans-serif',  // Clearer font than Courier New
         
         // Typewriter effect
         typewriterSpeed: 30,        // milliseconds per character
