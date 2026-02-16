@@ -118,7 +118,12 @@ const EnemyConfig = {
     // Crystal Node - Mid-boss for Level 2 (Communication Jammer)
     crystalNode: {
         health: 600,
+        shields: 0,
         speed: 20,
+        fireRate: 2500, // Shoots less frequently than regular enemies
+        bulletSpeed: 200,
+        damage: 2,
+        movementPattern: 'stationary', // Stays in place
         phases: [
             {
                 name: 'core',

@@ -1711,6 +1711,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemyType === 'battleship') texture = 'enemy-battleship';
         if (enemyType === 'weaponPlatform') texture = 'weapon-platform';
         if (enemyType === 'asteroid') texture = 'asteroid';
+        if (enemyType === 'crystalNode') texture = 'crystal-node';
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -1730,7 +1731,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid') && enemy.width > 0) {
+            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid' || enemyType === 'crystalNode') && enemy.width > 0) {
                 // Scale sprites to their configured target width
                 // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 40px
                 const targetWidth = config.size.width;
@@ -1874,6 +1875,30 @@ class Level1Scene extends Phaser.Scene {
             // Rotate asteroids
             if (enemy.enemyType === 'asteroid' && enemy.rotationSpeed) {
                 enemy.rotation += enemy.rotationSpeed * ASTEROID_ROTATION_FACTOR;
+            }
+            
+            // Pulsing effect for crystalNode
+            if (enemy.enemyType === 'crystalNode') {
+                if (enemy.pulseScale === undefined) {
+                    enemy.pulseScale = 1.0;
+                    enemy.pulseDirection = 1;
+                    enemy.baseScale = enemy.scaleX || 1.0; // Store base scale from spawn
+                }
+                
+                // Update pulse scale with boundary checking
+                const newScale = enemy.pulseScale + (enemy.pulseDirection * CRYSTAL_PULSE.speed);
+                if (newScale >= CRYSTAL_PULSE.maxScale) {
+                    enemy.pulseScale = CRYSTAL_PULSE.maxScale;
+                    enemy.pulseDirection = -1;
+                } else if (newScale <= CRYSTAL_PULSE.minScale) {
+                    enemy.pulseScale = CRYSTAL_PULSE.minScale;
+                    enemy.pulseDirection = 1;
+                } else {
+                    enemy.pulseScale = newScale;
+                }
+                
+                // Apply pulse as a multiplier on the base scale
+                enemy.setScale(enemy.baseScale * enemy.pulseScale);
             }
             
             // Update movement pattern
@@ -2542,11 +2567,15 @@ class Level1Scene extends Phaser.Scene {
         
         // Crystal node pulsing effect
         if (this.currentBossType === 'crystalNode' && this.boss.pulseScale !== undefined) {
-            this.boss.pulseScale += this.boss.pulseDirection * CRYSTAL_PULSE.speed;
-            if (this.boss.pulseScale >= CRYSTAL_PULSE.maxScale) {
+            const newScale = this.boss.pulseScale + (this.boss.pulseDirection * CRYSTAL_PULSE.speed);
+            if (newScale >= CRYSTAL_PULSE.maxScale) {
+                this.boss.pulseScale = CRYSTAL_PULSE.maxScale;
                 this.boss.pulseDirection = -1;
-            } else if (this.boss.pulseScale <= CRYSTAL_PULSE.minScale) {
+            } else if (newScale <= CRYSTAL_PULSE.minScale) {
+                this.boss.pulseScale = CRYSTAL_PULSE.minScale;
                 this.boss.pulseDirection = 1;
+            } else {
+                this.boss.pulseScale = newScale;
             }
             this.boss.setScale(this.boss.pulseScale);
         }
@@ -2667,8 +2696,11 @@ class Level1Scene extends Phaser.Scene {
         // Disable bullet using helper function
         this.disableBulletPhysics(bullet);
         
-        // Only damage in phase 3 (core exposed)
-        if (actualBoss.phase === 3) {
+        // CrystalNode boss is immediately damageable (no shield phases)
+        // Regular boss is only damageable in phase 3 (core exposed)
+        const isDamageable = this.currentBossType === 'crystalNode' || actualBoss.phase === 3;
+        
+        if (isDamageable) {
             actualBoss.health -= 10;
             actualBoss.phaseHealth -= 10;
             
