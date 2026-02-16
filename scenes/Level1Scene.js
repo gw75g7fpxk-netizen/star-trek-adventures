@@ -85,7 +85,7 @@ const PLAYER_HEALTH_BAR = {
 };
 
 // Boss-type enemies that get special explosion effects
-const BOSS_TYPE_ENEMIES = ['boss', 'crystalNode', 'battleship'];
+const BOSS_TYPE_ENEMIES = ['boss', 'crystalNode', 'battleship', 'vanguard'];
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -2047,6 +2047,8 @@ class Level1Scene extends Phaser.Scene {
         let texture = 'boss-core';
         if (bossType === 'crystalNode') {
             texture = 'crystal-node';
+        } else if (bossType === 'vanguard') {
+            texture = 'enemy-cruiser'; // Use cruiser texture for vanguard boss
         }
         
         const boss = this.enemies.get(x, y, texture);

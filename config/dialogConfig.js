@@ -88,6 +88,64 @@ const DialogConfig = {
     // Level-specific dialog sequences
     // Each level can have multiple dialog sequences (intro, mid-level, outro, etc.)
     levelDialogs: {
+        1: {
+            // Dialog at level start (intro)
+            intro: {
+                title: 'INCOMING TRANSMISSION',
+                sequence: [
+                    {
+                        speaker: 'Science Officer',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Captain, sensors are detecting an unknown fleet ahead. They match no known signatures in our database.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Tactical Officer',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Crystal-like vessels, Captain. And they\'re powering weapons! All frequencies jammed - we can\'t hail them.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Captain',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Red alert! All hands to battle stations. This first contact just went hostile. Shields up, prepare to engage!',
+                        audio: null
+                    }
+                ]
+            },
+            
+            // Dialog at level end (outro/victory)
+            outro: {
+                title: 'INCOMING TRANSMISSION',
+                sequence: [
+                    {
+                        speaker: 'Tactical Officer',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'The vanguard ship is destroyed, Captain. The remaining Crystalis forces are retreating.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Captain',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Good work. Helm, take us toward that asteroid field. We need cover to regroup and figure out what we\'re dealing with.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Science Officer',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Communications are still jammed, Captain. We\'re on our own for now.',
+                        audio: null
+                    }
+                ]
+            }
+        },
+        
         2: {
             // Dialog at level start (intro)
             intro: {

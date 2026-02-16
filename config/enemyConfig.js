@@ -85,6 +85,21 @@ const EnemyConfig = {
         rotation: true // Asteroids slowly rotate
     },
     
+    // Shard Vanguard - Level 1 Boss (First contact enemy leader)
+    vanguard: {
+        health: 75,
+        shields: 0,
+        speed: 50,
+        fireRate: 1800, // Time between attacks (slower than crystalNode)
+        bulletSpeed: 180,
+        damage: 1,
+        movementPattern: 'horizontal',
+        spreadShot: true, // Fires spread pattern
+        spreadCount: 3, // Fires 3 bullets per shot
+        size: { width: 100, height: 100 },
+        points: 1500
+    },
+    
     // Boss - Massive Crystalis Battleship (Simplified to be a stronger enemy)
     boss: {
         health: 500,
