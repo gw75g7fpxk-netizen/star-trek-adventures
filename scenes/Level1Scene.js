@@ -119,7 +119,7 @@ class Level1Scene extends Phaser.Scene {
         this.safeAreaOffset = 120; // pixels from bottom edge
         
         // Default to level 1 if not specified
-        this.levelNumber = 1
+        this.levelNumber = 1;
         
         // Enemy health bar tracking
         this.enemyHealthBars = new Map(); // Map of enemy -> health bar graphics
