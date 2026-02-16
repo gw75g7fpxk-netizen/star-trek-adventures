@@ -2324,7 +2324,9 @@ class Level1Scene extends Phaser.Scene {
                 // Once battleship reaches or passes y=100, stop vertical movement and start horizontal pattern
                 if (enemy.y >= 100) {
                     enemy.body.setVelocityY(0);
-                    if (enemy.x < 100 || enemy.x > this.cameraWidth - 100) {
+                    // Bounce off edges: reverse direction only when at edge AND moving toward it
+                    if ((enemy.x < 100 && enemy.body.velocity.x < 0) || 
+                        (enemy.x > this.cameraWidth - 100 && enemy.body.velocity.x > 0)) {
                         enemy.body.setVelocityX(-enemy.body.velocity.x);
                     }
                     if (enemy.body.velocity.x === 0) {
