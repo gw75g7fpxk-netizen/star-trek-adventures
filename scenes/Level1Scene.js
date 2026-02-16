@@ -267,6 +267,18 @@ class Level1Scene extends Phaser.Scene {
         console.log('Level1Scene: Level ready!');
     }
     
+    shutdown() {
+        // Clean up event listeners to prevent memory leaks
+        if (this.escKey) {
+            this.escKey.off('down');
+        }
+        if (this.pauseButton) {
+            this.pauseButton.off('pointerdown');
+            this.pauseButton.off('pointerover');
+            this.pauseButton.off('pointerout');
+        }
+    }
+    
     updateCameraDimensions() {
         if (this.cameras && this.cameras.main) {
             this.cameraWidth = this.cameras.main.width;
@@ -3035,7 +3047,7 @@ class Level1Scene extends Phaser.Scene {
         continueButton.setDepth(10002);
         continueButton.setInteractive({ useHandCursor: true });
         
-        continueButton.on('pointerdown', () => {
+        continueButton.once('pointerdown', () => {
             this.resumeGame();
         });
         
@@ -3072,7 +3084,7 @@ class Level1Scene extends Phaser.Scene {
         quitButton.setDepth(10002);
         quitButton.setInteractive({ useHandCursor: true });
         
-        quitButton.on('pointerdown', () => {
+        quitButton.once('pointerdown', () => {
             // Clean up and return to main menu
             this.quitToMainMenu();
         });
@@ -3091,9 +3103,11 @@ class Level1Scene extends Phaser.Scene {
     }
 
     quitToMainMenu() {
-        // Stop all timers
+        // Stop all timers and tweens
         if (this.waveTimer) this.waveTimer.remove();
         if (this.podTimer) this.podTimer.remove();
+        this.time.removeAllEvents();
+        this.tweens.killAll();
         
         // Clean up pause menu
         if (this.pauseMenu) {
