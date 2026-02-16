@@ -4,7 +4,7 @@
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        Star Trek Adventures                            │
+│                        Star Trek Aurora                            │
 │                                                                        │
 │  ┌─ INCOMING TRANSMISSION ────────────────────────┐                   │
 │  │                                                 │                   │
@@ -27,7 +27,7 @@
 
 ```
 ┌──────────────────────────┐
-│   Star Trek Adventures   │
+│   Star Trek Aurora   │
 │                          │
 │ ┌─ TRANSMISSION ───────┐ │
 │ │                      │ │

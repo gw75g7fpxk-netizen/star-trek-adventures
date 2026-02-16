@@ -2,7 +2,7 @@
 
 ## ✅ Implementation Complete
 
-This document summarizes the communication/dialog system implementation for Star Trek Adventures.
+This document summarizes the communication/dialog system implementation for Star Trek Aurora.
 
 ---
 

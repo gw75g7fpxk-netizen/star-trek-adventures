@@ -201,4 +201,4 @@ To implement:
 - `showCommunication()` - Add new triggers (mid-wave, boss-intro, etc.)
 
 ## Credits
-Communication system designed for immersive storytelling in Star Trek Adventures game.
+Communication system designed for immersive storytelling in Star Trek Aurora game.

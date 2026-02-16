@@ -1,19 +1,23 @@
-# Star Trek Adventures
+# Star Trek Aurora
 
 A vertical scrolling space shooter game inspired by Star Trek, built with Phaser 3. Command the USS Aurora against waves of Crystalis forces in fast-paced arcade action.
 
 ## Play the Game
 
-🎮 **[Play Star Trek Adventures](https://gw75g7fpxk-netizen.github.io/star-trek-adventures/)**
+🎮 **[Play Star Trek Aurora](https://gw75g7fpxk-netizen.github.io/star-trek-adventures/)**
 
 ## Features
 
 ### Core Gameplay
+- **10 Mission Campaign**: Progress through a complete story-driven campaign across 10 unique missions
 - **Wave-based Combat**: Battle through increasingly difficult waves of enemy fighters, cruisers, and battleships
-- **Boss Battles**: Multi-phase boss fight with shield generators, turrets, and vulnerable core mechanics
+- **Boss Battles**: Multi-phase boss fights with shield generators, turrets, and vulnerable core mechanics
 - **Rescue Missions**: Save Federation escape pods while defending them from enemy fire for bonus score multipliers
 - **Power-ups**: Collect upgrades to enhance your ship's capabilities
 - **Dynamic Difficulty**: Enemy waves scale in speed, quantity, and aggression
+- **Story Dialog System**: Cinematic communication sequences with crew members that advance the narrative
+- **Mission Select**: Visual space route map showing all missions with progress tracking
+- **Ship Upgrades**: Spend upgrade points earned from missions to enhance your ship (coming soon)
 
 ### Controls
 - **Desktop**: WASD or Arrow keys for movement, Spacebar to fire
@@ -29,6 +33,13 @@ A vertical scrolling space shooter game inspired by Star Trek, built with Phaser
 - Auto-scaling for different screen resolutions (Phaser.Scale.FIT)
 
 ## Game Mechanics
+
+### Story & Campaign
+The game features a complete 10-mission storyline where the USS Aurora encounters the mysterious Crystalis forces. Each mission builds on the previous one with:
+- **Narrative Dialog**: Intro and outro communication sequences with your crew
+- **Progressive Unlocking**: Complete missions to unlock the next in the campaign
+- **Story Continuity**: Discover the truth about the Crystalline Entity and the Crystalis civilization
+- **Save System**: Your progress is automatically saved via localStorage
 
 ### Menu System
 - **Main Menu**: Choose between Mission Select and Ship Upgrades
@@ -67,6 +78,8 @@ The game uses a modular architecture with separate configuration files:
 - `podConfig.js` - Escape pod mechanics
 - `powerUpConfig.js` - Power-up system
 - `progressConfig.js` - Level unlocks and save system
+- `upgradesConfig.js` - Ship upgrade system (coming soon)
+- `dialogConfig.js` - Story dialog and communications
 
 ### Project Structure
 ```
@@ -80,7 +93,9 @@ The game uses a modular architecture with separate configuration files:
 │   ├── waveConfig.js
 │   ├── podConfig.js
 │   ├── powerUpConfig.js
-│   └── progressConfig.js
+│   ├── progressConfig.js
+│   ├── upgradesConfig.js
+│   └── dialogConfig.js
 └── scenes/             # Game scenes
     ├── BootScene.js
     ├── PreloadScene.js
@@ -101,13 +116,13 @@ The game currently uses procedurally generated placeholder graphics. For product
 
 ## Future Enhancements
 
-- Expand wave content for levels 2-10 with unique challenges
-- Implement ship upgrade system with purchasable enhancements
-- More enemy types and attack patterns
-- Additional power-up types
-- Full sprite replacements for production graphics
+- Complete wave content for levels 3-10 with unique challenges per storyline
+- Implement ship upgrade system with purchasable enhancements using earned upgrade points
+- Add more diverse enemy types and attack patterns
+- Expand power-up variety and effects
+- Full sprite replacements for production-quality graphics
 - Enhanced sound effects and background music
-- Leaderboard system
+- Multiplayer leaderboard system
 
 ## License
 

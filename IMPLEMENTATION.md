@@ -1,4 +1,4 @@
-# Star Trek Adventures - Implementation Summary
+# Star Trek Aurora - Implementation Summary
 
 ## Project Complete! ✅
 
