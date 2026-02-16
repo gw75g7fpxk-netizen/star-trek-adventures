@@ -1,5 +1,5 @@
 // Main game entry point
-console.log('Star Trek Adventures - Initializing...');
+console.log('Star Trek Aurora - Initializing...');
 
 // Configure scenes
 GameConfig.scene = [
@@ -19,7 +19,7 @@ const game = new Phaser.Game(GameConfig);
 // Expose game to window for debugging and testing
 window.game = game;
 
-console.log('Star Trek Adventures - Game created');
+console.log('Star Trek Aurora - Game created');
 console.log('Configuration:', {
     width: GameConfig.width,
     height: GameConfig.height,

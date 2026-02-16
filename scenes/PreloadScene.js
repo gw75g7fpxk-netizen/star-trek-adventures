@@ -70,7 +70,7 @@ class PreloadScene extends Phaser.Scene {
         const height = this.cameras.main.height;
         
         // Title
-        const title = this.add.text(width / 2, height / 2 - 100, 'STAR TREK ADVENTURES', {
+        const title = this.add.text(width / 2, height / 2 - 100, 'STAR TREK AURORA', {
             fontSize: '32px',
             color: '#00FFFF',
             fontFamily: 'Arial'
