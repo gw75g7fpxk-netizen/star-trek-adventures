@@ -246,7 +246,7 @@ class LevelSelectScene extends Phaser.Scene {
                 fontStyle: 'bold',
                 wordWrap: { width: panelWidth - padding * 2 }
             }),
-            description: this.add.text(panelX + padding, panelY + padding + (isMobile ? 40 : 60), '', {
+            description: this.add.text(panelX + padding, panelY + padding + (isMobile ? 50 : 60), '', {
                 fontSize: descSize,
                 color: '#FFFFFF',
                 fontFamily: 'Courier New, monospace',
@@ -269,7 +269,8 @@ class LevelSelectScene extends Phaser.Scene {
         // Play button
         const buttonSize = isMobile ? '18px' : '24px'
         const buttonY = panelY + panelHeight - (isMobile ? 50 : 60)
-        this.playButton = this.add.text(panelX + panelWidth / 2, buttonY, '[ LAUNCH MISSION ]', {
+        const buttonText = isMobile ? '[ LAUNCH ]' : '[ LAUNCH MISSION ]'
+        this.playButton = this.add.text(panelX + panelWidth / 2, buttonY, buttonText, {
             fontSize: buttonSize,
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
