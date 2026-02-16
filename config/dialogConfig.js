@@ -46,6 +46,9 @@ const DialogConfig = {
         typewriterSpeed: 30,        // milliseconds per character
         skipAllowed: true,
         
+        // Dialogue advancement
+        advanceResetDelay: 100,     // milliseconds to wait before allowing next advance
+        
         // Advance prompt
         advanceText: '[SPACE] Continue',
         mobileAdvanceText: '[TAP] Continue',

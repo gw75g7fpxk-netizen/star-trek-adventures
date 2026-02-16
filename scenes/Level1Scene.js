@@ -3603,7 +3603,7 @@ class Level1Scene extends Phaser.Scene {
             this.communicationState.currentIndex++;
             this.showNextMessage();
             // Reset the flag after a short delay to allow the next message to setup
-            this.time.delayedCall(100, () => {
+            this.time.delayedCall(DialogConfig.hud.advanceResetDelay, () => {
                 if (this.communicationState) {
                     this.communicationState.isAdvancing = false;
                 }
