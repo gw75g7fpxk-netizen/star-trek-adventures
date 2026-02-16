@@ -136,6 +136,21 @@ class PreloadScene extends Phaser.Scene {
         asteroidGraphics.generateTexture('asteroid', 40, 40);
         asteroidGraphics.destroy();
         
+        // Create procedural mine texture (sphere with spikes)
+        const mineGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        mineGraphics.fillStyle(0x333333, 1); // Dark gray/black body
+        mineGraphics.fillCircle(8, 8, 7); // Main sphere
+        mineGraphics.fillStyle(0x666666, 1); // Lighter gray for spikes
+        // Draw spikes around the mine
+        mineGraphics.fillCircle(8, 1, 2); // Top spike
+        mineGraphics.fillCircle(8, 15, 2); // Bottom spike
+        mineGraphics.fillCircle(1, 8, 2); // Left spike
+        mineGraphics.fillCircle(15, 8, 2); // Right spike
+        mineGraphics.fillStyle(0xFF0000, 1); // Red warning light
+        mineGraphics.fillCircle(8, 8, 2); // Center light
+        mineGraphics.generateTexture('mine', 16, 16);
+        mineGraphics.destroy();
+        
         // Create crystal node boss texture (pulsing crystal for Level 2 boss)
         const crystalNodeGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         crystalNodeGraphics.fillStyle(0x00FFFF, 1); // Cyan crystal

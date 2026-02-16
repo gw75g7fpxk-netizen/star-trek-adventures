@@ -1957,6 +1957,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemyType === 'crystalNode') texture = 'crystal-node';
         if (enemyType === 'destroyer') texture = 'enemy-cruiser'; // Use cruiser texture for now
         if (enemyType === 'carrier') texture = 'enemy-carrier';
+        if (enemyType === 'mine') texture = 'mine';
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -1976,7 +1977,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'destroyer', 'carrier'];
+            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'destroyer', 'carrier', 'mine'];
             if (scalableEnemies.includes(enemyType) && enemy.width > 0) {
                 let targetWidth = config.size.width;
                 
@@ -2017,6 +2018,13 @@ class Level1Scene extends Phaser.Scene {
             // Add rotation for asteroids
             if (enemyType === 'asteroid') {
                 enemy.rotationSpeed = Phaser.Math.FloatBetween(-0.5, 0.5); // Random rotation speed
+            }
+            
+            // Add mine-specific properties
+            if (enemyType === 'mine') {
+                enemy.isChasing = false; // Track if mine is currently chasing
+                enemy.chaseSpeed = config.chaseSpeed; // Store chase speed
+                enemy.proximityDistance = config.proximityDistance; // Store trigger distance
             }
             
             // Set initial velocity so enemy moves onto screen
@@ -2498,6 +2506,34 @@ class Level1Scene extends Phaser.Scene {
                     const diagonalSpeed = config.speed;
                     const horizontalSpeed = diagonalSpeed * 0.5 * enemy.diagonalDirection;
                     enemy.body.setVelocity(horizontalSpeed, diagonalSpeed);
+                }
+                break;
+            case 'mine':
+                // Mine - stationary until player gets close, then chase
+                if (!enemy.isChasing) {
+                    // Check distance to player
+                    const distanceToPlayer = Phaser.Math.Distance.Between(
+                        enemy.x, enemy.y,
+                        this.playerShip.x, this.playerShip.y
+                    );
+                    
+                    if (distanceToPlayer < enemy.proximityDistance) {
+                        // Activate chase mode
+                        enemy.isChasing = true;
+                    } else {
+                        // Stay stationary horizontally like weapon platforms
+                        enemy.body.setVelocityX(0);
+                    }
+                } else {
+                    // Chase the player - move towards player position
+                    const angle = Phaser.Math.Angle.Between(
+                        enemy.x, enemy.y,
+                        this.playerShip.x, this.playerShip.y
+                    );
+                    enemy.body.setVelocity(
+                        Math.cos(angle) * enemy.chaseSpeed,
+                        Math.sin(angle) * enemy.chaseSpeed
+                    );
                 }
                 break;
         }
