@@ -2620,71 +2620,45 @@ class Level1Scene extends Phaser.Scene {
     
     launchFighters(carrier) {
         // Launch two fighters, one from each side of the carrier
-        const config = EnemyConfig.fighter;
         const carrierHalfWidth = carrier.displayWidth / 2;
         
-        // Left fighter
-        const leftFighter = this.enemies.get(carrier.x - carrierHalfWidth - 10, carrier.y, 'enemy-fighter');
-        if (leftFighter) {
-            leftFighter.setActive(true);
-            leftFighter.setVisible(true);
-            leftFighter.enemyType = 'fighter';
-            leftFighter.health = config.health;
-            leftFighter.shields = config.shields || 0;
-            leftFighter.points = config.points;
-            leftFighter.fireRate = config.fireRate;
-            leftFighter.lastFired = 0;
-            leftFighter.invincibleUntil = 0;
-            leftFighter.movementPattern = 'weaving';
-            leftFighter.patternOffset = Math.random() * Math.PI * 2;
-            leftFighter.hasEnteredScreen = true; // Already on screen
-            leftFighter.initialSpeed = config.speed;
-            
-            // Scale fighter to correct size
-            if (leftFighter.width > 0) {
-                const scale = config.size.width / leftFighter.width;
-                leftFighter.setScale(scale);
-            }
-            
-            // Set initial velocity - diagonal away from carrier and towards player
-            const angleToPlayer = Phaser.Math.Angle.Between(leftFighter.x, leftFighter.y, this.player.x, this.player.y);
-            leftFighter.body.setVelocity(Math.cos(angleToPlayer) * config.speed, Math.sin(angleToPlayer) * config.speed);
-            leftFighter.body.checkCollision.none = false;
-            
-            // Create health bar
-            this.createHealthBar(leftFighter);
-        }
+        // Launch fighters from left and right sides
+        this.launchFighterFromCarrier(carrier.x - carrierHalfWidth - 10, carrier.y);
+        this.launchFighterFromCarrier(carrier.x + carrierHalfWidth + 10, carrier.y);
+    }
+    
+    launchFighterFromCarrier(x, y) {
+        const config = EnemyConfig.fighter;
+        const fighter = this.enemies.get(x, y, 'enemy-fighter');
         
-        // Right fighter
-        const rightFighter = this.enemies.get(carrier.x + carrierHalfWidth + 10, carrier.y, 'enemy-fighter');
-        if (rightFighter) {
-            rightFighter.setActive(true);
-            rightFighter.setVisible(true);
-            rightFighter.enemyType = 'fighter';
-            rightFighter.health = config.health;
-            rightFighter.shields = config.shields || 0;
-            rightFighter.points = config.points;
-            rightFighter.fireRate = config.fireRate;
-            rightFighter.lastFired = 0;
-            rightFighter.invincibleUntil = 0;
-            rightFighter.movementPattern = 'weaving';
-            rightFighter.patternOffset = Math.random() * Math.PI * 2;
-            rightFighter.hasEnteredScreen = true; // Already on screen
-            rightFighter.initialSpeed = config.speed;
+        if (fighter) {
+            fighter.setActive(true);
+            fighter.setVisible(true);
+            fighter.enemyType = 'fighter';
+            fighter.health = config.health;
+            fighter.shields = config.shields || 0;
+            fighter.points = config.points;
+            fighter.fireRate = config.fireRate;
+            fighter.lastFired = 0;
+            fighter.invincibleUntil = 0;
+            fighter.movementPattern = 'weaving';
+            fighter.patternOffset = Math.random() * Math.PI * 2;
+            fighter.hasEnteredScreen = true; // Already on screen
+            fighter.initialSpeed = config.speed;
             
             // Scale fighter to correct size
-            if (rightFighter.width > 0) {
-                const scale = config.size.width / rightFighter.width;
-                rightFighter.setScale(scale);
+            if (fighter.width > 0) {
+                const scale = config.size.width / fighter.width;
+                fighter.setScale(scale);
             }
             
             // Set initial velocity - diagonal away from carrier and towards player
-            const angleToPlayer = Phaser.Math.Angle.Between(rightFighter.x, rightFighter.y, this.player.x, this.player.y);
-            rightFighter.body.setVelocity(Math.cos(angleToPlayer) * config.speed, Math.sin(angleToPlayer) * config.speed);
-            rightFighter.body.checkCollision.none = false;
+            const angleToPlayer = Phaser.Math.Angle.Between(fighter.x, fighter.y, this.player.x, this.player.y);
+            fighter.body.setVelocity(Math.cos(angleToPlayer) * config.speed, Math.sin(angleToPlayer) * config.speed);
+            fighter.body.checkCollision.none = false;
             
             // Create health bar
-            this.createHealthBar(rightFighter);
+            this.createHealthBar(fighter);
         }
     }
     
