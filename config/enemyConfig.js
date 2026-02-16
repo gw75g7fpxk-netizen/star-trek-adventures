@@ -129,5 +129,19 @@ const EnemyConfig = {
         size: { width: 120, height: 120 },
         points: 2500,
         pulsing: true // Visual effect - node pulses periodically
+    },
+    
+    // Destroyer - Medium ship that fires straight ahead and moves horizontally
+    destroyer: {
+        health: 4,
+        shields: 4,
+        speed: 200, // Moves as fast as player ship
+        fireRate: 1800, // milliseconds between shots
+        bulletSpeed: 300,
+        damage: 1,
+        points: 300,
+        movementPattern: 'horizontal',
+        straightFire: true, // Fires bullets straight down instead of targeting player
+        size: { width: 70, height: 70 }
     }
 };
