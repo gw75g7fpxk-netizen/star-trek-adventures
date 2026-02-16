@@ -1909,8 +1909,66 @@ class Level1Scene extends Phaser.Scene {
         });
     }
     
+    findNearbyAsteroids(enemy, searchRadius = 150) {
+        // Only check for asteroid avoidance if this is not an asteroid itself
+        if (enemy.enemyType === 'asteroid') {
+            return [];
+        }
+        
+        const nearbyAsteroids = [];
+        this.enemies.children.each((other) => {
+            if (!other.active || other.enemyType !== 'asteroid') return;
+            
+            const distance = Phaser.Math.Distance.Between(enemy.x, enemy.y, other.x, other.y);
+            if (distance < searchRadius) {
+                nearbyAsteroids.push({
+                    asteroid: other,
+                    distance: distance,
+                    angle: Phaser.Math.Angle.Between(enemy.x, enemy.y, other.x, other.y)
+                });
+            }
+        });
+        
+        return nearbyAsteroids;
+    }
+    
+    applyAsteroidAvoidance(enemy) {
+        // Skip avoidance for asteroids themselves and scouts in formation phase
+        if (enemy.enemyType === 'asteroid') return;
+        if (enemy.enemyType === 'scout' && enemy.formationPhase && enemy.formationPhase !== 'straight') return;
+        
+        const nearbyAsteroids = this.findNearbyAsteroids(enemy, 100);
+        
+        if (nearbyAsteroids.length > 0) {
+            // Calculate avoidance vector by summing repulsion from all nearby asteroids
+            let avoidanceX = 0;
+            let avoidanceY = 0;
+            
+            nearbyAsteroids.forEach(({ asteroid, distance, angle }) => {
+                // Stronger avoidance for closer asteroids
+                const strength = (100 - distance) / 100;
+                const avoidAngle = angle + Math.PI; // Opposite direction
+                
+                avoidanceX += Math.cos(avoidAngle) * strength * 80;
+                avoidanceY += Math.sin(avoidAngle) * strength * 80;
+            });
+            
+            // Apply avoidance to velocity
+            const currentVelX = enemy.body.velocity.x;
+            const currentVelY = enemy.body.velocity.y;
+            
+            enemy.body.setVelocity(
+                currentVelX + avoidanceX,
+                currentVelY + avoidanceY
+            );
+        }
+    }
+    
     updateEnemyMovement(enemy) {
         const config = EnemyConfig[enemy.enemyType];
+        
+        // Apply asteroid avoidance before normal movement pattern
+        this.applyAsteroidAvoidance(enemy);
         
         switch (enemy.movementPattern) {
             case 'straight':
