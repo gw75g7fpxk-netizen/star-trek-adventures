@@ -75,6 +75,9 @@ const CRYSTAL_PULSE = {
     minScale: 0.9         // Minimum scale during pulse
 };
 
+// Boss movement constants
+const BOSS_MOVEMENT_DIVISOR = 20; // Divisor for converting config speed to frame-based movement
+
 // Enemy health bar constants
 const ENEMY_HEALTH_BAR = {
     width: 30,            // Health bar width in pixels
@@ -2859,7 +2862,7 @@ class Level1Scene extends Phaser.Scene {
         // Boss horizontal movement
         // Use config speed for movement (crystalNode has speed: 40)
         const moveSpeed = EnemyConfig[this.currentBossType]?.speed || 2;
-        this.boss.x += this.boss.moveDirection * (moveSpeed / 20); // Divide by 20 for smoother, frame-based movement
+        this.boss.x += this.boss.moveDirection * (moveSpeed / BOSS_MOVEMENT_DIVISOR);
         if (this.boss.x < 150 || this.boss.x > this.cameraWidth - 150) {
             this.boss.moveDirection *= -1;
         }
