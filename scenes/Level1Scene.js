@@ -61,6 +61,16 @@ const HUD_BAR = {
     shieldsYPos: 22       // Y position for shields bar
 };
 
+// Asteroid rotation constants
+const ASTEROID_ROTATION_FACTOR = 0.01; // Rotation speed multiplier for asteroids
+
+// Crystal node boss animation constants
+const CRYSTAL_PULSE = {
+    speed: 0.002,         // Pulse animation speed
+    maxScale: 1.1,        // Maximum scale during pulse
+    minScale: 0.9         // Minimum scale during pulse
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -1721,8 +1731,8 @@ class Level1Scene extends Phaser.Scene {
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
             if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid') && enemy.width > 0) {
-                // Scale enemy sprites to their configured target width
-                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 40px, Asteroid: 40x40px → 40px
+                // Scale sprites to their configured target width
+                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 40px
                 const targetWidth = config.size.width;
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
@@ -1863,7 +1873,7 @@ class Level1Scene extends Phaser.Scene {
             
             // Rotate asteroids
             if (enemy.enemyType === 'asteroid' && enemy.rotationSpeed) {
-                enemy.rotation += enemy.rotationSpeed * 0.01;
+                enemy.rotation += enemy.rotationSpeed * ASTEROID_ROTATION_FACTOR;
             }
             
             // Update movement pattern
@@ -2532,10 +2542,10 @@ class Level1Scene extends Phaser.Scene {
         
         // Crystal node pulsing effect
         if (this.currentBossType === 'crystalNode' && this.boss.pulseScale !== undefined) {
-            this.boss.pulseScale += this.boss.pulseDirection * 0.002;
-            if (this.boss.pulseScale >= 1.1) {
+            this.boss.pulseScale += this.boss.pulseDirection * CRYSTAL_PULSE.speed;
+            if (this.boss.pulseScale >= CRYSTAL_PULSE.maxScale) {
                 this.boss.pulseDirection = -1;
-            } else if (this.boss.pulseScale <= 0.9) {
+            } else if (this.boss.pulseScale <= CRYSTAL_PULSE.minScale) {
                 this.boss.pulseDirection = 1;
             }
             this.boss.setScale(this.boss.pulseScale);
