@@ -27,7 +27,7 @@ class MainMenuScene extends Phaser.Scene {
         
         const subtitleSize = isMobile ? '32px' : '48px'
         const subtitleY = isMobile ? 100 : height / 4 + 70
-        const subtitle = this.add.text(width / 2, subtitleY, 'ADVENTURES', {
+        const subtitle = this.add.text(width / 2, subtitleY, 'AURORA', {
             fontSize: subtitleSize,
             color: '#00FFFF',
             fontFamily: 'Courier New, monospace',
