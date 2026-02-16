@@ -85,54 +85,32 @@ const EnemyConfig = {
         rotation: true // Asteroids slowly rotate
     },
     
-    // Boss - Massive Crystalis Battleship
+    // Boss - Massive Crystalis Battleship (Simplified to be a stronger enemy)
     boss: {
-        health: 1000,
+        health: 500,
+        shields: 0,
         speed: 30,
-        phases: [
-            {
-                name: 'shields',
-                health: 300,
-                generators: 4,
-                generatorHealth: 200,
-                attacks: ['beam', 'missiles']
-            },
-            {
-                name: 'turrets',
-                health: 400,
-                turrets: 6,
-                turretHealth: 200,
-                attacks: ['rapid_fire', 'minions'],
-                minionSpawnChance: 0.3 // 30% chance per attack cycle
-            },
-            {
-                name: 'core',
-                health: 200,
-                attacks: ['beam', 'missiles', 'rapid_fire']
-            }
-        ],
-        size: { width: 200, height: 200 },
-        points: 5000
+        fireRate: 1500, // milliseconds between shots
+        bulletSpeed: 200,
+        damage: 2,
+        points: 5000,
+        movementPattern: 'horizontal',
+        spreadShot: true, // Fires multiple bullets in a spread pattern
+        spreadCount: 5, // Number of bullets per shot
+        size: { width: 200, height: 200 }
     },
     
     // Crystal Node - Mid-boss for Level 2 (Communication Jammer)
     crystalNode: {
-        health: 100,
+        health: 150,
         shields: 0,
         speed: 40,
-        fireRate: 1250, // Time between burst attacks (scene uses this for attackRate)
+        fireRate: 1250, // Time between burst attacks
         bulletSpeed: 200,
         damage: 2,
         movementPattern: 'horizontal', // Moves like battleships
         burstCount: 3, // Number of shots per burst attack
         burstDelay: 200, // Milliseconds between shots in a burst
-        phases: [
-            {
-                name: 'core',
-                health: 100,
-                attacks: ['pulse_wave', 'energy_bolts']
-            }
-        ],
         size: { width: 120, height: 120 },
         points: 2500,
         pulsing: true // Visual effect - node pulses periodically

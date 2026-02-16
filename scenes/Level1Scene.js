@@ -1217,9 +1217,6 @@ class Level1Scene extends Phaser.Scene {
         // Player bullets vs enemies
         this.physics.add.overlap(this.bullets, this.enemies, this.hitEnemy, null, this);
         
-        // Player bullets vs boss components (generators and turrets)
-        this.physics.add.overlap(this.bullets, this.bossComponents, this.hitBossComponent, null, this);
-        
         // Enemy bullets vs player
         this.physics.add.overlap(this.player, this.enemyBullets, this.playerHit, null, this);
         
@@ -1808,12 +1805,6 @@ class Level1Scene extends Phaser.Scene {
         if (this.boss) {
             this.boss.destroy();
             this.boss = null;
-        }
-        
-        // Clear boss phase text if any
-        if (this.bossPhaseText) {
-            this.bossPhaseText.destroy();
-            this.bossPhaseText = null;
         }
         
         // Clear wave timers
@@ -2684,7 +2675,6 @@ class Level1Scene extends Phaser.Scene {
         this.boss = this.physics.add.sprite(x, y, bossTexture);
         this.boss.setActive(true);
         this.boss.setVisible(true);
-        // Ensure boss is rendered behind its components (generators/turrets)
         this.boss.setDepth(RENDER_DEPTH.BOSS);
         
         // Configure physics body for boss
@@ -2694,17 +2684,19 @@ class Level1Scene extends Phaser.Scene {
             this.boss.body.checkCollision.none = false;
         }
         
-        // Initialize boss stats
-        this.boss.phase = 0;
+        // Initialize boss stats (simplified - no phases)
         this.boss.maxHealth = bossConfig.health;
         this.boss.health = bossConfig.health;
-        this.boss.phaseHealth = bossConfig.phases[0].health;
         this.boss.invincibleUntil = 0; // Initialize invincibility timer
-        this.boss.generators = [];
-        this.boss.turrets = [];
         this.boss.lastAttack = 0;
-        this.boss.attackRate = 2000;
+        this.boss.attackRate = bossConfig.fireRate; // Use fireRate from config
         this.boss.moveDirection = 1;
+        
+        // Add pulsing effect for crystal node
+        if (bossType === 'crystalNode') {
+            this.boss.pulseScale = 1.0;
+            this.boss.pulseDirection = 1;
+        }
         
         // Move boss into position
         this.tweens.add({
@@ -2717,132 +2709,6 @@ class Level1Scene extends Phaser.Scene {
         // Add collision
         this.physics.add.overlap(this.bullets, this.boss, this.hitBoss, null, this);
         this.physics.add.overlap(this.player, this.boss, this.playerHitByBoss, null, this);
-        
-        // Start appropriate phase based on boss type
-        this.time.delayedCall(3000, () => {
-            if (bossType === 'crystalNode') {
-                this.startCrystalNodePhase();
-            } else {
-                this.startBossPhase1();
-            }
-        });
-    }
-    
-    startBossPhase1() {
-        console.log('Boss Phase 1: Shield Generators');
-        this.boss.phase = 1;
-        
-        // Spawn shield generators around boss
-        const positions = [
-            { x: -60, y: -60 },
-            { x: 60, y: -60 },
-            { x: -60, y: 60 },
-            { x: 60, y: 60 }
-        ];
-        
-        positions.forEach((pos) => {
-            const generator = this.bossComponents.get(
-                this.boss.x + pos.x,
-                this.boss.y + pos.y,
-                'boss-generator-yellow' // Use yellow texture for active generators
-            );
-            
-            if (generator) {
-                generator.setActive(true);
-                generator.setVisible(true);
-                generator.setScale(0.5);
-                generator.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
-                generator.health = EnemyConfig.boss.phases[0].generatorHealth;
-                generator.invincibleUntil = 0; // Initialize invincibility timer
-                generator.isBossComponent = true;
-                generator.isGenerator = true; // Mark as generator for collision routing
-                
-                // Ensure physics body is properly configured
-                if (generator.body) {
-                    generator.body.enable = true;
-                    generator.body.checkCollision.none = false;
-                }
-                
-                this.boss.generators.push(generator);
-            }
-        });
-    }
-    
-    startBossPhase2() {
-        console.log('Boss Phase 2: Turrets');
-        this.boss.phase = 2;
-        this.boss.phaseHealth = EnemyConfig.boss.phases[1].health;
-        
-        // Spawn turrets
-        const turretCount = 6;
-        for (let i = 0; i < turretCount; i++) {
-            const angle = (i / turretCount) * Math.PI * 2;
-            const radius = 100;
-            const turret = this.bossComponents.get(
-                this.boss.x + Math.cos(angle) * radius,
-                this.boss.y + Math.sin(angle) * radius,
-                'boss-turret-yellow' // Use yellow texture for active turrets
-            );
-            
-            if (turret) {
-                turret.setActive(true);
-                turret.setVisible(true);
-                turret.setScale(0.7);
-                turret.setDepth(RENDER_DEPTH.COMPONENT); // Render above boss
-                turret.health = EnemyConfig.boss.phases[1].turretHealth;
-                turret.invincibleUntil = 0; // Initialize invincibility timer
-                turret.isBossComponent = true;
-                turret.isTurret = true; // Mark as turret for collision routing
-                turret.angle = angle;
-                
-                // Ensure physics body is properly configured
-                if (turret.body) {
-                    turret.body.enable = true;
-                    turret.body.checkCollision.none = false;
-                }
-                
-                this.boss.turrets.push(turret);
-            }
-        }
-    }
-    
-    startBossPhase3() {
-        console.log('Boss Phase 3: Core Exposed');
-        this.boss.phase = 3;
-        this.boss.phaseHealth = EnemyConfig.boss.phases[2].health;
-        
-        // Change boss core to yellow to indicate it's now damageable
-        this.boss.setTexture('boss-core-yellow');
-        this.boss.setVisible(true);
-        
-        // Ensure physics body is properly enabled for collisions in phase 3
-        if (this.boss.body) {
-            this.boss.body.enable = true;
-            this.boss.body.checkCollision.none = false;
-            // Body size already set at spawn (200x200)
-        }
-        
-        // Boss becomes more aggressive
-        this.boss.attackRate = 1000;
-    }
-    
-    startCrystalNodePhase() {
-        console.log('Crystal Node Boss: Communication Jammer');
-        this.boss.phase = 1;
-        this.boss.phaseHealth = EnemyConfig.crystalNode.phases[0].health;
-        
-        // Crystal node is immediately damageable (no shield generators)
-        if (this.boss.body) {
-            this.boss.body.enable = true;
-            this.boss.body.checkCollision.none = false;
-        }
-        
-        // Add pulsing effect
-        this.boss.pulseScale = 1.0;
-        this.boss.pulseDirection = 1;
-        
-        // Fires twice as fast (1250ms instead of 2500ms)
-        this.boss.attackRate = 1250;
     }
     
     updateBoss(time) {
@@ -2864,38 +2730,11 @@ class Level1Scene extends Phaser.Scene {
         }
         
         // Boss horizontal movement
-        // Use config speed for movement (crystalNode has speed: 40)
+        // Use config speed for movement
         const moveSpeed = EnemyConfig[this.currentBossType]?.speed || DEFAULT_BOSS_MOVEMENT_SPEED;
         this.boss.x += this.boss.moveDirection * (moveSpeed / CONFIG_SPEED_TO_PIXELS_DIVISOR);
         if (this.boss.x < 150 || this.boss.x > this.cameraWidth - 150) {
             this.boss.moveDirection *= -1;
-        }
-        
-        // Update generators positions
-        if (this.boss.generators.length > 0) {
-            const positions = [
-                { x: -60, y: -60 },
-                { x: 60, y: -60 },
-                { x: -60, y: 60 },
-                { x: 60, y: 60 }
-            ];
-            this.boss.generators.forEach((gen, i) => {
-                if (gen && gen.active) {
-                    gen.x = this.boss.x + positions[i].x;
-                    gen.y = this.boss.y + positions[i].y;
-                }
-            });
-        }
-        
-        // Update turrets positions
-        if (this.boss.turrets.length > 0) {
-            this.boss.turrets.forEach((turret, i) => {
-                if (turret && turret.active) {
-                    const radius = 100;
-                    turret.x = this.boss.x + Math.cos(turret.angle) * radius;
-                    turret.y = this.boss.y + Math.sin(turret.angle) * radius;
-                }
-            });
         }
         
         // Boss attacks
@@ -2906,7 +2745,7 @@ class Level1Scene extends Phaser.Scene {
     }
     
     bossAttack() {
-        // CrystalNode fires bursts of 3 shots straight down (like pulse cannons)
+        // CrystalNode fires bursts of 3 shots straight down
         if (this.currentBossType === 'crystalNode') {
             const config = EnemyConfig.crystalNode;
             const burstCount = config.burstCount || 3;
@@ -2934,60 +2773,23 @@ class Level1Scene extends Phaser.Scene {
             return;
         }
         
-        if (this.boss.phase === 1 || this.boss.phase === 3) {
-            // Beam attack - spread of bullets
-            for (let i = -2; i <= 2; i++) {
-                const angle = Math.PI / 2 + (i * 0.2);
-                const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
-                if (bullet) {
-                    bullet.setActive(true);
-                    bullet.setVisible(true);
-                    // Re-enable physics body if it was disabled
-                    if (bullet.body) {
-                        bullet.body.enable = true;
-                    }
-                    bullet.body.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
+        // Regular boss fires spread shot (5 bullets in a spread pattern)
+        const config = EnemyConfig.boss;
+        const spreadCount = config.spreadCount || 5;
+        const halfSpread = Math.floor(spreadCount / 2);
+        
+        for (let i = -halfSpread; i <= halfSpread; i++) {
+            const angle = Math.PI / 2 + (i * 0.2);
+            const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
+            if (bullet) {
+                bullet.setActive(true);
+                bullet.setVisible(true);
+                // Re-enable physics body if it was disabled
+                if (bullet.body) {
+                    bullet.body.enable = true;
+                    bullet.body.setVelocity(Math.cos(angle) * config.bulletSpeed, Math.sin(angle) * config.bulletSpeed);
                 }
             }
-        }
-        
-        if (this.boss.phase === 2 || this.boss.phase === 3) {
-            // Rapid fire from turrets
-            this.boss.turrets.forEach((turret) => {
-                if (turret && turret.active) {
-                    const angle = Phaser.Math.Angle.Between(turret.x, turret.y, this.player.x, this.player.y);
-                    const bullet = this.enemyBullets.get(turret.x, turret.y, 'enemy-bullet');
-                    if (bullet) {
-                        bullet.setActive(true);
-                        bullet.setVisible(true);
-                        // Re-enable physics body if it was disabled
-                        if (bullet.body) {
-                            bullet.body.enable = true;
-                        }
-                        bullet.body.setVelocity(Math.cos(angle) * 250, Math.sin(angle) * 250);
-                    }
-                }
-            });
-        }
-        
-        if (this.boss.phase === 2) {
-            // Spawn minions based on config chance
-            const phase2Config = EnemyConfig.boss.phases[1];
-            if (Math.random() < phase2Config.minionSpawnChance) {
-                this.spawnEnemy({
-                    enemyTypes: ['fighter'],
-                    difficulty: 2
-                });
-            }
-        }
-    }
-    
-    hitBossComponent(bullet, component) {
-        // Route to appropriate handler based on component type
-        if (component.isGenerator) {
-            this.hitBossGenerator(bullet, component);
-        } else if (component.isTurret) {
-            this.hitBossTurret(bullet, component);
         }
     }
     
@@ -3009,116 +2811,17 @@ class Level1Scene extends Phaser.Scene {
         // Disable bullet using helper function
         this.disableBulletPhysics(bullet);
         
-        // CrystalNode boss is immediately damageable (no shield phases)
-        // Regular boss is only damageable in phase 3 (core exposed)
-        const isDamageable = this.currentBossType === 'crystalNode' || actualBoss.phase === 3;
-        
-        if (isDamageable) {
-            actualBoss.health -= 10;
-            actualBoss.phaseHealth -= 10;
-            
-            // Play hit sound effect
-            this.playSound('hit');
-            
-            // Set invincibility after taking damage
-            actualBoss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
-            
-            if (actualBoss.phaseHealth <= 0 || actualBoss.health <= 0) {
-                this.defeatBoss();
-            }
-        }
-    }
-    
-    hitBossGenerator(bullet, generator) {
-        // Check if bullet is already inactive (already processed by another collision handler)
-        if (!bullet.active) {
-            return;
-        }
-        
-        // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < (generator.invincibleUntil || 0)) {
-            return; // Still invincible, ignore damage
-        }
-        
-        // Disable bullet using helper function
-        this.disableBulletPhysics(bullet);
-        
-        generator.health -= 10;
+        // Boss is always damageable (no phase system)
+        actualBoss.health -= 10;
         
         // Play hit sound effect
         this.playSound('hit');
         
         // Set invincibility after taking damage
-        generator.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
+        actualBoss.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
         
-        if (generator.health <= 0) {
-            // Play explosion sound effect
-            this.playSound('explosion');
-            this.createExplosion(generator.x, generator.y);
-            generator.setActive(false);
-            generator.setVisible(false);
-            generator.destroy();
-            
-            // Remove from array
-            const index = this.boss.generators.indexOf(generator);
-            if (index > -1) {
-                this.boss.generators.splice(index, 1);
-            }
-            
-            // Check if all generators destroyed
-            if (this.boss.generators.length === 0) {
-                this.startBossPhase2();
-            }
-        }
-    }
-    
-    hitBossTurret(bullet, turret) {
-        // Check if bullet is already inactive (already processed by another collision handler)
-        if (!bullet.active) {
-            return;
-        }
-        
-        // Check invincibility (prevents multiple hits in rapid succession)
-        if (this.time.now < (turret.invincibleUntil || 0)) {
-            return; // Still invincible, ignore damage
-        }
-        
-        // Only allow damage to turrets if in phase 2 or later (generators must be destroyed first)
-        if (this.boss.phase < 2) {
-            // Disable bullet but don't damage turret
-            this.disableBulletPhysics(bullet);
-            return;
-        }
-        
-        // Disable bullet using helper function
-        this.disableBulletPhysics(bullet);
-        
-        turret.health -= 10;
-        
-        // Play hit sound effect
-        this.playSound('hit');
-        
-        // Set invincibility after taking damage
-        turret.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
-        
-        if (turret.health <= 0) {
-            // Play explosion sound effect
-            this.playSound('explosion');
-            this.createExplosion(turret.x, turret.y);
-            turret.setActive(false);
-            turret.setVisible(false);
-            turret.destroy();
-            
-            // Remove from array
-            const index = this.boss.turrets.indexOf(turret);
-            if (index > -1) {
-                this.boss.turrets.splice(index, 1);
-            }
-            
-            // Check if all turrets destroyed
-            if (this.boss.turrets.length === 0) {
-                this.startBossPhase3();
-            }
+        if (actualBoss.health <= 0) {
+            this.defeatBoss();
         }
     }
     
@@ -3147,63 +2850,24 @@ class Level1Scene extends Phaser.Scene {
             this.boss.body.checkCollision.none = true;
         }
         
-        // First, destroy any remaining components (turrets and generators) with staggered timing
-        let componentDelay = 0;
-        const componentExplosionInterval = 150;
-        
-        // Destroy remaining generators first
-        if (this.boss.generators && this.boss.generators.length > 0) {
-            this.boss.generators.forEach((generator) => {
-                if (generator && generator.active) {
-                    this.time.delayedCall(componentDelay, () => {
-                        this.createExplosion(generator.x, generator.y);
-                        generator.setActive(false);
-                        generator.setVisible(false);
-                        generator.destroy();
-                    });
-                    componentDelay += componentExplosionInterval;
-                }
-            });
-            this.boss.generators = [];
-        }
-        
-        // Then destroy remaining turrets
-        if (this.boss.turrets && this.boss.turrets.length > 0) {
-            this.boss.turrets.forEach((turret) => {
-                if (turret && turret.active) {
-                    this.time.delayedCall(componentDelay, () => {
-                        this.createExplosion(turret.x, turret.y);
-                        turret.setActive(false);
-                        turret.setVisible(false);
-                        turret.destroy();
-                    });
-                    componentDelay += componentExplosionInterval;
-                }
-            });
-            this.boss.turrets = [];
-        }
-        
-        // Finally, destroy boss body with massive explosions AFTER components
-        const bossExplosionStart = componentDelay + 200; // Small delay after last component
-        
         // Hide boss immediately but don't destroy yet (for proper cleanup)
         this.boss.setVisible(false);
         
-        // Massive explosion using captured position - starts after components are destroyed
+        // Massive explosion sequence
         for (let i = 0; i < 10; i++) {
-            this.time.delayedCall(bossExplosionStart + (i * 200), () => {
+            this.time.delayedCall(i * 200, () => {
                 const x = bossX + Phaser.Math.Between(-100, 100);
                 const y = bossY + Phaser.Math.Between(-100, 100);
                 this.createExplosion(x, y);
             });
         }
         
-        // Award points
-        this.addScore(EnemyConfig.boss.points);
+        // Award points based on boss type
+        const bossConfig = EnemyConfig[this.currentBossType];
+        this.addScore(bossConfig.points);
         
         // Destroy boss and transition to victory after all explosions
-        const totalExplosionTime = bossExplosionStart + 2000;
-        this.time.delayedCall(totalExplosionTime, () => {
+        this.time.delayedCall(2000, () => {
             if (this.boss) {
                 this.boss.destroy();
             }
