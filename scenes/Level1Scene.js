@@ -2165,7 +2165,10 @@ class Level1Scene extends Phaser.Scene {
             
             // Normalize the new velocity to maintain the original speed
             const newSpeed = Math.sqrt(newVelX * newVelX + newVelY * newVelY);
-            if (newSpeed > 0 && originalSpeed > 0) {
+            if (originalSpeed === 0) {
+                // Enemy was stationary, keep it stationary despite avoidance forces
+                enemy.body.setVelocity(0, 0);
+            } else if (newSpeed > 0) {
                 // Scale the velocity to match the original speed
                 const scale = originalSpeed / newSpeed;
                 enemy.body.setVelocity(
@@ -2173,8 +2176,8 @@ class Level1Scene extends Phaser.Scene {
                     newVelY * scale
                 );
             } else {
-                // Fallback to new velocity if either speed is zero
-                enemy.body.setVelocity(newVelX, newVelY);
+                // New velocity is zero but original wasn't - maintain original direction
+                enemy.body.setVelocity(currentVelX, currentVelY);
             }
         }
     }
