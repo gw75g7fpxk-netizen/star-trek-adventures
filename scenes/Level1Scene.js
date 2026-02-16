@@ -1616,7 +1616,9 @@ class Level1Scene extends Phaser.Scene {
     }
     
     playerHitByEnemy(player, enemy) {
-        // Disable enemy collision immediately to prevent multiple damage hits
+        // Disable enemy collision immediately to prevent multiple damage hits in the same frame
+        // This is necessary because overlap detection can fire multiple times while physics bodies
+        // are still touching, causing rapid repeated damage before the enemy is fully destroyed
         if (enemy.body) {
             enemy.body.checkCollision.none = true;
         }
