@@ -108,11 +108,11 @@ const EnemyConfig = {
         fireRate: 1250, // Time between burst attacks
         bulletSpeed: 200,
         damage: 2,
-        points: 2500,
         movementPattern: 'horizontal', // Moves like battleships
         burstCount: 3, // Number of shots per burst attack
         burstDelay: 200, // Milliseconds between shots in a burst
         size: { width: 120, height: 120 },
+        points: 2500,
         pulsing: true // Visual effect - node pulses periodically
     }
 };
