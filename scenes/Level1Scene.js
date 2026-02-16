@@ -2778,8 +2778,8 @@ class Level1Scene extends Phaser.Scene {
         this.boss.pulseScale = 1.0;
         this.boss.pulseDirection = 1;
         
-        // Less aggressive than main boss
-        this.boss.attackRate = 2500;
+        // Fires twice as fast (1250ms instead of 2500ms)
+        this.boss.attackRate = 1250;
     }
     
     updateBoss(time) {
@@ -2841,6 +2841,36 @@ class Level1Scene extends Phaser.Scene {
     }
     
     bossAttack() {
+        // CrystalNode fires bursts of 3 shots
+        if (this.currentBossType === 'crystalNode') {
+            const config = EnemyConfig.crystalNode;
+            const burstCount = config.burstCount || 3;
+            const burstDelay = config.burstDelay || 200;
+            
+            for (let burst = 0; burst < burstCount; burst++) {
+                this.time.delayedCall(burst * burstDelay, () => {
+                    // Check if boss is still active before firing
+                    if (!this.boss || !this.boss.active) return;
+                    
+                    // Fire spread of bullets
+                    for (let i = -2; i <= 2; i++) {
+                        const angle = Math.PI / 2 + (i * 0.2);
+                        const bullet = this.enemyBullets.get(this.boss.x, this.boss.y + 50, 'enemy-bullet');
+                        if (bullet) {
+                            bullet.setActive(true);
+                            bullet.setVisible(true);
+                            // Re-enable physics body if it was disabled
+                            if (bullet.body) {
+                                bullet.body.enable = true;
+                                bullet.body.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
+                            }
+                        }
+                    }
+                });
+            }
+            return;
+        }
+        
         if (this.boss.phase === 1 || this.boss.phase === 3) {
             // Beam attack - spread of bullets
             for (let i = -2; i <= 2; i++) {
