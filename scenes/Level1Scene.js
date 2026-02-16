@@ -135,6 +135,9 @@ class Level1Scene extends Phaser.Scene {
     init(data) {
         // Accept level number from scene data
         this.levelNumber = data?.levelNumber || 1
+        // Initialize pause state
+        this.isPaused = false
+        this.pauseMenu = null
         console.log(`Level1Scene: Initializing level ${this.levelNumber}`)
     }
     
@@ -408,6 +411,12 @@ class Level1Scene extends Phaser.Scene {
         };
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         
+        // Pause key (ESC)
+        this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+        this.escKey.on('down', () => {
+            this.togglePause();
+        });
+        
         // Cheat code: N key to skip to next wave (for testing)
         this.nextWaveKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.N);
         this.nextWaveKey.on('down', () => {
@@ -661,6 +670,40 @@ class Level1Scene extends Phaser.Scene {
         });
         this.skipWaveButton.on('pointerout', () => {
             this.skipWaveButton.setColor('#FF9900');
+        });
+        
+        // Pause button (upper left corner)
+        const pauseButtonBg = this.add.graphics();
+        pauseButtonBg.fillStyle(0x333333, 0.8);
+        pauseButtonBg.fillRoundedRect(10, 10, 80, 30, 5);
+        pauseButtonBg.lineStyle(2, 0xFF9900, 1);
+        pauseButtonBg.strokeRoundedRect(10, 10, 80, 30, 5);
+        pauseButtonBg.setScrollFactor(0);
+        pauseButtonBg.setDepth(999);
+        
+        const pauseButtonStyle = {
+            fontSize: '12px',
+            color: '#FF9900',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        };
+        this.pauseButton = this.add.text(50, 25, 'PAUSE', pauseButtonStyle);
+        this.pauseButton.setOrigin(0.5, 0.5);
+        this.pauseButton.setScrollFactor(0);
+        this.pauseButton.setDepth(1000);
+        this.pauseButton.setInteractive({ useHandCursor: true });
+        
+        // Pause button click handler
+        this.pauseButton.on('pointerdown', () => {
+            this.togglePause();
+        });
+        
+        // Add hover effect for pause button
+        this.pauseButton.on('pointerover', () => {
+            this.pauseButton.setColor('#FFCC00');
+        });
+        this.pauseButton.on('pointerout', () => {
+            this.pauseButton.setColor('#FF9900');
         });
         
         console.log('Level1Scene: HUD created');
@@ -2904,6 +2947,168 @@ class Level1Scene extends Phaser.Scene {
         }
     }
 
+    // ========================================
+    // PAUSE MENU SYSTEM
+    // ========================================
+
+    togglePause() {
+        if (this.isPaused) {
+            this.resumeGame();
+        } else {
+            this.pauseGame();
+        }
+    }
+
+    pauseGame() {
+        if (this.isPaused) return;
+        
+        this.isPaused = true;
+        
+        // Pause physics
+        this.physics.pause();
+        
+        // Create pause menu overlay
+        this.createPauseMenu();
+        
+        console.log('Level1Scene: Game paused');
+    }
+
+    resumeGame() {
+        if (!this.isPaused) return;
+        
+        this.isPaused = false;
+        
+        // Resume physics
+        this.physics.resume();
+        
+        // Destroy pause menu overlay
+        if (this.pauseMenu) {
+            this.pauseMenu.forEach(element => element.destroy());
+            this.pauseMenu = null;
+        }
+        
+        console.log('Level1Scene: Game resumed');
+    }
+
+    createPauseMenu() {
+        this.pauseMenu = [];
+        
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        
+        // Semi-transparent overlay
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(10000);
+        this.pauseMenu.push(overlay);
+        
+        // Title with LCARS styling
+        const title = this.add.text(width / 2, height / 2 - 80, 'PAUSED', {
+            fontSize: '48px',
+            color: '#FF9900',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        });
+        title.setOrigin(0.5);
+        title.setScrollFactor(0);
+        title.setDepth(10001);
+        this.pauseMenu.push(title);
+        
+        // Continue button
+        const continueButtonBg = this.add.graphics();
+        continueButtonBg.fillStyle(0x333333, 0.9);
+        continueButtonBg.fillRoundedRect(width / 2 - 100, height / 2 - 20, 200, 50, 5);
+        continueButtonBg.lineStyle(3, 0x00FF00, 1);
+        continueButtonBg.strokeRoundedRect(width / 2 - 100, height / 2 - 20, 200, 50, 5);
+        continueButtonBg.setScrollFactor(0);
+        continueButtonBg.setDepth(10001);
+        this.pauseMenu.push(continueButtonBg);
+        
+        const continueButton = this.add.text(width / 2, height / 2 + 5, '[ CONTINUE ]', {
+            fontSize: '24px',
+            color: '#00FF00',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        });
+        continueButton.setOrigin(0.5);
+        continueButton.setScrollFactor(0);
+        continueButton.setDepth(10002);
+        continueButton.setInteractive({ useHandCursor: true });
+        
+        continueButton.on('pointerdown', () => {
+            this.resumeGame();
+        });
+        
+        continueButton.on('pointerover', () => {
+            continueButton.setColor('#00FFFF');
+            continueButton.setScale(1.05);
+        });
+        
+        continueButton.on('pointerout', () => {
+            continueButton.setColor('#00FF00');
+            continueButton.setScale(1.0);
+        });
+        
+        this.pauseMenu.push(continueButton);
+        
+        // Quit button
+        const quitButtonBg = this.add.graphics();
+        quitButtonBg.fillStyle(0x333333, 0.9);
+        quitButtonBg.fillRoundedRect(width / 2 - 100, height / 2 + 50, 200, 50, 5);
+        quitButtonBg.lineStyle(3, 0xFF0000, 1);
+        quitButtonBg.strokeRoundedRect(width / 2 - 100, height / 2 + 50, 200, 50, 5);
+        quitButtonBg.setScrollFactor(0);
+        quitButtonBg.setDepth(10001);
+        this.pauseMenu.push(quitButtonBg);
+        
+        const quitButton = this.add.text(width / 2, height / 2 + 75, '[ QUIT TO MENU ]', {
+            fontSize: '24px',
+            color: '#FF0000',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        });
+        quitButton.setOrigin(0.5);
+        quitButton.setScrollFactor(0);
+        quitButton.setDepth(10002);
+        quitButton.setInteractive({ useHandCursor: true });
+        
+        quitButton.on('pointerdown', () => {
+            // Clean up and return to main menu
+            this.quitToMainMenu();
+        });
+        
+        quitButton.on('pointerover', () => {
+            quitButton.setColor('#FF6666');
+            quitButton.setScale(1.05);
+        });
+        
+        quitButton.on('pointerout', () => {
+            quitButton.setColor('#FF0000');
+            quitButton.setScale(1.0);
+        });
+        
+        this.pauseMenu.push(quitButton);
+    }
+
+    quitToMainMenu() {
+        // Stop all timers
+        if (this.waveTimer) this.waveTimer.remove();
+        if (this.podTimer) this.podTimer.remove();
+        
+        // Clean up pause menu
+        if (this.pauseMenu) {
+            this.pauseMenu.forEach(element => element.destroy());
+            this.pauseMenu = null;
+        }
+        
+        // Resume physics before transitioning (so next scene starts normally)
+        this.physics.resume();
+        
+        // Return to main menu
+        this.scene.start('MainMenuScene');
+        
+        console.log('Level1Scene: Quit to main menu');
+    }
 
     gameOver() {
         console.log('Level1Scene: Game Over!');
