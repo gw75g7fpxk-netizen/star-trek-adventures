@@ -22,7 +22,7 @@ class LevelSelectScene extends Phaser.Scene {
         
         // Title
         const titleSize = isMobile ? '28px' : '36px'
-        const titleY = isMobile ? 25 : 30
+        const titleY = isMobile ? 35 : 30
         const title = this.add.text(width / 2, titleY, 'MISSION SELECT', {
             fontSize: titleSize,
             color: '#FF9900',
@@ -108,19 +108,19 @@ class LevelSelectScene extends Phaser.Scene {
                 { x: width * 0.65, y: height * 0.80 }   // Level 11 (secret)
             ]
         } else {
-            // Desktop: Original winding space route
+            // Desktop: Winding space route - shifted right to avoid info panel overlap
             levelPositions = [
-                { x: width * 0.2, y: height * 0.25 },  // Level 1
-                { x: width * 0.35, y: height * 0.3 },  // Level 2
-                { x: width * 0.5, y: height * 0.25 },  // Level 3
-                { x: width * 0.65, y: height * 0.3 },  // Level 4
-                { x: width * 0.75, y: height * 0.4 },  // Level 5
-                { x: width * 0.7, y: height * 0.55 },  // Level 6
-                { x: width * 0.55, y: height * 0.6 },  // Level 7
-                { x: width * 0.4, y: height * 0.55 },  // Level 8
-                { x: width * 0.3, y: height * 0.65 },  // Level 9
-                { x: width * 0.2, y: height * 0.75 },  // Level 10
-                { x: width * 0.5, y: height * 0.85 }   // Level 11 (secret)
+                { x: width * 0.45, y: height * 0.25 },  // Level 1
+                { x: width * 0.55, y: height * 0.3 },  // Level 2
+                { x: width * 0.65, y: height * 0.25 },  // Level 3
+                { x: width * 0.75, y: height * 0.3 },  // Level 4
+                { x: width * 0.85, y: height * 0.4 },  // Level 5
+                { x: width * 0.8, y: height * 0.55 },  // Level 6
+                { x: width * 0.68, y: height * 0.6 },  // Level 7
+                { x: width * 0.56, y: height * 0.55 },  // Level 8
+                { x: width * 0.48, y: height * 0.65 },  // Level 9
+                { x: width * 0.45, y: height * 0.75 },  // Level 10
+                { x: width * 0.65, y: height * 0.85 }   // Level 11 (secret)
             ]
         }
         
@@ -215,9 +215,9 @@ class LevelSelectScene extends Phaser.Scene {
         if (isMobile) {
             // Mobile: Smaller panel on left side with reduced height to avoid hiding back button
             panelX = width * 0.03
-            panelY = height * 0.12
+            panelY = height * 0.14
             panelWidth = width * 0.44
-            panelHeight = height * 0.60
+            panelHeight = height * 0.58
         } else {
             // Desktop: Original size
             panelX = width * 0.05
@@ -246,19 +246,19 @@ class LevelSelectScene extends Phaser.Scene {
                 fontStyle: 'bold',
                 wordWrap: { width: panelWidth - padding * 2 }
             }),
-            description: this.add.text(panelX + padding, panelY + padding + (isMobile ? 40 : 60), '', {
+            description: this.add.text(panelX + padding, panelY + padding + (isMobile ? 50 : 60), '', {
                 fontSize: descSize,
                 color: '#FFFFFF',
                 fontFamily: 'Courier New, monospace',
                 wordWrap: { width: panelWidth - padding * 2 }
             }),
-            stats: this.add.text(panelX + padding, panelY + padding + (isMobile ? 80 : 120), '', {
+            stats: this.add.text(panelX + padding, panelY + padding + (isMobile ? 100 : 120), '', {
                 fontSize: statsSize,
                 color: '#00FFFF',
                 fontFamily: 'Courier New, monospace',
                 wordWrap: { width: panelWidth - padding * 2 }
             }),
-            locked: this.add.text(panelX + padding, panelY + padding + (isMobile ? 80 : 120), '', {
+            locked: this.add.text(panelX + padding, panelY + padding + (isMobile ? 100 : 120), '', {
                 fontSize: descSize,
                 color: '#FF0000',
                 fontFamily: 'Courier New, monospace',
@@ -269,7 +269,8 @@ class LevelSelectScene extends Phaser.Scene {
         // Play button
         const buttonSize = isMobile ? '18px' : '24px'
         const buttonY = panelY + panelHeight - (isMobile ? 50 : 60)
-        this.playButton = this.add.text(panelX + panelWidth / 2, buttonY, '[ LAUNCH MISSION ]', {
+        const buttonText = isMobile ? '[ LAUNCH ]' : '[ LAUNCH MISSION ]'
+        this.playButton = this.add.text(panelX + panelWidth / 2, buttonY, buttonText, {
             fontSize: buttonSize,
             color: '#00FF00',
             fontFamily: 'Courier New, monospace',
