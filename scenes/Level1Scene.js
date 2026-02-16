@@ -862,6 +862,9 @@ class Level1Scene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        // Don't update game logic when paused
+        if (this.isPaused) return;
+        
         // Scroll background (infinite vertical scrolling)
         this.starsLayer.tilePositionY -= 0.5; // Slow movement
         this.nebulaLayer.tilePositionY -= 1.5; // Faster movement for parallax
@@ -2987,6 +2990,17 @@ class Level1Scene extends Phaser.Scene {
         // Pause physics
         this.physics.pause();
         
+        // Pause all timers
+        if (this.waveTimer) {
+            this.waveTimer.paused = true;
+        }
+        if (this.podTimer) {
+            this.podTimer.paused = true;
+        }
+        
+        // Pause all time events
+        this.time.paused = true;
+        
         // Create pause menu overlay
         this.createPauseMenu();
         
@@ -3000,6 +3014,17 @@ class Level1Scene extends Phaser.Scene {
         
         // Resume physics
         this.physics.resume();
+        
+        // Resume all timers
+        if (this.waveTimer) {
+            this.waveTimer.paused = false;
+        }
+        if (this.podTimer) {
+            this.podTimer.paused = false;
+        }
+        
+        // Resume all time events
+        this.time.paused = false;
         
         // Clean up pause menu
         this.cleanupPauseMenu();
