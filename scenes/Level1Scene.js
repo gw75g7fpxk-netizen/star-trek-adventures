@@ -3398,7 +3398,10 @@ class Level1Scene extends Phaser.Scene {
         const lineHeight = isMobile ? config.mobileLineHeight : config.lineHeight;
         
         // Calculate HUD position - center horizontally on mobile for better visibility
-        const hudX = isMobile ? (this.cameraWidth - hudWidth) / 2 : config.x;
+        // Use Math.max to prevent negative positioning on very small screens
+        // Fallback to camera.main.width if cameraWidth not set (defensive)
+        const cameraWidth = this.cameraWidth || this.cameras.main.width;
+        const hudX = isMobile ? Math.max(0, (cameraWidth - hudWidth) / 2) : config.x;
         const hudY = config.y;
         
         // Create container for all HUD elements
