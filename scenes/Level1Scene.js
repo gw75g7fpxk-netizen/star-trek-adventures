@@ -113,6 +113,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Default to level 1 if not specified
         this.levelNumber = 1
+        
+        // Enemy health bar tracking
+        this.enemyHealthBars = new Map(); // Map of enemy -> health bar graphics
     }
     
     init(data) {
@@ -1349,6 +1352,9 @@ class Level1Scene extends Phaser.Scene {
         // Play hit sound when enemy is damaged
         this.playSound('hit');
         
+        // Update health bar
+        this.updateHealthBar(enemy);
+        
         if (enemy.health <= 0) {
             this.destroyEnemy(enemy);
         }
@@ -1370,12 +1376,89 @@ class Level1Scene extends Phaser.Scene {
             this.spawnPowerUp(enemy.x, enemy.y);
         }
         
+        // Clean up health bar
+        this.destroyHealthBar(enemy);
+        
         enemy.setActive(false);
         enemy.setVisible(false);
         enemy.destroy();
         
         // Check if victory condition is met after destroying enemy
         this.checkVictoryCondition();
+    }
+    
+    createHealthBar(enemy) {
+        // Don't create health bars for asteroids
+        if (enemy.enemyType === 'asteroid') {
+            return;
+        }
+        
+        // Get enemy configuration to determine max health
+        const config = EnemyConfig[enemy.enemyType];
+        const maxHealth = config.health + (config.shields || 0);
+        
+        // Create health bar graphics
+        const healthBar = this.add.graphics();
+        
+        // Store reference to the health bar
+        this.enemyHealthBars.set(enemy, healthBar);
+        
+        // Initial draw
+        this.updateHealthBar(enemy);
+    }
+    
+    updateHealthBar(enemy) {
+        const healthBar = this.enemyHealthBars.get(enemy);
+        if (!healthBar || !enemy.active) {
+            return;
+        }
+        
+        // Get enemy configuration
+        const config = EnemyConfig[enemy.enemyType];
+        const maxHealth = config.health + (config.shields || 0);
+        const currentHealth = enemy.health + enemy.shields;
+        
+        // Health bar dimensions
+        const barWidth = 30;
+        const barHeight = 4;
+        const barX = enemy.x - barWidth / 2;
+        const barY = enemy.y - enemy.displayHeight / 2 - 8; // Position above enemy
+        
+        // Clear previous drawing
+        healthBar.clear();
+        
+        // Draw background (black)
+        healthBar.fillStyle(0x000000, 0.8);
+        healthBar.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Calculate health percentage
+        const healthPercent = currentHealth / maxHealth;
+        
+        // Choose color based on health percentage
+        let healthColor;
+        if (healthPercent > 0.6) {
+            healthColor = 0x00ff00; // Green
+        } else if (healthPercent > 0.3) {
+            healthColor = 0xffff00; // Yellow
+        } else {
+            healthColor = 0xff0000; // Red
+        }
+        
+        // Draw health bar (colored based on health)
+        healthBar.fillStyle(healthColor, 1);
+        healthBar.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+        
+        // Draw border (white)
+        healthBar.lineStyle(1, 0xffffff, 0.8);
+        healthBar.strokeRect(barX, barY, barWidth, barHeight);
+    }
+    
+    destroyHealthBar(enemy) {
+        const healthBar = this.enemyHealthBars.get(enemy);
+        if (healthBar) {
+            healthBar.destroy();
+            this.enemyHealthBars.delete(enemy);
+        }
     }
     
     playerHit(player, bullet) {
@@ -1750,6 +1833,9 @@ class Level1Scene extends Phaser.Scene {
             
             // Disable collision detection initially - will be enabled when enemy enters screen
             enemy.body.checkCollision.none = true;
+            
+            // Create health bar for this enemy (excludes asteroids)
+            this.createHealthBar(enemy);
         }
     }
     
@@ -1811,6 +1897,9 @@ class Level1Scene extends Phaser.Scene {
                 
                 // Disable collision detection initially
                 scout.body.checkCollision.none = true;
+                
+                // Create health bar for this scout
+                this.createHealthBar(scout);
                 
                 // Add to formation members array
                 formationMembers.push(scout);
@@ -1906,6 +1995,9 @@ class Level1Scene extends Phaser.Scene {
                     }
                 }
             }
+            
+            // Update health bar position
+            this.updateHealthBar(enemy);
         });
     }
     
@@ -2265,6 +2357,7 @@ class Level1Scene extends Phaser.Scene {
         // Clean up off-screen enemies
         this.enemies.children.each((enemy) => {
             if (enemy.active && enemy.y > this.cameraHeight + 50) {
+                this.destroyHealthBar(enemy);
                 enemy.setActive(false);
                 enemy.setVisible(false);
                 enemy.destroy();
