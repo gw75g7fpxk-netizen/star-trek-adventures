@@ -3476,6 +3476,8 @@ class Level1Scene extends Phaser.Scene {
     }
 
     startTypewriterEffect(fullText, textObject, advancePrompt) {
+        // Mark that we haven't manually completed this typewriter
+        this.communicationState.typewriterCompleted = false;
         this.communicationState.isTyping = true;
         this.communicationState.skipPressed = false;
         
@@ -3494,11 +3496,17 @@ class Level1Scene extends Phaser.Scene {
                 return;
             }
             
+            // If typewriter was manually completed, don't continue
+            if (this.communicationState.typewriterCompleted) {
+                return;
+            }
+            
             if (this.communicationState.skipPressed || currentChar >= fullText.length) {
                 // Show full text immediately
                 textObject.setText(fullText);
                 this.communicationState.isTyping = false;
                 this.communicationState.typewriterTimer = null;
+                this.communicationState.typewriterCompleted = true;
                 advancePrompt.setAlpha(1);
                 
                 // Make advance prompt blink
@@ -3563,6 +3571,7 @@ class Level1Scene extends Phaser.Scene {
         if (this.communicationState.isTyping) {
             // Skip typewriter effect - cancel the typewriter timer and complete immediately
             this.communicationState.skipPressed = true;
+            this.communicationState.typewriterCompleted = true; // Prevent any queued callbacks from running
             
             // Cancel any pending typewriter timer
             if (this.communicationState.typewriterTimer) {
@@ -3683,8 +3692,8 @@ class Level1Scene extends Phaser.Scene {
         this.time.delayedCall(DialogConfig.playerShip.scaleDuration, () => {
             this.physics.resume();
             
-            // Call completion callback
-            const onComplete = this.communicationState.onComplete;
+            // Call completion callback - save reference before clearing state
+            const onComplete = this.communicationState?.onComplete;
             this.communicationState = null;
             
             if (onComplete) {
