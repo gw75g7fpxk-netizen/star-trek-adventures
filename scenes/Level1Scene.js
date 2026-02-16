@@ -3262,6 +3262,9 @@ class Level1Scene extends Phaser.Scene {
             hudElements: null
         };
         
+        // Setup input listeners ONCE at the start of communication
+        this.setupCommunicationInput();
+        
         // Show first message after player ship scaling
         this.time.delayedCall(DialogConfig.playerShip.scaleDuration, () => {
             this.showNextMessage();
@@ -3448,9 +3451,6 @@ class Level1Scene extends Phaser.Scene {
 
         // Start typewriter effect
         this.startTypewriterEffect(message.text, dialogText, advancePrompt);
-
-        // Setup input for advancing
-        this.setupCommunicationInput();
     }
 
     startTypewriterEffect(fullText, textObject, advancePrompt) {
