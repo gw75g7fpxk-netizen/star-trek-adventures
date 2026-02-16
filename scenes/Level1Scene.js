@@ -71,6 +71,13 @@ const CRYSTAL_PULSE = {
     minScale: 0.9         // Minimum scale during pulse
 };
 
+// Enemy health bar constants
+const ENEMY_HEALTH_BAR = {
+    width: 30,            // Health bar width in pixels
+    height: 4,            // Health bar height in pixels
+    yOffset: 8            // Distance above enemy sprite
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -1395,7 +1402,9 @@ class Level1Scene extends Phaser.Scene {
         
         // Get enemy configuration to determine max health
         const config = EnemyConfig[enemy.enemyType];
-        const maxHealth = config.health + (config.shields || 0);
+        if (!config) {
+            return; // Skip if enemy type is not recognized
+        }
         
         // Create health bar graphics
         const healthBar = this.add.graphics();
@@ -1415,14 +1424,23 @@ class Level1Scene extends Phaser.Scene {
         
         // Get enemy configuration
         const config = EnemyConfig[enemy.enemyType];
+        if (!config) {
+            return; // Skip if enemy type is not recognized
+        }
+        
         const maxHealth = config.health + (config.shields || 0);
-        const currentHealth = enemy.health + enemy.shields;
+        const currentHealth = enemy.health + (enemy.shields || 0);
+        
+        // Validate maxHealth to prevent division by zero
+        if (maxHealth <= 0) {
+            return;
+        }
         
         // Health bar dimensions
-        const barWidth = 30;
-        const barHeight = 4;
+        const barWidth = ENEMY_HEALTH_BAR.width;
+        const barHeight = ENEMY_HEALTH_BAR.height;
         const barX = enemy.x - barWidth / 2;
-        const barY = enemy.y - enemy.displayHeight / 2 - 8; // Position above enemy
+        const barY = enemy.y - enemy.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset; // Position above enemy
         
         // Clear previous drawing
         healthBar.clear();
