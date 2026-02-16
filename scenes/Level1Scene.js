@@ -1956,7 +1956,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemyType === 'asteroid') texture = 'asteroid';
         if (enemyType === 'crystalNode') texture = 'crystal-node';
         if (enemyType === 'destroyer') texture = 'enemy-cruiser'; // Use cruiser texture for now
-        if (enemyType === 'carrier') texture = 'enemy-battleship'; // Use battleship texture for now
+        if (enemyType === 'carrier') texture = 'enemy-carrier';
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -2621,10 +2621,12 @@ class Level1Scene extends Phaser.Scene {
     launchFighters(carrier) {
         // Launch two fighters, one from each side of the carrier
         const carrierHalfWidth = carrier.displayWidth / 2;
+        const carrierHalfHeight = carrier.displayHeight / 2;
         
-        // Launch fighters from left and right sides
-        this.launchFighterFromCarrier(carrier.x - carrierHalfWidth - 10, carrier.y);
-        this.launchFighterFromCarrier(carrier.x + carrierHalfWidth + 10, carrier.y);
+        // Launch fighters from underneath the carrier (below center)
+        // This makes them appear to fly out from the bottom of the carrier
+        this.launchFighterFromCarrier(carrier.x - carrierHalfWidth - 10, carrier.y + carrierHalfHeight);
+        this.launchFighterFromCarrier(carrier.x + carrierHalfWidth + 10, carrier.y + carrierHalfHeight);
     }
     
     launchFighterFromCarrier(x, y) {

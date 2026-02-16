@@ -115,6 +115,9 @@ class PreloadScene extends Phaser.Scene {
         // Load actual enemy battleship image (will be scaled in Level1Scene)
         this.load.image('enemy-battleship', 'assets/images/enemy-battleship.png');
         
+        // Load actual enemy carrier image (will be scaled in Level1Scene)
+        this.load.image('enemy-carrier', 'assets/images/enemy-carrier.png');
+        
         // Load weapon platform image (will be scaled in Level1Scene)
         this.load.image('weapon-platform', 'assets/images/weapon-platform.png');
         
