@@ -1342,6 +1342,9 @@ class Level1Scene extends Phaser.Scene {
         // Enemy bullets vs escape pods
         this.physics.add.overlap(this.enemyBullets, this.escapePods, this.podHit, null, this);
         
+        // Enemy bullets vs enemies (for asteroid blocking)
+        this.physics.add.overlap(this.enemyBullets, this.enemies, this.enemyBulletHitAsteroid, null, this);
+        
         // Enemies vs escape pods
         this.physics.add.overlap(this.enemies, this.escapePods, this.podHitByEnemy, null, this);
         
@@ -1430,6 +1433,15 @@ class Level1Scene extends Phaser.Scene {
         
         // Check if victory condition is met after destroying enemy
         this.checkVictoryCondition();
+    }
+    
+    enemyBulletHitAsteroid(bullet, enemy) {
+        // Only asteroids should block enemy bullets
+        // Other enemies should not block each other's fire
+        if (enemy.enemyType === 'asteroid') {
+            // Disable bullet (it stops at the asteroid)
+            this.disableBulletPhysics(bullet);
+        }
     }
     
     createHealthBar(enemy) {
