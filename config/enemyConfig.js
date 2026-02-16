@@ -136,7 +136,7 @@ const EnemyConfig = {
         health: 4,
         shields: 4,
         speed: 200, // Moves as fast as player ship
-        fireRate: 1800, // milliseconds between shots
+        fireRate: 1200, // milliseconds between shots (faster than before)
         bulletSpeed: 300,
         damage: 1,
         points: 300,
@@ -150,7 +150,7 @@ const EnemyConfig = {
         health: 12, // Stronger than battleship (8 health)
         shields: 12,
         speed: 30, // Slow movement, similar to boss ships
-        fireRate: 4000, // Launches fighters every 4 seconds
+        fireRate: 3000, // Launches fighters every 3 seconds (faster than before)
         bulletSpeed: null, // Doesn't fire bullets
         damage: 1, // Collision damage
         points: 600,
