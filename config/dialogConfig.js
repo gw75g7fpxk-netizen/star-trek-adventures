@@ -50,12 +50,18 @@ const DialogConfig = {
         advanceColor: '#00FF00'
     },
     
-    // Camera zoom settings for dramatic effect
+    // Camera and player ship settings for dramatic effect during communications
     camera: {
         normalZoom: 1.0,
-        communicationZoom: 3.0,    // Zoom in on player during comms (3x for dramatic close-up effect)
-        zoomDuration: 800,          // milliseconds for zoom transition
-        focusOnPlayer: true         // Center on player ship during comms
+        focusOnPlayer: true,        // Center on player ship during comms
+        panDuration: 800            // milliseconds for pan transition
+    },
+    
+    // Player ship scale settings during communications
+    playerShip: {
+        normalScale: 1.0,
+        communicationScale: 2.0,    // Scale player ship to 2x size during comms
+        scaleDuration: 800          // milliseconds for scale transition
     },
     
     // Ship portraits for communications

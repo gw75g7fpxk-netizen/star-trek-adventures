@@ -3387,24 +3387,28 @@ class Level1Scene extends Phaser.Scene {
         // Pause game during communication
         this.physics.pause();
         
-        // Store original camera zoom
-        this.originalCameraZoom = this.cameras.main.zoom;
-        
-        // Apply camera zoom effect
-        this.cameras.main.zoomTo(
-            DialogConfig.camera.communicationZoom,
-            DialogConfig.camera.zoomDuration,
-            'Sine.easeInOut'
-        );
-        
-        // Center camera on player if configured
-        if (DialogConfig.camera.focusOnPlayer && this.playerShip) {
-            this.cameras.main.pan(
-                this.playerShip.x,
-                this.playerShip.y,
-                DialogConfig.camera.zoomDuration,
-                'Sine.easeInOut'
-            );
+        // Store original player ship scale
+        if (this.playerShip) {
+            this.originalPlayerScale = this.playerShip.scale;
+            
+            // Scale player ship to 2x size
+            this.tweens.add({
+                targets: this.playerShip,
+                scaleX: DialogConfig.playerShip.communicationScale,
+                scaleY: DialogConfig.playerShip.communicationScale,
+                duration: DialogConfig.playerShip.scaleDuration,
+                ease: 'Sine.easeInOut'
+            });
+            
+            // Center camera on player if configured
+            if (DialogConfig.camera.focusOnPlayer) {
+                this.cameras.main.pan(
+                    this.playerShip.x,
+                    this.playerShip.y,
+                    DialogConfig.camera.panDuration,
+                    'Sine.easeInOut'
+                );
+            }
         }
         
         // Initialize communication state
@@ -3417,8 +3421,8 @@ class Level1Scene extends Phaser.Scene {
             hudElements: null
         };
         
-        // Show first message after camera zoom
-        this.time.delayedCall(DialogConfig.camera.zoomDuration, () => {
+        // Show first message after player ship scaling
+        this.time.delayedCall(DialogConfig.playerShip.scaleDuration, () => {
             this.showNextMessage();
         });
     }
@@ -3706,27 +3710,27 @@ class Level1Scene extends Phaser.Scene {
             this.communicationInputZone = null;
         }
 
-        // Restore camera zoom and position
-        this.cameras.main.zoomTo(
-            this.originalCameraZoom || DialogConfig.camera.normalZoom,
-            DialogConfig.camera.zoomDuration,
+        // Restore player ship scale
+        if (this.playerShip && this.originalPlayerScale) {
+            this.tweens.add({
+                targets: this.playerShip,
+                scaleX: this.originalPlayerScale,
+                scaleY: this.originalPlayerScale,
+                duration: DialogConfig.playerShip.scaleDuration,
+                ease: 'Sine.easeInOut'
+            });
+        }
+
+        // Reset camera to center of screen
+        this.cameras.main.pan(
+            this.cameraWidth / 2,
+            this.cameraHeight / 2,
+            DialogConfig.camera.panDuration,
             'Sine.easeInOut'
         );
 
-        // Reset camera to follow player
-        if (this.playerShip) {
-            this.cameras.main.stopFollow();
-            // Re-center on middle of screen
-            this.cameras.main.pan(
-                this.cameraWidth / 2,
-                this.cameraHeight / 2,
-                DialogConfig.camera.zoomDuration,
-                'Sine.easeInOut'
-            );
-        }
-
-        // Resume game after camera restoration
-        this.time.delayedCall(DialogConfig.camera.zoomDuration, () => {
+        // Resume game after player ship restoration
+        this.time.delayedCall(DialogConfig.playerShip.scaleDuration, () => {
             this.physics.resume();
             
             // Call completion callback
