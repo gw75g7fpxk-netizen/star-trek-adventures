@@ -84,6 +84,9 @@ const PLAYER_HEALTH_BAR = {
     yOffset: 8            // Distance above player sprite (same as enemy for consistency)
 };
 
+// Boss-type enemies that get special explosion effects
+const BOSS_TYPE_ENEMIES = ['boss', 'crystalNode', 'battleship'];
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -1276,8 +1279,8 @@ class Level1Scene extends Phaser.Scene {
         // Clean up health bar
         this.destroyHealthBar(enemy);
         
-        // Check if this is a boss-type enemy (based on health or specific type)
-        const isBossType = enemy.enemyType === 'boss' || enemy.enemyType === 'crystalNode' || enemy.enemyType === 'battleship';
+        // Check if this is a boss-type enemy
+        const isBossType = BOSS_TYPE_ENEMIES.includes(enemy.enemyType);
         
         if (isBossType) {
             // Boss-type enemies get massive explosion sequence
@@ -2756,9 +2759,10 @@ class Level1Scene extends Phaser.Scene {
         
         this.updateHUD();
         
-        // Jump to boss fight
+        // Jump to boss wave
         this.currentWave = 5;
-        this.startBossFight();
+        this.isWaveActive = false;
+        this.startNextWave();
     }
     
     
