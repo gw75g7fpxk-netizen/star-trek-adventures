@@ -1334,6 +1334,13 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitEnemy(bullet, enemy) {
+        // Asteroids are invincible - bullets stop but asteroids take no damage
+        if (enemy.enemyType === 'asteroid') {
+            // Disable bullet (it stops at the asteroid)
+            this.disableBulletPhysics(bullet);
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (enemy.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
@@ -2126,6 +2133,11 @@ class Level1Scene extends Phaser.Scene {
         const nearbyAsteroids = this.findNearbyAsteroids(enemy, ASTEROID_AVOIDANCE_RADIUS);
         
         if (nearbyAsteroids.length > 0) {
+            // Store the original speed magnitude
+            const currentVelX = enemy.body.velocity.x;
+            const currentVelY = enemy.body.velocity.y;
+            const originalSpeed = Math.sqrt(currentVelX * currentVelX + currentVelY * currentVelY);
+            
             // Calculate avoidance vector by summing repulsion from all nearby asteroids
             let avoidanceX = 0;
             let avoidanceY = 0;
@@ -2148,13 +2160,22 @@ class Level1Scene extends Phaser.Scene {
             });
             
             // Apply avoidance to velocity
-            const currentVelX = enemy.body.velocity.x;
-            const currentVelY = enemy.body.velocity.y;
+            const newVelX = currentVelX + avoidanceX;
+            const newVelY = currentVelY + avoidanceY;
             
-            enemy.body.setVelocity(
-                currentVelX + avoidanceX,
-                currentVelY + avoidanceY
-            );
+            // Normalize the new velocity to maintain the original speed
+            const newSpeed = Math.sqrt(newVelX * newVelX + newVelY * newVelY);
+            if (newSpeed > 0 && originalSpeed > 0) {
+                // Scale the velocity to match the original speed
+                const scale = originalSpeed / newSpeed;
+                enemy.body.setVelocity(
+                    newVelX * scale,
+                    newVelY * scale
+                );
+            } else {
+                // Fallback to new velocity if either speed is zero
+                enemy.body.setVelocity(newVelX, newVelY);
+            }
         }
     }
     
