@@ -107,6 +107,18 @@ The game uses a modular architecture with separate configuration files:
     └── VictoryScene.js
 ```
 
+## Contributing & Testing
+
+### PR Preview Deployments
+
+This repository includes automated PR preview deployments! When you open a pull request:
+- A preview deployment is automatically created at `https://gw75g7fpxk-netizen.github.io/star-trek-adventures/pr-{number}/`
+- The GitHub Actions bot will comment on your PR with the preview link
+- The preview updates automatically as you push new commits
+- The preview is automatically cleaned up when the PR is closed or merged
+
+This allows you to test changes in a live environment before merging to the main branch, without affecting the production site.
+
 ## Asset Credits
 
 The game currently uses procedurally generated placeholder graphics. For production, consider these free asset resources:
