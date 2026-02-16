@@ -3045,6 +3045,8 @@ class Level1Scene extends Phaser.Scene {
         continueButton.setDepth(10002);
         continueButton.setInteractive({ useHandCursor: true });
         
+        // Use .once() for click to prevent duplicate triggers
+        // Use .on() for hover effects which are cleaned up in cleanupPauseMenu()
         continueButton.once('pointerdown', () => {
             this.resumeGame();
         });
@@ -3083,6 +3085,8 @@ class Level1Scene extends Phaser.Scene {
         quitButton.setDepth(10002);
         quitButton.setInteractive({ useHandCursor: true });
         
+        // Use .once() for click to prevent duplicate triggers
+        // Use .on() for hover effects which are cleaned up in cleanupPauseMenu()
         quitButton.once('pointerdown', () => {
             // Clean up and return to main menu
             this.quitToMainMenu();
