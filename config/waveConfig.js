@@ -3,52 +3,45 @@
 
 const WaveConfig = {
     betweenWaveDelay: 1500, // Delay between waves in milliseconds (reduced from 3000ms)
+    // Level 1: Shards of First Contact - Introduction level
+    // Simple waves with scouts, fighters, and cruisers only
     level1: {
         wave1: { 
-            enemyCount: 8, 
+            enemyCount: 6, 
             enemyTypes: ['fighter', 'scout'],
-            shipCounts: { fighter: 5, scout: 3 },
-            spawnRate: 2000, 
+            shipCounts: { fighter: 4, scout: 2 },
+            spawnRate: 2200, 
             difficulty: 1,
-            duration: 20000 // 20 seconds
+            duration: 18000
         },
         wave2: { 
-            enemyCount: 11, 
+            enemyCount: 9, 
             enemyTypes: ['fighter', 'scout'],
-            shipCounts: { fighter: 8, scout: 3 },
-            spawnRate: 1500, 
-            difficulty: 1.5,
-            duration: 25000
+            shipCounts: { fighter: 6, scout: 3 },
+            spawnRate: 1800, 
+            difficulty: 1.3,
+            duration: 22000
         },
         wave3: { 
-            enemyCount: 14, 
-            enemyTypes: ['fighter', 'cruiser', 'weaponPlatform', 'scout'],
-            shipCounts: { fighter: 7, cruiser: 3, weaponPlatform: 1, scout: 3 },
-            spawnRate: 1200, 
+            enemyCount: 10, 
+            enemyTypes: ['fighter', 'cruiser', 'scout'],
+            shipCounts: { fighter: 5, cruiser: 2, scout: 3 },
+            spawnRate: 1600, 
+            difficulty: 1.7,
+            duration: 26000
+        },
+        wave4: {
+            enemyCount: 12,
+            enemyTypes: ['fighter', 'cruiser', 'scout'],
+            shipCounts: { fighter: 6, cruiser: 3, scout: 3 },
+            spawnRate: 1400,
             difficulty: 2,
             duration: 30000
         },
-        wave4: {
-            enemyCount: 17,
-            enemyTypes: ['fighter', 'cruiser', 'weaponPlatform', 'scout'],
-            shipCounts: { fighter: 7, cruiser: 5, weaponPlatform: 2, scout: 3 },
-            spawnRate: 1000,
-            difficulty: 2.5,
-            duration: 35000
-        },
-        wave5: {
-            enemyCount: 20,
-            enemyTypes: ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'scout'],
-            shipCounts: { fighter: 8, cruiser: 5, battleship: 2, weaponPlatform: 2, scout: 3 },
-            spawnRate: 900,
-            difficulty: 3,
-            duration: 40000
+        bossWave: {
+            threshold: 4, // Boss appears after wave 4
+            type: 'vanguard'
         }
-        // Boss wave disabled - player progresses to next level after wave 5
-        // bossWave: {
-        //     threshold: 5, // Boss appears after wave 5
-        //     type: 'boss'
-        // }
     },
     // Level 2: Echoes of the Entity - Asteroid field with rescue missions
     level2: {
