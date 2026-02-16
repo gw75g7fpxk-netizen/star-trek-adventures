@@ -204,16 +204,37 @@ const DialogConfig = {
             }
         },
         
-        // Template for future levels
+        // Level 3: Siege of New Horizon - Orbital defense
         3: {
             intro: {
                 title: 'INCOMING TRANSMISSION',
                 sequence: [
                     {
+                        speaker: 'Communications Officer',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: "Captain, we're receiving a priority distress call from the Federation colony on New Horizon!",
+                        audio: null
+                    },
+                    {
                         speaker: 'Starfleet Command',
                         ship: 'Starbase 47',
                         portrait: 'playerShip',
-                        text: 'Aurora, the colony on New Horizon is under attack. Provide orbital defense until reinforcements arrive.',
+                        text: 'Aurora, New Horizon is under heavy Crystalis attack. Provide orbital defense until reinforcements arrive.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Captain',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Understood, Command. Helm, set course for New Horizon. All hands to battle stations. We hold the line!',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Science Officer',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: "Detecting multiple evacuation pods launching from the surface. They're evacuating civilians, Captain.",
                         audio: null
                     }
                 ]
@@ -222,10 +243,31 @@ const DialogConfig = {
                 title: 'INCOMING TRANSMISSION',
                 sequence: [
                     {
+                        speaker: 'Tactical Officer',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'The Crystalis flagship is destroyed! Remaining enemy forces are breaking off their attack.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Starfleet Command',
+                        ship: 'Starbase 47',
+                        portrait: 'playerShip',
+                        text: 'Well done, Aurora. Reinforcements have arrived and are securing the colony. New Horizon is safe.',
+                        audio: null
+                    },
+                    {
                         speaker: 'Captain',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
-                        text: 'New Horizon is secure. All evacuees are safe. Standing by for further orders.',
+                        text: 'All civilian evacuation pods recovered successfully. New Horizon colony is secure. Aurora standing by.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Science Officer',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Captain, the Crystalis are becoming more coordinated. Their attack patterns are evolving.',
                         audio: null
                     }
                 ]
