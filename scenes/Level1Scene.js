@@ -1803,6 +1803,14 @@ class Level1Scene extends Phaser.Scene {
             this.podTimer.remove();
         }
         
+        // Don't start next wave if this is the final wave (boss wave)
+        // Boss waves end when all enemies are defeated, not by timer
+        // checkVictoryCondition() will trigger victory() when all enemies are gone
+        if (this.isFinalWave) {
+            this.checkVictoryCondition();
+            return; // Prevent scheduling another wave
+        }
+        
         // Short break before next wave
         this.time.delayedCall(WaveConfig.betweenWaveDelay, () => {
             this.startNextWave();
