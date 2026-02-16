@@ -2993,17 +2993,15 @@ class Level1Scene extends Phaser.Scene {
         // Resume physics
         this.physics.resume();
         
-        // Destroy pause menu overlay
-        if (this.pauseMenu) {
-            this.pauseMenu.forEach(element => element.destroy());
-            this.pauseMenu = null;
-        }
+        // Clean up pause menu
+        this.cleanupPauseMenu();
         
         console.log('Level1Scene: Game resumed');
     }
 
     createPauseMenu() {
         this.pauseMenu = [];
+        this.pauseMenuButtons = []; // Store button references for cleanup
         
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
@@ -3062,6 +3060,7 @@ class Level1Scene extends Phaser.Scene {
         });
         
         this.pauseMenu.push(continueButton);
+        this.pauseMenuButtons.push(continueButton);
         
         // Quit button
         const quitButtonBg = this.add.graphics();
@@ -3100,6 +3099,24 @@ class Level1Scene extends Phaser.Scene {
         });
         
         this.pauseMenu.push(quitButton);
+        this.pauseMenuButtons.push(quitButton);
+    }
+
+    cleanupPauseMenu() {
+        // Remove event listeners from buttons before destroying
+        if (this.pauseMenuButtons) {
+            this.pauseMenuButtons.forEach(button => {
+                button.off('pointerover');
+                button.off('pointerout');
+            });
+            this.pauseMenuButtons = [];
+        }
+        
+        // Destroy menu elements
+        if (this.pauseMenu) {
+            this.pauseMenu.forEach(element => element.destroy());
+            this.pauseMenu = null;
+        }
     }
 
     quitToMainMenu() {
@@ -3110,10 +3127,7 @@ class Level1Scene extends Phaser.Scene {
         this.tweens.killAll();
         
         // Clean up pause menu
-        if (this.pauseMenu) {
-            this.pauseMenu.forEach(element => element.destroy());
-            this.pauseMenu = null;
-        }
+        this.cleanupPauseMenu();
         
         // Resume physics before transitioning (so next scene starts normally)
         this.physics.resume();
