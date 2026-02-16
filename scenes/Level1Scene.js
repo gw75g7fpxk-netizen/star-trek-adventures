@@ -52,15 +52,6 @@ const SHIELD_IMPACT = {
 };
 
 // HUD bar dimension constants
-const HUD_BAR = {
-    width: 204,           // Total bar width in pixels
-    height: 10,           // Bar height in pixels
-    segmentGap: 2,        // Gap between segments in pixels
-    xPos: 10,             // X position on screen
-    healthYPos: 10,       // Y position for health bar
-    shieldsYPos: 22       // Y position for shields bar
-};
-
 // Asteroid rotation constants
 const ASTEROID_ROTATION_FACTOR = 0.01; // Rotation speed multiplier for asteroids
 
@@ -86,6 +77,12 @@ const ENEMY_HEALTH_BAR = {
     yOffset: 8            // Distance above enemy sprite
 };
 
+const PLAYER_HEALTH_BAR = {
+    width: 40,            // Health bar width in pixels
+    height: 4,            // Health bar height in pixels
+    segmentGap: 1         // Gap between segments in pixels
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -99,10 +96,6 @@ class Level1Scene extends Phaser.Scene {
             speed: PlayerConfig.speed,
             fireRate: PlayerConfig.fireRate
         };
-        
-        // Track previous max values for HUD bar optimization
-        this.previousMaxHealth = PlayerConfig.maxHealth;
-        this.previousMaxShields = PlayerConfig.maxShields;
         
         // Game state
         this.currentWave = 0;
@@ -607,31 +600,7 @@ class Level1Scene extends Phaser.Scene {
             fontStyle: 'bold'
         };
         
-        // Create segmented health bar background with divisions
-        this.healthBarBg = this.add.graphics();
-        this.healthBarBg.setScrollFactor(0);
-        this.healthBarBg.setDepth(999);
-        this.createSegmentedBarBackground(this.healthBarBg, HUD_BAR.xPos, HUD_BAR.healthYPos, this.playerStats.maxHealth);
-        
-        // Hull health bar (will be drawn with segments)
-        this.healthBar = this.add.graphics();
-        this.healthBar.setScrollFactor(0);
-        this.healthBar.setDepth(999);
-        this.updateHealthBar();
-        
-        // Create segmented shield bar background with divisions
-        this.shieldBarBg = this.add.graphics();
-        this.shieldBarBg.setScrollFactor(0);
-        this.shieldBarBg.setDepth(999);
-        this.createSegmentedBarBackground(this.shieldBarBg, HUD_BAR.xPos, HUD_BAR.shieldsYPos, this.playerStats.maxShields);
-        
-        // Shield bar (will be drawn with segments)
-        this.shieldBar = this.add.graphics();
-        this.shieldBar.setScrollFactor(0);
-        this.shieldBar.setDepth(999);
-        this.updateShieldsBar();
-        
-        // Score text (top right) with LCARS styling - adjusted Y position since bars are now taller
+        // Score text (top right) with LCARS styling
         this.scoreText = this.add.text(this.cameraWidth - 10, 10, `SCORE: ${this.score}`, titleStyle);
         this.scoreText.setOrigin(1, 0);
         this.scoreText.setScrollFactor(0);
@@ -844,87 +813,6 @@ class Level1Scene extends Phaser.Scene {
                 oscillator.start(time);
                 oscillator.stop(time + config.duration);
                 break;
-        }
-    }
-
-    createSegmentedBarBackground(graphics, x, y, maxSegments) {
-        const segmentWidth = (HUD_BAR.width - (maxSegments - 1) * HUD_BAR.segmentGap) / maxSegments;
-        
-        graphics.clear();
-        
-        // Draw outer border
-        graphics.lineStyle(2, 0x00FFFF, 1);
-        graphics.strokeRect(x, y, HUD_BAR.width, HUD_BAR.height);
-        
-        // Draw dark background
-        graphics.fillStyle(0x333333, 1);
-        graphics.fillRect(x + 2, y + 2, HUD_BAR.width - 4, HUD_BAR.height - 4);
-        
-        // Draw segment dividers
-        graphics.lineStyle(1, 0x00FFFF, 0.5);
-        for (let i = 1; i < maxSegments; i++) {
-            const dividerX = x + 2 + i * (segmentWidth + HUD_BAR.segmentGap) - HUD_BAR.segmentGap / 2;
-            graphics.lineBetween(dividerX, y + 2, dividerX, y + HUD_BAR.height - 2);
-        }
-    }
-
-    updateHealthBar() {
-        this.healthBar.clear();
-        
-        // Only redraw background if maxHealth changed (e.g., from upgrades)
-        if (this.playerStats.maxHealth !== this.previousMaxHealth) {
-            this.createSegmentedBarBackground(this.healthBarBg, HUD_BAR.xPos, HUD_BAR.healthYPos, this.playerStats.maxHealth);
-            this.previousMaxHealth = this.playerStats.maxHealth;
-        }
-        
-        const maxSegments = this.playerStats.maxHealth;
-        const currentSegments = this.playerStats.health;
-        const segmentWidth = (HUD_BAR.width - (maxSegments - 1) * HUD_BAR.segmentGap) / maxSegments;
-        
-        // Calculate health percentage for color
-        const healthPercent = currentSegments / maxSegments;
-        
-        // Color based on health percentage
-        let color = 0x00FF00; // Green
-        if (healthPercent < 0.5) color = 0xFFFF00; // Yellow
-        if (healthPercent < 0.25) color = 0xFF0000; // Red
-        
-        this.healthBar.fillStyle(color, 1);
-        
-        // Draw filled segments
-        for (let i = 0; i < currentSegments; i++) {
-            const segmentX = 12 + i * (segmentWidth + HUD_BAR.segmentGap);
-            this.healthBar.fillRect(segmentX, 12, segmentWidth, 6);
-        }
-    }
-
-    updateShieldsBar() {
-        this.shieldBar.clear();
-        
-        // Only redraw background if maxShields changed (e.g., from upgrades)
-        if (this.playerStats.maxShields !== this.previousMaxShields) {
-            this.createSegmentedBarBackground(this.shieldBarBg, HUD_BAR.xPos, HUD_BAR.shieldsYPos, this.playerStats.maxShields);
-            this.previousMaxShields = this.playerStats.maxShields;
-        }
-        
-        const maxSegments = this.playerStats.maxShields;
-        const currentSegments = this.playerStats.shields;
-        const segmentWidth = (HUD_BAR.width - (maxSegments - 1) * HUD_BAR.segmentGap) / maxSegments;
-        
-        // Calculate shields percentage for color
-        const shieldsPercent = currentSegments / maxSegments;
-        
-        // Color based on shields percentage
-        let color = 0x00FFFF; // Cyan (LCARS style)
-        if (shieldsPercent < 0.5) color = 0x9999FF; // Light blue
-        if (shieldsPercent < 0.25) color = 0xFF00FF; // Magenta
-        
-        this.shieldBar.fillStyle(color, 1);
-        
-        // Draw filled segments
-        for (let i = 0; i < currentSegments; i++) {
-            const segmentX = 12 + i * (segmentWidth + HUD_BAR.segmentGap);
-            this.shieldBar.fillRect(segmentX, 24, segmentWidth, 6);
         }
     }
 
@@ -1223,8 +1111,6 @@ class Level1Scene extends Phaser.Scene {
         this.waveText.setText(`WAVE: ${this.currentWave}`);
         this.multiplierText.setText(`MULTIPLIER: x${this.scoreMultiplier.toFixed(1)}`);
         this.podsText.setText(`PODS: ${this.podsRescued}`);
-        this.updateHealthBar();
-        this.updateShieldsBar();
         this.updatePlayerShieldBar(); // Update shield bar above player ship
         this.updatePlayerHealthBar(); // Update health bar above player ship
     }
@@ -1535,8 +1421,8 @@ class Level1Scene extends Phaser.Scene {
         }
         
         // Calculate shield bar dimensions and position
-        const barWidth = 40; // Same width as health bar
-        const barHeight = ENEMY_HEALTH_BAR.height;
+        const barWidth = PLAYER_HEALTH_BAR.width; // Same width as health bar
+        const barHeight = PLAYER_HEALTH_BAR.height;
         const barX = this.player.x - barWidth / 2;
         // Position shield bar above health bar (health bar offset + bar height + small gap)
         const barY = this.player.y - this.player.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset - 5 - barHeight - 2;
@@ -1548,8 +1434,13 @@ class Level1Scene extends Phaser.Scene {
         this.playerShieldBar.fillStyle(0x000000, 0.8);
         this.playerShieldBar.fillRect(barX, barY, barWidth, barHeight);
         
-        // Calculate shield percentage
-        const shieldPercent = this.playerStats.shields / this.playerStats.maxShields;
+        // Calculate segments
+        const maxSegments = this.playerStats.maxShields;
+        const currentSegments = this.playerStats.shields;
+        const segmentWidth = (barWidth - (maxSegments - 1) * PLAYER_HEALTH_BAR.segmentGap) / maxSegments;
+        
+        // Calculate shield percentage for color
+        const shieldPercent = currentSegments / maxSegments;
         
         // Choose color based on shield percentage (cyan/blue theme for shields)
         let shieldColor;
@@ -1561,9 +1452,19 @@ class Level1Scene extends Phaser.Scene {
             shieldColor = 0xFF00FF; // Magenta - low shields
         }
         
-        // Draw shield bar (colored based on shield strength)
+        // Draw filled segments
         this.playerShieldBar.fillStyle(shieldColor, 1);
-        this.playerShieldBar.fillRect(barX, barY, barWidth * shieldPercent, barHeight);
+        for (let i = 0; i < currentSegments; i++) {
+            const segmentX = barX + i * (segmentWidth + PLAYER_HEALTH_BAR.segmentGap);
+            this.playerShieldBar.fillRect(segmentX, barY, segmentWidth, barHeight);
+        }
+        
+        // Draw segment dividers
+        this.playerShieldBar.lineStyle(1, 0xffffff, 0.5);
+        for (let i = 1; i < maxSegments; i++) {
+            const dividerX = barX + i * (segmentWidth + PLAYER_HEALTH_BAR.segmentGap) - PLAYER_HEALTH_BAR.segmentGap / 2;
+            this.playerShieldBar.lineBetween(dividerX, barY, dividerX, barY + barHeight);
+        }
         
         // Draw border (white)
         this.playerShieldBar.lineStyle(1, 0xffffff, 0.8);
@@ -1575,9 +1476,9 @@ class Level1Scene extends Phaser.Scene {
             return;
         }
         
-        // Calculate health bar dimensions and position (similar to enemy health bars)
-        const barWidth = 40; // Slightly wider than enemies for visibility
-        const barHeight = ENEMY_HEALTH_BAR.height;
+        // Calculate health bar dimensions and position
+        const barWidth = PLAYER_HEALTH_BAR.width;
+        const barHeight = PLAYER_HEALTH_BAR.height;
         const barX = this.player.x - barWidth / 2;
         const barY = this.player.y - this.player.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset - 5; // Extra offset above player
         
@@ -1588,10 +1489,15 @@ class Level1Scene extends Phaser.Scene {
         this.playerHealthBar.fillStyle(0x000000, 0.8);
         this.playerHealthBar.fillRect(barX, barY, barWidth, barHeight);
         
-        // Calculate health percentage
-        const healthPercent = this.playerStats.health / this.playerStats.maxHealth;
+        // Calculate segments
+        const maxSegments = this.playerStats.maxHealth;
+        const currentSegments = this.playerStats.health;
+        const segmentWidth = (barWidth - (maxSegments - 1) * PLAYER_HEALTH_BAR.segmentGap) / maxSegments;
         
-        // Choose color based on health percentage (same as HUD bars)
+        // Calculate health percentage for color
+        const healthPercent = currentSegments / maxSegments;
+        
+        // Choose color based on health percentage
         let healthColor;
         if (healthPercent > 0.5) {
             healthColor = 0x00ff00; // Green
@@ -1601,9 +1507,19 @@ class Level1Scene extends Phaser.Scene {
             healthColor = 0xff0000; // Red
         }
         
-        // Draw health bar (colored based on health)
+        // Draw filled segments
         this.playerHealthBar.fillStyle(healthColor, 1);
-        this.playerHealthBar.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+        for (let i = 0; i < currentSegments; i++) {
+            const segmentX = barX + i * (segmentWidth + PLAYER_HEALTH_BAR.segmentGap);
+            this.playerHealthBar.fillRect(segmentX, barY, segmentWidth, barHeight);
+        }
+        
+        // Draw segment dividers
+        this.playerHealthBar.lineStyle(1, 0xffffff, 0.5);
+        for (let i = 1; i < maxSegments; i++) {
+            const dividerX = barX + i * (segmentWidth + PLAYER_HEALTH_BAR.segmentGap) - PLAYER_HEALTH_BAR.segmentGap / 2;
+            this.playerHealthBar.lineBetween(dividerX, barY, dividerX, barY + barHeight);
+        }
         
         // Draw border (white)
         this.playerHealthBar.lineStyle(1, 0xffffff, 0.8);
