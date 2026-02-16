@@ -64,6 +64,9 @@ const HUD_BAR = {
 // Asteroid rotation constants
 const ASTEROID_ROTATION_FACTOR = 0.01; // Rotation speed multiplier for asteroids
 
+// Asteroid avoidance constants
+const ASTEROID_AVOIDANCE_RADIUS = 100; // Distance at which enemies start avoiding asteroids (in pixels)
+
 // Crystal node boss animation constants
 const CRYSTAL_PULSE = {
     speed: 0.002,         // Pulse animation speed
@@ -1759,7 +1762,9 @@ class Level1Scene extends Phaser.Scene {
                 }
                 
                 // Scale sprites to their configured target width
-                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 40px
+                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px
+                // WeaponPlatform: 1227x1219px → 40px
+                // Asteroids: Size variant determines width (small: 25px, medium: 40px, large: 60px)
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
             }
@@ -1973,7 +1978,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemy.enemyType === 'asteroid') return;
         if (enemy.enemyType === 'scout' && enemy.formationPhase && enemy.formationPhase !== 'straight') return;
         
-        const nearbyAsteroids = this.findNearbyAsteroids(enemy, 100);
+        const nearbyAsteroids = this.findNearbyAsteroids(enemy, ASTEROID_AVOIDANCE_RADIUS);
         
         if (nearbyAsteroids.length > 0) {
             // Calculate avoidance vector by summing repulsion from all nearby asteroids
@@ -1982,7 +1987,7 @@ class Level1Scene extends Phaser.Scene {
             
             nearbyAsteroids.forEach(({ asteroid, distance, angle, size }) => {
                 // Stronger avoidance for closer asteroids
-                let baseStrength = (100 - distance) / 100;
+                let baseStrength = (ASTEROID_AVOIDANCE_RADIUS - distance) / ASTEROID_AVOIDANCE_RADIUS;
                 
                 // Adjust avoidance strength based on asteroid size
                 if (size === 'large') {
