@@ -24,6 +24,7 @@ class VictoryScene extends Phaser.Scene {
         this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
         
         // Responsive font sizing based on screen width
+        // Mobile detection: screens < 600px get scaled fonts (min sizes prevent too-small text)
         const isMobile = width < 600;
         const titleFontSize = isMobile ? Math.max(32, width * 0.08) : 64;
         const subtitleFontSize = isMobile ? Math.max(16, width * 0.04) : 24;
@@ -70,7 +71,7 @@ class VictoryScene extends Phaser.Scene {
         const statsPanel = this.add.graphics();
         statsPanel.lineStyle(3, 0x00FFFF, 1);
         
-        // Use percentage-based width with max constraint for desktop
+        // Panel width: 85% of screen width on mobile, max 500px on desktop to prevent overflow
         const panelWidth = Math.min(500, width * 0.85);
         const panelHeight = isMobile ? 240 : 260;
         statsPanel.strokeRect(width / 2 - panelWidth / 2, statsY - 30, panelWidth, panelHeight);
