@@ -76,7 +76,8 @@ const CRYSTAL_PULSE = {
 };
 
 // Boss movement constants
-const BOSS_MOVEMENT_DIVISOR = 20; // Divisor for converting config speed to frame-based movement
+const CONFIG_SPEED_TO_PIXELS_DIVISOR = 20; // Converts config speed to frame-based pixel movement
+const DEFAULT_BOSS_MOVEMENT_SPEED = 2; // Default boss movement speed in pixels per frame
 
 // Enemy health bar constants
 const ENEMY_HEALTH_BAR = {
@@ -2861,8 +2862,8 @@ class Level1Scene extends Phaser.Scene {
         
         // Boss horizontal movement
         // Use config speed for movement (crystalNode has speed: 40)
-        const moveSpeed = EnemyConfig[this.currentBossType]?.speed || 2;
-        this.boss.x += this.boss.moveDirection * (moveSpeed / BOSS_MOVEMENT_DIVISOR);
+        const moveSpeed = EnemyConfig[this.currentBossType]?.speed || DEFAULT_BOSS_MOVEMENT_SPEED;
+        this.boss.x += this.boss.moveDirection * (moveSpeed / CONFIG_SPEED_TO_PIXELS_DIVISOR);
         if (this.boss.x < 150 || this.boss.x > this.cameraWidth - 150) {
             this.boss.moveDirection *= -1;
         }
