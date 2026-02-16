@@ -64,6 +64,10 @@ const HUD_BAR = {
 // Asteroid rotation constants
 const ASTEROID_ROTATION_FACTOR = 0.01; // Rotation speed multiplier for asteroids
 
+// Asteroid avoidance constants
+const ASTEROID_AVOIDANCE_RADIUS = 100; // Distance at which enemies start avoiding asteroids (in pixels)
+const ASTEROID_AVOIDANCE_FORCE = 80; // Force multiplier for asteroid avoidance vector
+
 // Crystal node boss animation constants
 const CRYSTAL_PULSE = {
     speed: 0.002,         // Pulse animation speed
@@ -1833,9 +1837,38 @@ class Level1Scene extends Phaser.Scene {
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
             if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid' || enemyType === 'crystalNode') && enemy.width > 0) {
+                let targetWidth = config.size.width;
+                
+                // For asteroids, randomly assign a size variant (small, medium, large)
+                // This overrides the base config values (health: 3, points: 10) to provide variety
+                if (enemyType === 'asteroid') {
+                    const sizeType = Phaser.Utils.Array.GetRandom(['small', 'medium', 'large']);
+                    enemy.asteroidSize = sizeType;
+                    
+                    // Set size-based properties
+                    switch (sizeType) {
+                        case 'small':
+                            targetWidth = 25; // Small asteroids
+                            enemy.health = 1;
+                            enemy.points = 5;
+                            break;
+                        case 'medium':
+                            targetWidth = 40; // Medium asteroids (base config size)
+                            enemy.health = 3;
+                            enemy.points = 10;
+                            break;
+                        case 'large':
+                            targetWidth = 60; // Large asteroids
+                            enemy.health = 5;
+                            enemy.points = 20;
+                            break;
+                    }
+                }
+                
                 // Scale sprites to their configured target width
-                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px, WeaponPlatform: 1227x1219px → 40px
-                const targetWidth = config.size.width;
+                // Fighter: 651x1076px → 25px, Cruiser: 811x790px → 60px, Battleship: large PNG → 120px
+                // WeaponPlatform: 1227x1219px → 40px
+                // Asteroids: Size variant determines width (small: 25px, medium: 40px, large: 60px)
                 const scale = targetWidth / enemy.width;
                 enemy.setScale(scale);
             }
@@ -2044,8 +2077,84 @@ class Level1Scene extends Phaser.Scene {
         });
     }
     
+    findNearbyAsteroids(enemy, searchRadius = 150) {
+        // Only check for asteroid avoidance if this is not an asteroid itself
+        if (enemy.enemyType === 'asteroid') {
+            return [];
+        }
+        
+        const nearbyAsteroids = [];
+        this.enemies.children.each((other) => {
+            if (!other.active || other.enemyType !== 'asteroid') return;
+            
+            const distance = Phaser.Math.Distance.Between(enemy.x, enemy.y, other.x, other.y);
+            
+            // Adjust search radius based on asteroid size
+            let effectiveSearchRadius = searchRadius;
+            if (other.asteroidSize === 'large') {
+                effectiveSearchRadius = searchRadius * 1.3;
+            } else if (other.asteroidSize === 'small') {
+                effectiveSearchRadius = searchRadius * 0.8;
+            }
+            
+            if (distance < effectiveSearchRadius) {
+                nearbyAsteroids.push({
+                    asteroid: other,
+                    distance: distance,
+                    angle: Phaser.Math.Angle.Between(enemy.x, enemy.y, other.x, other.y),
+                    size: other.asteroidSize || 'medium'
+                });
+            }
+        });
+        
+        return nearbyAsteroids;
+    }
+    
+    applyAsteroidAvoidance(enemy) {
+        // Skip avoidance for asteroids themselves and scouts in formation phase
+        if (enemy.enemyType === 'asteroid') return;
+        if (enemy.enemyType === 'scout' && enemy.formationPhase && enemy.formationPhase !== 'straight') return;
+        
+        const nearbyAsteroids = this.findNearbyAsteroids(enemy, ASTEROID_AVOIDANCE_RADIUS);
+        
+        if (nearbyAsteroids.length > 0) {
+            // Calculate avoidance vector by summing repulsion from all nearby asteroids
+            let avoidanceX = 0;
+            let avoidanceY = 0;
+            
+            nearbyAsteroids.forEach(({ asteroid, distance, angle, size }) => {
+                // Stronger avoidance for closer asteroids
+                let baseStrength = (ASTEROID_AVOIDANCE_RADIUS - distance) / ASTEROID_AVOIDANCE_RADIUS;
+                
+                // Adjust avoidance strength based on asteroid size
+                if (size === 'large') {
+                    baseStrength *= 1.5; // Larger asteroids have stronger avoidance
+                } else if (size === 'small') {
+                    baseStrength *= 0.7; // Smaller asteroids have weaker avoidance
+                }
+                
+                const avoidAngle = angle + Math.PI; // Opposite direction
+                
+                avoidanceX += Math.cos(avoidAngle) * baseStrength * ASTEROID_AVOIDANCE_FORCE;
+                avoidanceY += Math.sin(avoidAngle) * baseStrength * ASTEROID_AVOIDANCE_FORCE;
+            });
+            
+            // Apply avoidance to velocity
+            const currentVelX = enemy.body.velocity.x;
+            const currentVelY = enemy.body.velocity.y;
+            
+            enemy.body.setVelocity(
+                currentVelX + avoidanceX,
+                currentVelY + avoidanceY
+            );
+        }
+    }
+    
     updateEnemyMovement(enemy) {
         const config = EnemyConfig[enemy.enemyType];
+        
+        // Apply asteroid avoidance before normal movement pattern
+        this.applyAsteroidAvoidance(enemy);
         
         switch (enemy.movementPattern) {
             case 'straight':

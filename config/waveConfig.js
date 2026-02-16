@@ -53,41 +53,41 @@ const WaveConfig = {
     // Level 2: Echoes of the Entity - Asteroid field with rescue missions
     level2: {
         wave1: { 
-            enemyCount: 10, 
+            enemyCount: 16, 
             enemyTypes: ['fighter', 'scout', 'asteroid'],
-            shipCounts: { fighter: 4, scout: 2, asteroid: 4 },
+            shipCounts: { fighter: 4, scout: 2, asteroid: 12 },
             spawnRate: 2000, 
             difficulty: 1.2,
             duration: 25000
         },
         wave2: { 
-            enemyCount: 13, 
+            enemyCount: 23, 
             enemyTypes: ['fighter', 'scout', 'asteroid'],
-            shipCounts: { fighter: 5, scout: 3, asteroid: 5 },
+            shipCounts: { fighter: 5, scout: 3, asteroid: 15 },
             spawnRate: 1800, 
             difficulty: 1.5,
             duration: 28000
         },
         wave3: { 
-            enemyCount: 16, 
+            enemyCount: 26, 
             enemyTypes: ['fighter', 'cruiser', 'asteroid', 'scout'],
-            shipCounts: { fighter: 6, cruiser: 2, asteroid: 5, scout: 3 },
+            shipCounts: { fighter: 6, cruiser: 2, asteroid: 15, scout: 3 },
             spawnRate: 1600, 
             difficulty: 2,
             duration: 32000
         },
         wave4: {
-            enemyCount: 19,
+            enemyCount: 31,
             enemyTypes: ['fighter', 'cruiser', 'asteroid', 'scout'],
-            shipCounts: { fighter: 7, cruiser: 3, asteroid: 6, scout: 3 },
+            shipCounts: { fighter: 7, cruiser: 3, asteroid: 18, scout: 3 },
             spawnRate: 1400,
             difficulty: 2.5,
             duration: 35000
         },
         wave5: {
-            enemyCount: 22,
-            enemyTypes: ['fighter', 'cruiser', 'asteroid', 'weaponPlatform', 'scout'],
-            shipCounts: { fighter: 8, cruiser: 4, asteroid: 6, weaponPlatform: 1, scout: 3 },
+            enemyCount: 39,
+            enemyTypes: ['fighter', 'cruiser', 'asteroid', 'scout'],
+            shipCounts: { fighter: 8, cruiser: 4, asteroid: 18, scout: 3 },
             spawnRate: 1200,
             difficulty: 3,
             duration: 38000
