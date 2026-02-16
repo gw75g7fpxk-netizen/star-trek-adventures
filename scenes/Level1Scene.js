@@ -75,6 +75,13 @@ const CRYSTAL_PULSE = {
     minScale: 0.9         // Minimum scale during pulse
 };
 
+// Enemy health bar constants
+const ENEMY_HEALTH_BAR = {
+    width: 30,            // Health bar width in pixels
+    height: 4,            // Health bar height in pixels
+    yOffset: 8            // Distance above enemy sprite
+};
+
 class Level1Scene extends Phaser.Scene {
     constructor() {
         super({ key: 'Level1Scene' });
@@ -116,7 +123,10 @@ class Level1Scene extends Phaser.Scene {
         this.safeAreaOffset = 120; // pixels from bottom edge
         
         // Default to level 1 if not specified
-        this.levelNumber = 1
+        this.levelNumber = 1;
+        
+        // Enemy health bar tracking
+        this.enemyHealthBars = new Map(); // Map of enemy -> health bar graphics
     }
     
     init(data) {
@@ -1353,6 +1363,9 @@ class Level1Scene extends Phaser.Scene {
         // Play hit sound when enemy is damaged
         this.playSound('hit');
         
+        // Update health bar
+        this.updateHealthBar(enemy);
+        
         if (enemy.health <= 0) {
             this.destroyEnemy(enemy);
         }
@@ -1374,12 +1387,100 @@ class Level1Scene extends Phaser.Scene {
             this.spawnPowerUp(enemy.x, enemy.y);
         }
         
+        // Clean up health bar
+        this.destroyHealthBar(enemy);
+        
         enemy.setActive(false);
         enemy.setVisible(false);
         enemy.destroy();
         
         // Check if victory condition is met after destroying enemy
         this.checkVictoryCondition();
+    }
+    
+    createHealthBar(enemy) {
+        // Don't create health bars for asteroids
+        if (enemy.enemyType === 'asteroid') {
+            return;
+        }
+        
+        // Get enemy configuration to determine max health
+        const config = EnemyConfig[enemy.enemyType];
+        if (!config) {
+            return; // Skip if enemy type is not recognized
+        }
+        
+        // Create health bar graphics
+        const healthBar = this.add.graphics();
+        
+        // Store reference to the health bar
+        this.enemyHealthBars.set(enemy, healthBar);
+        
+        // Initial draw
+        this.updateHealthBar(enemy);
+    }
+    
+    updateHealthBar(enemy) {
+        const healthBar = this.enemyHealthBars.get(enemy);
+        if (!healthBar || !enemy.active) {
+            return;
+        }
+        
+        // Get enemy configuration
+        const config = EnemyConfig[enemy.enemyType];
+        if (!config) {
+            return; // Skip if enemy type is not recognized
+        }
+        
+        const maxHealth = config.health + (config.shields || 0);
+        const currentHealth = enemy.health + (enemy.shields || 0);
+        
+        // Validate maxHealth to prevent division by zero
+        if (maxHealth <= 0) {
+            return;
+        }
+        
+        // Health bar dimensions
+        const barWidth = ENEMY_HEALTH_BAR.width;
+        const barHeight = ENEMY_HEALTH_BAR.height;
+        const barX = enemy.x - barWidth / 2;
+        const barY = enemy.y - enemy.displayHeight / 2 - ENEMY_HEALTH_BAR.yOffset; // Position above enemy
+        
+        // Clear previous drawing
+        healthBar.clear();
+        
+        // Draw background (black)
+        healthBar.fillStyle(0x000000, 0.8);
+        healthBar.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Calculate health percentage
+        const healthPercent = currentHealth / maxHealth;
+        
+        // Choose color based on health percentage
+        let healthColor;
+        if (healthPercent > 0.6) {
+            healthColor = 0x00ff00; // Green
+        } else if (healthPercent > 0.3) {
+            healthColor = 0xffff00; // Yellow
+        } else {
+            healthColor = 0xff0000; // Red
+        }
+        
+        // Draw health bar (colored based on health)
+        healthBar.fillStyle(healthColor, 1);
+        healthBar.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+        
+        // Draw border (white)
+        healthBar.lineStyle(1, 0xffffff, 0.8);
+        healthBar.strokeRect(barX, barY, barWidth, barHeight);
+    }
+    
+    destroyHealthBar(enemy) {
+        const healthBar = this.enemyHealthBars.get(enemy);
+        if (healthBar) {
+            healthBar.destroy();
+            this.enemyHealthBars.delete(enemy);
+        }
     }
     
     playerHit(player, bullet) {
@@ -1715,6 +1816,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemyType === 'battleship') texture = 'enemy-battleship';
         if (enemyType === 'weaponPlatform') texture = 'weapon-platform';
         if (enemyType === 'asteroid') texture = 'asteroid';
+        if (enemyType === 'crystalNode') texture = 'crystal-node';
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -1734,7 +1836,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid') && enemy.width > 0) {
+            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid' || enemyType === 'crystalNode') && enemy.width > 0) {
                 let targetWidth = config.size.width;
                 
                 // For asteroids, randomly assign a size variant (small, medium, large)
@@ -1783,6 +1885,9 @@ class Level1Scene extends Phaser.Scene {
             
             // Disable collision detection initially - will be enabled when enemy enters screen
             enemy.body.checkCollision.none = true;
+            
+            // Create health bar for this enemy (excludes asteroids)
+            this.createHealthBar(enemy);
         }
     }
     
@@ -1844,6 +1949,9 @@ class Level1Scene extends Phaser.Scene {
                 
                 // Disable collision detection initially
                 scout.body.checkCollision.none = true;
+                
+                // Create health bar for this scout
+                this.createHealthBar(scout);
                 
                 // Add to formation members array
                 formationMembers.push(scout);
@@ -1909,6 +2017,30 @@ class Level1Scene extends Phaser.Scene {
                 enemy.rotation += enemy.rotationSpeed * ASTEROID_ROTATION_FACTOR;
             }
             
+            // Pulsing effect for crystalNode
+            if (enemy.enemyType === 'crystalNode') {
+                if (enemy.pulseScale === undefined) {
+                    enemy.pulseScale = 1.0;
+                    enemy.pulseDirection = 1;
+                    enemy.baseScale = enemy.scaleX || 1.0; // Store base scale from spawn
+                }
+                
+                // Update pulse scale with boundary checking
+                const newScale = enemy.pulseScale + (enemy.pulseDirection * CRYSTAL_PULSE.speed);
+                if (newScale >= CRYSTAL_PULSE.maxScale) {
+                    enemy.pulseScale = CRYSTAL_PULSE.maxScale;
+                    enemy.pulseDirection = -1;
+                } else if (newScale <= CRYSTAL_PULSE.minScale) {
+                    enemy.pulseScale = CRYSTAL_PULSE.minScale;
+                    enemy.pulseDirection = 1;
+                } else {
+                    enemy.pulseScale = newScale;
+                }
+                
+                // Apply pulse as a multiplier on the base scale
+                enemy.setScale(enemy.baseScale * enemy.pulseScale);
+            }
+            
             // Update movement pattern
             this.updateEnemyMovement(enemy);
             
@@ -1939,6 +2071,9 @@ class Level1Scene extends Phaser.Scene {
                     }
                 }
             }
+            
+            // Update health bar position
+            this.updateHealthBar(enemy);
         });
     }
     
@@ -2374,6 +2509,7 @@ class Level1Scene extends Phaser.Scene {
         // Clean up off-screen enemies
         this.enemies.children.each((enemy) => {
             if (enemy.active && enemy.y > this.cameraHeight + 50) {
+                this.destroyHealthBar(enemy);
                 enemy.setActive(false);
                 enemy.setVisible(false);
                 enemy.destroy();
@@ -2651,11 +2787,15 @@ class Level1Scene extends Phaser.Scene {
         
         // Crystal node pulsing effect
         if (this.currentBossType === 'crystalNode' && this.boss.pulseScale !== undefined) {
-            this.boss.pulseScale += this.boss.pulseDirection * CRYSTAL_PULSE.speed;
-            if (this.boss.pulseScale >= CRYSTAL_PULSE.maxScale) {
+            const newScale = this.boss.pulseScale + (this.boss.pulseDirection * CRYSTAL_PULSE.speed);
+            if (newScale >= CRYSTAL_PULSE.maxScale) {
+                this.boss.pulseScale = CRYSTAL_PULSE.maxScale;
                 this.boss.pulseDirection = -1;
-            } else if (this.boss.pulseScale <= CRYSTAL_PULSE.minScale) {
+            } else if (newScale <= CRYSTAL_PULSE.minScale) {
+                this.boss.pulseScale = CRYSTAL_PULSE.minScale;
                 this.boss.pulseDirection = 1;
+            } else {
+                this.boss.pulseScale = newScale;
             }
             this.boss.setScale(this.boss.pulseScale);
         }
@@ -2776,8 +2916,11 @@ class Level1Scene extends Phaser.Scene {
         // Disable bullet using helper function
         this.disableBulletPhysics(bullet);
         
-        // Only damage in phase 3 (core exposed)
-        if (actualBoss.phase === 3) {
+        // CrystalNode boss is immediately damageable (no shield phases)
+        // Regular boss is only damageable in phase 3 (core exposed)
+        const isDamageable = this.currentBossType === 'crystalNode' || actualBoss.phase === 3;
+        
+        if (isDamageable) {
             actualBoss.health -= 10;
             actualBoss.phaseHealth -= 10;
             
