@@ -50,16 +50,51 @@ const WaveConfig = {
         //     type: 'boss'
         // }
     },
-    // Levels 2-10: Placeholder wave configurations (single wave with 5 fighters)
-    // These will be expanded with proper content later
+    // Level 2: Echoes of the Entity - Asteroid field with rescue missions
     level2: {
         wave1: { 
-            enemyCount: 5, 
-            enemyTypes: ['fighter'],
-            shipCounts: { fighter: 5 },
+            enemyCount: 10, 
+            enemyTypes: ['fighter', 'scout', 'asteroid'],
+            shipCounts: { fighter: 4, scout: 2, asteroid: 4 },
             spawnRate: 2000, 
-            difficulty: 1,
-            duration: 20000
+            difficulty: 1.2,
+            duration: 25000
+        },
+        wave2: { 
+            enemyCount: 13, 
+            enemyTypes: ['fighter', 'scout', 'asteroid'],
+            shipCounts: { fighter: 5, scout: 3, asteroid: 5 },
+            spawnRate: 1800, 
+            difficulty: 1.5,
+            duration: 28000
+        },
+        wave3: { 
+            enemyCount: 16, 
+            enemyTypes: ['fighter', 'cruiser', 'asteroid', 'scout'],
+            shipCounts: { fighter: 6, cruiser: 2, asteroid: 5, scout: 3 },
+            spawnRate: 1600, 
+            difficulty: 2,
+            duration: 32000
+        },
+        wave4: {
+            enemyCount: 19,
+            enemyTypes: ['fighter', 'cruiser', 'asteroid', 'scout'],
+            shipCounts: { fighter: 7, cruiser: 3, asteroid: 6, scout: 3 },
+            spawnRate: 1400,
+            difficulty: 2.5,
+            duration: 35000
+        },
+        wave5: {
+            enemyCount: 22,
+            enemyTypes: ['fighter', 'cruiser', 'asteroid', 'weaponPlatform', 'scout'],
+            shipCounts: { fighter: 8, cruiser: 4, asteroid: 6, weaponPlatform: 1, scout: 3 },
+            spawnRate: 1200,
+            difficulty: 3,
+            duration: 38000
+        },
+        bossWave: {
+            threshold: 5, // Boss appears after wave 5
+            type: 'crystalNode'
         }
     },
     level3: {
