@@ -2631,35 +2631,43 @@ class Level1Scene extends Phaser.Scene {
         const config = EnemyConfig.fighter;
         const fighter = this.enemies.get(x, y, 'enemy-fighter');
         
-        if (fighter) {
-            fighter.setActive(true);
-            fighter.setVisible(true);
-            fighter.enemyType = 'fighter';
-            fighter.health = config.health;
-            fighter.shields = config.shields || 0;
-            fighter.points = config.points;
-            fighter.fireRate = config.fireRate;
-            fighter.lastFired = 0;
-            fighter.invincibleUntil = 0;
-            fighter.movementPattern = 'weaving';
-            fighter.patternOffset = Math.random() * Math.PI * 2;
-            fighter.hasEnteredScreen = true; // Already on screen
-            fighter.initialSpeed = config.speed;
-            
-            // Scale fighter to correct size
-            if (fighter.width > 0) {
-                const scale = config.size.width / fighter.width;
-                fighter.setScale(scale);
-            }
-            
-            // Set initial velocity - diagonal away from carrier and towards player
+        if (!fighter) {
+            console.warn('Unable to launch fighter from carrier - enemy pool exhausted');
+            return;
+        }
+        
+        fighter.setActive(true);
+        fighter.setVisible(true);
+        fighter.enemyType = 'fighter';
+        fighter.health = config.health;
+        fighter.shields = config.shields || 0;
+        fighter.points = config.points;
+        fighter.fireRate = config.fireRate;
+        fighter.lastFired = 0;
+        fighter.invincibleUntil = 0;
+        fighter.movementPattern = config.movementPattern;
+        fighter.patternOffset = Math.random() * Math.PI * 2;
+        fighter.hasEnteredScreen = true; // Already on screen
+        fighter.initialSpeed = config.speed;
+        
+        // Scale fighter to correct size
+        if (fighter.width > 0) {
+            const scale = config.size.width / fighter.width;
+            fighter.setScale(scale);
+        }
+        
+        // Set initial velocity - diagonal towards player's current position
+        if (this.player && this.player.active) {
             const angleToPlayer = Phaser.Math.Angle.Between(fighter.x, fighter.y, this.player.x, this.player.y);
             fighter.body.setVelocity(Math.cos(angleToPlayer) * config.speed, Math.sin(angleToPlayer) * config.speed);
-            fighter.body.checkCollision.none = false;
-            
-            // Create health bar
-            this.createHealthBar(fighter);
+        } else {
+            // If no player, fly straight down
+            fighter.body.setVelocity(0, config.speed);
         }
+        fighter.body.checkCollision.none = false;
+        
+        // Create health bar
+        this.createHealthBar(fighter);
     }
     
     findNearestPod(enemy) {
