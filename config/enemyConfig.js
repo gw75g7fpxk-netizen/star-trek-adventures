@@ -131,7 +131,7 @@ const EnemyConfig = {
         pulsing: true // Visual effect - node pulses periodically
     },
     
-    // Destroyer - Medium ship that fires straight ahead and moves horizontally
+    // Destroyer - Medium ship that fires straight down and moves horizontally
     destroyer: {
         health: 4,
         shields: 4,

@@ -1975,7 +1975,8 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            if ((enemyType === 'fighter' || enemyType === 'cruiser' || enemyType === 'battleship' || enemyType === 'weaponPlatform' || enemyType === 'asteroid' || enemyType === 'crystalNode' || enemyType === 'destroyer') && enemy.width > 0) {
+            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'destroyer'];
+            if (scalableEnemies.includes(enemyType) && enemy.width > 0) {
                 let targetWidth = config.size.width;
                 
                 // For asteroids, randomly assign a size variant (small, medium, large)
