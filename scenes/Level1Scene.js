@@ -1623,8 +1623,20 @@ class Level1Scene extends Phaser.Scene {
             enemy.body.checkCollision.none = true;
         }
         
-        this.takeDamage(1);
-        this.destroyEnemy(enemy);
+        // Get enemy configuration to determine collision damage
+        const config = EnemyConfig[enemy.enemyType];
+        const enemyDamage = config ? config.damage : 1;
+        
+        // Player takes damage from enemy collision
+        this.takeDamage(enemyDamage);
+        
+        // Enemy also takes damage from collision (ramming damage)
+        enemy.health -= 1;
+        
+        // Only destroy enemy if health reaches 0
+        if (enemy.health <= 0) {
+            this.destroyEnemy(enemy);
+        }
     }
     
     podHit(bullet, pod) {
