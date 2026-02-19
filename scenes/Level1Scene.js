@@ -1892,8 +1892,8 @@ class Level1Scene extends Phaser.Scene {
             loop: true
         });
         
-        // Spawn escape pods during wave (except for level 11 - testing level)
-        if (this.levelNumber !== 11) {
+        // Spawn escape pods during wave (only on configured levels)
+        if (PodConfig.spawnLevels.includes(this.levelNumber)) {
             this.podTimer = this.time.addEvent({
                 delay: PodConfig.spawnRate,
                 callback: () => {
