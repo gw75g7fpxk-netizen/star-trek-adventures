@@ -1994,16 +1994,8 @@ class Level1Scene extends Phaser.Scene {
         const x = Phaser.Math.Between(50, this.cameraWidth - 50);
         const y = -50;
         
-        let texture = 'enemy-fighter';
-        if (enemyType === 'cruiser') texture = 'enemy-cruiser';
-        if (enemyType === 'battleship') texture = 'enemy-battleship';
-        if (enemyType === 'weaponPlatform') texture = 'weapon-platform';
-        if (enemyType === 'asteroid') texture = 'asteroid';
-        if (enemyType === 'crystalNode') texture = 'crystal-node';
-        if (enemyType === 'crystalEntity') texture = 'crystal-entity';
-        if (enemyType === 'destroyer') texture = 'enemy-cruiser'; // Use cruiser texture for now
-        if (enemyType === 'carrier') texture = 'enemy-carrier';
-        if (enemyType === 'mine') texture = 'mine';
+        // Get texture from config
+        const texture = config.texture || 'enemy-fighter'; // Fallback to fighter if not specified
         
         const enemy = this.enemies.get(x, y, texture);
         
@@ -2100,15 +2092,8 @@ class Level1Scene extends Phaser.Scene {
         const x = this.cameraWidth / 2;
         const y = -100;
         
-        // Use appropriate texture for boss type
-        let texture = 'boss-core';
-        if (bossType === 'crystalNode') {
-            texture = 'crystal-node';
-        } else if (bossType === 'crystalEntity') {
-            texture = 'crystal-entity';
-        } else if (bossType === 'vanguard') {
-            texture = 'enemy-cruiser'; // Use cruiser texture for vanguard boss
-        }
+        // Get texture from config
+        const texture = config.texture || 'boss-core'; // Fallback to boss-core if not specified
         
         const boss = this.enemies.get(x, y, texture);
         
@@ -2170,7 +2155,7 @@ class Level1Scene extends Phaser.Scene {
         
         for (let i = 0; i < formationSize; i++) {
             const y = -50 - (i * formationSpacing); // Each scout spawns slightly above the previous one
-            const scout = this.enemies.get(x, y, 'enemy-fighter'); // Use fighter texture
+            const scout = this.enemies.get(x, y, config.texture || 'enemy-fighter'); // Use texture from config
             
             if (scout) {
                 scout.setActive(true);
