@@ -131,7 +131,7 @@ class PreloadScene extends Phaser.Scene {
         this.load.image('asteroid', 'assets/images/asteroid.png');
        
         // Load USS Sentinel image (reinforcement flagship)
-        this.load.image('uss-sentinel', 'assets/images/uss-sentinel.png
+        this.load.image('uss-sentinel', 'assets/images/uss-sentinel.png');
         
         // Create procedural mine texture (sphere with spikes)
         const mineGraphics = this.make.graphics({ x: 0, y: 0, add: false });
