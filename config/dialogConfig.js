@@ -78,6 +78,7 @@ const DialogConfig = {
         enemyCruiser: 'enemy-cruiser',       // Crystalis cruiser
         enemyBattleship: 'enemy-battleship', // Crystalis battleship
         escapePod: 'escape-pod',             // Federation escape pod
+        ussSentinel: 'uss-sentinel',         // USS Sentinel (reinforcement flagship)
         
         // For future use with custom portrait assets
         // captain: 'captain-portrait',
@@ -250,9 +251,9 @@ const DialogConfig = {
                         audio: null
                     },
                     {
-                        speaker: 'Starfleet Command',
-                        ship: 'Starbase 47',
-                        portrait: 'playerShip',
+                        speaker: 'USS Sentinel',
+                        ship: 'USS Sentinel',
+                        portrait: 'ussSentinel',
                         text: 'Well done, Aurora. Reinforcements have arrived and are securing the colony. New Horizon is safe.',
                         audio: null
                     },
