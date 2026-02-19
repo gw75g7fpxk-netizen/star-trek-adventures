@@ -92,7 +92,7 @@ const EnemyConfig = {
     },
     
     // Shard Vanguard - Level 1 Boss (First contact enemy leader)
-    vanguard: {
+    enemyBossLevel1: {
         health: 75,
         shields: 0,
         speed: 50,
@@ -124,7 +124,7 @@ const EnemyConfig = {
     },
     
     // Crystal Node - Mid-boss for Level 2 (Communication Jammer)
-    crystalNode: {
+    enemyBossLevel2: {
         health: 150,
         shields: 0,
         speed: 40,
@@ -137,11 +137,11 @@ const EnemyConfig = {
         size: { width: 120, height: 120 },
         points: 2500,
         pulsing: true, // Visual effect - node pulses periodically
-        texture: 'crystal-node'
+        texture: 'crystal-entity' // Use crystal-entity texture (previously used by boss #3)
     },
     
     // Crystal Entity - Level 3 Boss (Orbital Defense Commander)
-    crystalEntity: {
+    enemyBossLevel3: {
         health: 250,
         shields: 50, // First boss with shields for added difficulty
         speed: 35,
@@ -157,7 +157,7 @@ const EnemyConfig = {
         points: 4000,
         pulsing: true, // Visual effect - entity pulses with energy
         rotating: true, // Visual effect - slowly rotates
-        texture: 'crystal-entity'
+        texture: 'enemy-boss-level-3' // Use renamed IMG_8423.png
     },
     
     // Destroyer - Medium ship that fires straight down and moves horizontally
