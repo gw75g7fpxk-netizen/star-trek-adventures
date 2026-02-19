@@ -304,6 +304,13 @@ class Level1Scene extends Phaser.Scene {
             this.nebulaLayer.setPosition(this.cameraWidth / 2, this.cameraHeight / 2);
         }
         
+        // Update planet sprite for Level 3
+        if (this.planetSprite && this.levelNumber === 3) {
+            const planetScale = this.cameraWidth / 576;
+            this.planetSprite.setScale(planetScale);
+            this.planetSprite.setPosition(this.cameraWidth / 2, this.cameraHeight + 150);
+        }
+        
         // Update world bounds
         if (this.physics && this.physics.world) {
             this.physics.world.setBounds(0, 0, this.cameraWidth, this.cameraHeight);
@@ -381,6 +388,19 @@ class Level1Scene extends Phaser.Scene {
         this.nebulaLayer = this.add.tileSprite(this.cameraWidth / 2, this.cameraHeight / 2, this.cameraWidth, this.cameraHeight, 'nebula-layer');
         this.nebulaLayer.setAlpha(0.5);
         this.nebulaLayer.setDepth(-1); // Render behind game objects
+        
+        // Level 3: Add planet under siege at bottom of screen
+        if (this.levelNumber === 3) {
+            // Add planet sprite - show only top half by positioning it below viewport
+            // The planet image is 576x574, we want top half visible
+            const planetScale = this.cameraWidth / 576; // Scale to fit screen width
+            this.planetSprite = this.add.sprite(this.cameraWidth / 2, this.cameraHeight + 150, 'planet-under-siege');
+            this.planetSprite.setScale(planetScale);
+            this.planetSprite.setDepth(-1); // Behind game objects, same as nebula
+            this.planetSprite.setAlpha(0.9); // Slightly transparent
+            
+            console.log('Level1Scene: Planet under siege added to background');
+        }
         
         console.log('Level1Scene: Scrolling background created with parallax layers');
     }
