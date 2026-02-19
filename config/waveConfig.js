@@ -145,14 +145,51 @@ const WaveConfig = {
             type: 'enemyBossLevel3'
         }
     },
+    // Level 4: Fractured Nexus - Weapon platforms and mine fields
     level4: {
         wave1: { 
-            enemyCount: 5, 
-            enemyTypes: ['fighter'],
-            shipCounts: { fighter: 5 },
+            enemyCount: 14, 
+            enemyTypes: ['mine', 'weaponPlatform'],
+            shipCounts: { mine: 10, weaponPlatform: 4 },
             spawnRate: 2000, 
-            difficulty: 1,
-            duration: 20000
+            difficulty: 1.3,
+            duration: 24000
+        },
+        wave2: { 
+            enemyCount: 18, 
+            enemyTypes: ['mine', 'weaponPlatform', 'fighter'],
+            shipCounts: { mine: 8, weaponPlatform: 5, fighter: 5 },
+            spawnRate: 1800, 
+            difficulty: 1.7,
+            duration: 28000
+        },
+        wave3: { 
+            enemyCount: 22, 
+            enemyTypes: ['mine', 'weaponPlatform', 'fighter', 'cruiser'],
+            shipCounts: { mine: 10, weaponPlatform: 4, fighter: 5, cruiser: 3 },
+            spawnRate: 1600, 
+            difficulty: 2.2,
+            duration: 32000
+        },
+        wave4: {
+            enemyCount: 26,
+            enemyTypes: ['mine', 'weaponPlatform', 'cruiser', 'destroyer'],
+            shipCounts: { mine: 12, weaponPlatform: 6, cruiser: 4, destroyer: 4 },
+            spawnRate: 1400,
+            difficulty: 2.7,
+            duration: 36000
+        },
+        wave5: {
+            enemyCount: 30,
+            enemyTypes: ['mine', 'weaponPlatform', 'cruiser', 'destroyer'],
+            shipCounts: { mine: 14, weaponPlatform: 6, cruiser: 5, destroyer: 5 },
+            spawnRate: 1200,
+            difficulty: 3.3,
+            duration: 40000
+        },
+        bossWave: {
+            threshold: 5, // Boss appears after wave 5
+            type: 'enemyBossLevel4'
         }
     },
     level5: {

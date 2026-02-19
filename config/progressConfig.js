@@ -27,7 +27,7 @@ const ProgressConfig = {
         1: { name: 'First Contact', description: 'Encounter initial Crystalis forces' },
         2: { name: 'Echoes of the Entity', description: 'Navigate asteroid field, rescue escape pods, and destroy communication jammer' },
         3: { name: 'Siege of New Horizon', description: 'Provide orbital defense and evacuate civilians from the colony' },
-        4: { name: 'Deep Space Patrol', description: 'Patrol the frontier sectors' },
+        4: { name: 'Fractured Nexus', description: 'Fight through weapon platforms and mine fields to save a Federation convoy' },
         5: { name: 'Enemy Territory', description: 'Strike behind enemy lines' },
         6: { name: 'The Badlands', description: 'Navigate treacherous plasma storms' },
         7: { name: 'Battle of Sector 001', description: 'Defend Earth from invasion' },

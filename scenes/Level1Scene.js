@@ -88,7 +88,7 @@ const PLAYER_HEALTH_BAR = {
 };
 
 // Boss-type enemies that get special explosion effects
-const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyBossLevel3', 'battleship'];
+const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyBossLevel3', 'enemyBossLevel4', 'battleship'];
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -1350,6 +1350,19 @@ class Level1Scene extends Phaser.Scene {
         // Update health bar
         this.updateHealthBar(enemy);
         
+        // Check for boss fracture mechanic (Level 4 boss)
+        const config = EnemyConfig[enemy.enemyType];
+        if (config && config.fractures && !enemy.hasFractured) {
+            const maxHealth = config.health + config.shields;
+            const currentHealth = enemy.health + enemy.shields;
+            const healthPercent = currentHealth / maxHealth;
+            
+            if (healthPercent <= config.fractureThreshold) {
+                this.fractureBoss(enemy, config);
+                enemy.hasFractured = true; // Prevent multiple fractures
+            }
+        }
+        
         if (enemy.health <= 0) {
             this.destroyEnemy(enemy);
         }
@@ -2137,6 +2150,79 @@ class Level1Scene extends Phaser.Scene {
                 ease: 'Power2'
             });
         }
+    }
+    
+    fractureBoss(boss, config) {
+        // Visual and audio effects for fracture event
+        this.playSound('explosion');
+        
+        // Create multiple explosions around the boss
+        for (let i = 0; i < 5; i++) {
+            this.time.delayedCall(i * 100, () => {
+                const offsetX = Phaser.Math.Between(-50, 50);
+                const offsetY = Phaser.Math.Between(-50, 50);
+                this.createExplosion(boss.x + offsetX, boss.y + offsetY);
+            });
+        }
+        
+        // Spawn agile fighters around the boss
+        const spawnCount = config.fractureSpawnCount || 4;
+        const angleStep = (Math.PI * 2) / spawnCount;
+        const spawnRadius = 80; // Distance from boss center
+        
+        for (let i = 0; i < spawnCount; i++) {
+            const angle = i * angleStep;
+            const spawnX = boss.x + Math.cos(angle) * spawnRadius;
+            const spawnY = boss.y + Math.sin(angle) * spawnRadius;
+            
+            // Spawn a destroyer (agile and fast enemy)
+            const fragment = this.enemies.get(spawnX, spawnY, 'enemy-cruiser');
+            
+            if (fragment) {
+                const destroyerConfig = EnemyConfig.destroyer;
+                fragment.setActive(true);
+                fragment.setVisible(true);
+                fragment.enemyType = 'destroyer';
+                fragment.health = destroyerConfig.health;
+                fragment.shields = destroyerConfig.shields || 0;
+                fragment.points = destroyerConfig.points;
+                fragment.fireRate = destroyerConfig.fireRate;
+                fragment.lastFired = 0;
+                fragment.invincibleUntil = 0;
+                fragment.movementPattern = 'weaving'; // Make them agile
+                fragment.patternOffset = Math.random() * Math.PI * 2;
+                fragment.hasEnteredScreen = true; // Already on screen
+                fragment.initialSpeed = destroyerConfig.speed;
+                
+                // Scale to correct size
+                if (fragment.width > 0) {
+                    const targetWidth = destroyerConfig.size.width;
+                    const scale = targetWidth / fragment.width;
+                    fragment.setScale(scale);
+                }
+                
+                // Set initial velocity away from boss
+                fragment.body.setVelocity(
+                    Math.cos(angle) * 100,
+                    Math.sin(angle) * 100
+                );
+                
+                // Create health bar
+                this.createHealthBar(fragment);
+                
+                // Mark as entered screen and enable collision
+                fragment.body.checkCollision.none = false;
+            }
+        }
+        
+        // Make boss flash to indicate fracture
+        this.tweens.add({
+            targets: boss,
+            alpha: 0.3,
+            duration: 100,
+            yoyo: true,
+            repeat: 5
+        });
     }
     
     spawnScoutFormation(config) {
