@@ -202,5 +202,26 @@ const EnemyConfig = {
         movementPattern: 'mine', // Custom movement pattern
         size: { width: 10, height: 16 }, // Same size as escape pod
         texture: 'mine'
+    },
+    
+    // Fractured Nexus Boss - Level 4 Boss (Multi-phase fracturing boss)
+    enemyBossLevel4: {
+        health: 300,
+        shields: 75, // Stronger shields than Level 3 boss
+        speed: 45,
+        fireRate: 1200, // Moderate attack speed
+        bulletSpeed: 230,
+        damage: 2,
+        movementPattern: 'horizontal',
+        burstCount: 3, // Fires in bursts
+        burstDelay: 180,
+        spreadShot: true, // Also uses spread shot
+        spreadCount: 4,
+        size: { width: 150, height: 150 }, // Large boss
+        points: 5000,
+        texture: 'enemy-boss-level-3', // Use existing boss texture
+        fractures: true, // Special flag for fracturing behavior
+        fractureThreshold: 0.5, // Fractures at 50% health
+        fractureSpawnCount: 4 // Spawns 4 agile enemies when fractured
     }
 };
