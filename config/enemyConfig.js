@@ -165,7 +165,7 @@ const EnemyConfig = {
         shields: 0,
         speed: 0, // Stationary horizontally until triggered
         chaseSpeed: 220, // Speed when chasing player (slightly faster than player's 200)
-        proximityDistance: 150, // Distance at which mine activates and chases
+        proximityDistance: 250, // Distance at which mine activates and chases
         fireRate: null, // Mines don't fire weapons
         bulletSpeed: null,
         damage: 1, // Explosion damage on impact

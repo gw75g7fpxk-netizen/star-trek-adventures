@@ -1616,8 +1616,27 @@ class Level1Scene extends Phaser.Scene {
     }
     
     playerHitByEnemy(player, enemy) {
-        this.takeDamage(1);
-        this.destroyEnemy(enemy);
+        // Disable enemy collision immediately to prevent multiple damage hits in the same frame
+        // This is necessary because overlap detection can fire multiple times while physics bodies
+        // are still touching, causing rapid repeated damage before the enemy is fully destroyed
+        if (enemy.body) {
+            enemy.body.checkCollision.none = true;
+        }
+        
+        // Get enemy configuration to determine collision damage
+        const config = EnemyConfig[enemy.enemyType];
+        const enemyDamage = config ? config.damage : 1;
+        
+        // Player takes damage from enemy collision
+        this.takeDamage(enemyDamage);
+        
+        // Enemy also takes damage from collision (ramming damage)
+        enemy.health -= 1;
+        
+        // Only destroy enemy if health reaches 0
+        if (enemy.health <= 0) {
+            this.destroyEnemy(enemy);
+        }
     }
     
     podHit(bullet, pod) {
