@@ -2703,8 +2703,11 @@ class Level1Scene extends Phaser.Scene {
             const spreadCount = config.spreadCount || 5;
             const halfSpread = Math.floor(spreadCount / 2);
             
+            // Calculate angle to player for targeting
+            const targetAngle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+            
             for (let i = -halfSpread; i <= halfSpread; i++) {
-                const angle = Math.PI / 2 + (i * 0.2);
+                const angle = targetAngle + (i * 0.2);
                 const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
                 if (bullet) {
                     bullet.setActive(true);
