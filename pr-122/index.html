@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Star Trek Aurora</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            position: fixed;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+            margin: 0;
+            padding: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Phaser 3.80.1 (local) -->
+    <script src="phaser.min.js"></script>
+    
+    <!-- Game Configuration -->
+    <script src="config/gameConfig.js"></script>
+    <script src="config/playerConfig.js"></script>
+    <script src="config/enemyConfig.js"></script>
+    <script src="config/waveConfig.js"></script>
+    <script src="config/podConfig.js"></script>
+    <script src="config/powerUpConfig.js"></script>
+    <script src="config/progressConfig.js"></script>
+    <script src="config/upgradesConfig.js"></script>
+    <script src="config/dialogConfig.js"></script>
+    
+    <!-- Game Scenes -->
+    <script src="scenes/BootScene.js"></script>
+    <script src="scenes/PreloadScene.js"></script>
+    <script src="scenes/MainMenuScene.js"></script>
+    <script src="scenes/LevelSelectScene.js"></script>
+    <script src="scenes/UpgradesScene.js"></script>
+    <script src="scenes/Level1Scene.js"></script>
+    <script src="scenes/GameOverScene.js"></script>
+    <script src="scenes/VictoryScene.js"></script>
+    
+    <!-- Main Game Entry Point -->
+    <script src="main.js"></script>
+</body>
+</html>
