@@ -222,11 +222,11 @@ class PreloadScene extends Phaser.Scene {
         bulletGraphics.generateTexture('bullet', 4, 12);
         bulletGraphics.destroy();
         
-        // Enemy bullet placeholder (red rectangle)
+        // Enemy bullet placeholder (red circle)
         const enemyBulletGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         enemyBulletGraphics.fillStyle(0xFF0000, 1);
-        enemyBulletGraphics.fillRect(0, 0, 6, 10);
-        enemyBulletGraphics.generateTexture('enemy-bullet', 6, 10);
+        enemyBulletGraphics.fillCircle(5, 5, 5);
+        enemyBulletGraphics.generateTexture('enemy-bullet', 10, 10);
         enemyBulletGraphics.destroy();
         
         // Power-up placeholders (various colors)
