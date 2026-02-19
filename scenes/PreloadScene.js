@@ -124,6 +124,9 @@ class PreloadScene extends Phaser.Scene {
         // Load escape pod sprite
         this.load.image('escape-pod', 'assets/images/escape-pod.png');
         
+        // Load planet image for Level 3
+        this.load.image('planet-under-siege', 'assets/images/planet-under-siege.png');
+        
         // Create procedural asteroid texture
         const asteroidGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         asteroidGraphics.fillStyle(0x888888, 1); // Gray color
