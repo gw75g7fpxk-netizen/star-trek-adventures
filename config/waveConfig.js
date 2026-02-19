@@ -142,7 +142,7 @@ const WaveConfig = {
         },
         bossWave: {
             threshold: 6, // Boss appears after wave 6
-            type: 'battleship'
+            type: 'crystalEntity'
         }
     },
     level4: {
