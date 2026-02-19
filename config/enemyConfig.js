@@ -12,7 +12,8 @@ const EnemyConfig = {
         damage: 1,
         points: 100,
         movementPattern: 'weaving', // 'straight', 'weaving', 'zigzag'
-        size: { width: 25, height: 25 }
+        size: { width: 25, height: 25 },
+        texture: 'enemy-fighter'
     },
     
     // Scout - Small, unarmed ship that flies in formation
@@ -27,7 +28,8 @@ const EnemyConfig = {
         movementPattern: 'formation', // Flies in formation with other scouts
         size: { width: 15, height: 15 }, // 15x15 size
         formationSize: 3, // Default number of scouts in a formation
-        formationSpacing: 36 // Vertical spacing between scouts in formation
+        formationSpacing: 36, // Vertical spacing between scouts in formation
+        texture: 'enemy-fighter' // Use fighter texture
     },
     
     // Crystalis Cruiser - Medium warship
@@ -40,7 +42,8 @@ const EnemyConfig = {
         damage: 1,
         points: 250,
         movementPattern: 'straight',
-        size: { width: 60, height: 60 }
+        size: { width: 60, height: 60 },
+        texture: 'enemy-cruiser'
     },
     
     // Crystalis Battleship (Mini-boss)
@@ -53,7 +56,8 @@ const EnemyConfig = {
         damage: 1,
         points: 500,
         movementPattern: 'horizontal',
-        size: { width: 120, height: 120 }
+        size: { width: 120, height: 120 },
+        texture: 'enemy-battleship'
     },
     
     // Weapon Platform - Stationary turret with scattershot
@@ -68,7 +72,8 @@ const EnemyConfig = {
         movementPattern: 'stationary',
         scattershot: true, // Fires in all directions
         scattershotCount: 6, // Number of bullets per shot
-        size: { width: 40, height: 40 }
+        size: { width: 40, height: 40 },
+        texture: 'weapon-platform'
     },
     
     // Asteroid - Passive obstacle in asteroid field
@@ -82,7 +87,8 @@ const EnemyConfig = {
         points: 10, // Small points for destroying obstacles
         movementPattern: 'stationary',
         size: { width: 40, height: 40 },
-        rotation: true // Asteroids slowly rotate
+        rotation: true, // Asteroids slowly rotate
+        texture: 'asteroid'
     },
     
     // Shard Vanguard - Level 1 Boss (First contact enemy leader)
@@ -97,7 +103,8 @@ const EnemyConfig = {
         spreadShot: true, // Fires spread pattern
         spreadCount: 3, // Fires 3 bullets per shot
         size: { width: 100, height: 100 },
-        points: 1500
+        points: 1500,
+        texture: 'enemy-cruiser' // Use cruiser texture for vanguard boss
     },
     
     // Boss - Massive Crystalis Battleship (Simplified to be a stronger enemy)
@@ -112,7 +119,8 @@ const EnemyConfig = {
         movementPattern: 'horizontal',
         spreadShot: true, // Fires multiple bullets in a spread pattern
         spreadCount: 5, // Number of bullets per shot
-        size: { width: 200, height: 200 }
+        size: { width: 200, height: 200 },
+        texture: 'boss-core'
     },
     
     // Crystal Node - Mid-boss for Level 2 (Communication Jammer)
@@ -128,7 +136,8 @@ const EnemyConfig = {
         burstDelay: 200, // Milliseconds between shots in a burst
         size: { width: 120, height: 120 },
         points: 2500,
-        pulsing: true // Visual effect - node pulses periodically
+        pulsing: true, // Visual effect - node pulses periodically
+        texture: 'crystal-node'
     },
     
     // Crystal Entity - Level 3 Boss (Orbital Defense Commander)
@@ -147,7 +156,8 @@ const EnemyConfig = {
         size: { width: 140, height: 140 }, // Larger than crystalNode
         points: 4000,
         pulsing: true, // Visual effect - entity pulses with energy
-        rotating: true // Visual effect - slowly rotates
+        rotating: true, // Visual effect - slowly rotates
+        texture: 'crystal-entity'
     },
     
     // Destroyer - Medium ship that fires straight down and moves horizontally
@@ -161,7 +171,8 @@ const EnemyConfig = {
         points: 300,
         movementPattern: 'horizontal',
         straightFire: true, // Fires bullets straight down instead of targeting player
-        size: { width: 70, height: 70 }
+        size: { width: 70, height: 70 },
+        texture: 'enemy-cruiser' // Use cruiser texture for now
     },
     
     // Carrier - Large ship that launches fighters from both sides
@@ -175,7 +186,8 @@ const EnemyConfig = {
         points: 600,
         movementPattern: 'horizontal',
         launchesFighters: true, // Special flag to indicate fighter launching behavior
-        size: { width: 140, height: 140 }
+        size: { width: 140, height: 140 },
+        texture: 'enemy-carrier'
     },
     
     // Mine - Proximity mine that chases player when close
@@ -190,6 +202,7 @@ const EnemyConfig = {
         damage: 1, // Explosion damage on impact
         points: 75,
         movementPattern: 'mine', // Custom movement pattern
-        size: { width: 10, height: 16 } // Same size as escape pod
+        size: { width: 10, height: 16 }, // Same size as escape pod
+        texture: 'mine'
     }
 };
