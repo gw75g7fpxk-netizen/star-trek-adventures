@@ -40,7 +40,7 @@ const WaveConfig = {
         },
         bossWave: {
             threshold: 4, // Boss appears after wave 4
-            type: 'enemy-boss-level-1'
+            type: 'enemyBossLevel1'
         }
     },
     // Level 2: Echoes of the Entity - Asteroid field with rescue missions
@@ -87,7 +87,7 @@ const WaveConfig = {
         },
         bossWave: {
             threshold: 5, // Boss appears after wave 5
-            type: 'enemy-boss-level-2'
+            type: 'enemyBossLevel2'
         }
     },
     // Level 3: Siege of New Horizon - Orbital defense with heavier enemies
@@ -142,7 +142,7 @@ const WaveConfig = {
         },
         bossWave: {
             threshold: 6, // Boss appears after wave 6
-            type: 'enemy-boss-level-3'
+            type: 'enemyBossLevel3'
         }
     },
     level4: {
@@ -219,8 +219,8 @@ const WaveConfig = {
     level11: {
         wave1: { 
             enemyCount: 1, 
-            enemyTypes: ['enemy-boss-level-2'],
-            shipCounts: { 'enemy-boss-level-2': 1 },
+            enemyTypes: ['enemyBossLevel2'],
+            shipCounts: { enemyBossLevel2: 1 },
             spawnRate: 2000, 
             difficulty: 1,
             duration: 10000
