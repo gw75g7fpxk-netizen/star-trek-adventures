@@ -2056,6 +2056,7 @@ class Level1Scene extends Phaser.Scene {
             // Add rotation for asteroids
             if (enemyType === 'asteroid') {
                 enemy.rotationSpeed = Phaser.Math.FloatBetween(-0.5, 0.5); // Random rotation speed
+                enemy.rotation = Phaser.Math.FloatBetween(0, Math.PI * 2); // Random initial rotation
             }
             
             // Add mine-specific properties

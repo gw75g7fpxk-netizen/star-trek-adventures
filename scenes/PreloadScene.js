@@ -127,17 +127,8 @@ class PreloadScene extends Phaser.Scene {
         // Load planet image for Level 3
         this.load.image('planet-under-siege', 'assets/images/planet-under-siege.png');
         
-        // Create procedural asteroid texture
-        const asteroidGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-        asteroidGraphics.fillStyle(0x888888, 1); // Gray color
-        asteroidGraphics.fillCircle(20, 20, 20); // Main circle
-        asteroidGraphics.fillStyle(0x666666, 1); // Darker gray for crater
-        asteroidGraphics.fillCircle(15, 15, 7);
-        asteroidGraphics.fillCircle(25, 18, 5);
-        asteroidGraphics.fillStyle(0x555555, 1); // Even darker
-        asteroidGraphics.fillCircle(20, 25, 4);
-        asteroidGraphics.generateTexture('asteroid', 40, 40);
-        asteroidGraphics.destroy();
+        // Load asteroid image
+        this.load.image('asteroid', 'assets/images/asteroid.png');
         
         // Create procedural mine texture (sphere with spikes)
         const mineGraphics = this.make.graphics({ x: 0, y: 0, add: false });
