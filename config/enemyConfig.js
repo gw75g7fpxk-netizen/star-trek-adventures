@@ -155,8 +155,6 @@ const EnemyConfig = {
         spreadCount: 5, // Wide spread pattern
         size: { width: 140, height: 140 }, // Larger than crystalNode
         points: 4000,
-        pulsing: true, // Visual effect - entity pulses with energy
-        rotating: true, // Visual effect - slowly rotates
         texture: 'enemy-boss-level-3' // Use renamed IMG_8423.png
     },
     

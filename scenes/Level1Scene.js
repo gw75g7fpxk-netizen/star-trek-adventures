@@ -2264,8 +2264,8 @@ class Level1Scene extends Phaser.Scene {
                 enemy.rotation += enemy.rotationSpeed * ASTEROID_ROTATION_FACTOR;
             }
             
-            // Pulsing effect for enemyBossLevel2 and enemyBossLevel3
-            if (enemy.enemyType === 'enemyBossLevel2' || enemy.enemyType === 'enemyBossLevel3') {
+            // Pulsing and spinning effect for enemyBossLevel2 only
+            if (enemy.enemyType === 'enemyBossLevel2') {
                 if (enemy.pulseScale === undefined) {
                     enemy.pulseScale = 1.0;
                     enemy.pulseDirection = 1;
@@ -2287,10 +2287,8 @@ class Level1Scene extends Phaser.Scene {
                 // Apply pulse as a multiplier on the base scale
                 enemy.setScale(enemy.baseScale * enemy.pulseScale);
                 
-                // Add rotation effect for enemyBossLevel3
-                if (enemy.enemyType === 'enemyBossLevel3') {
-                    enemy.rotation += BOSS_ROTATION_SPEED;
-                }
+                // Add rotation effect for enemyBossLevel2
+                enemy.rotation += BOSS_ROTATION_SPEED;
             }
             
             // Update movement pattern
