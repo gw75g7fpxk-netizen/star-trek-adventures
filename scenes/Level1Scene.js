@@ -66,7 +66,7 @@ const CRYSTAL_PULSE = {
     minScale: 0.9         // Minimum scale during pulse
 };
 
-// Boss rotation constant for crystalEntity
+// Boss rotation constant for enemy-boss-level-3
 const BOSS_ROTATION_SPEED = 0.005; // Slow rotation speed in radians per frame
 
 // Boss movement constants
@@ -88,7 +88,7 @@ const PLAYER_HEALTH_BAR = {
 };
 
 // Boss-type enemies that get special explosion effects
-const BOSS_TYPE_ENEMIES = ['boss', 'crystalNode', 'crystalEntity', 'battleship', 'vanguard'];
+const BOSS_TYPE_ENEMIES = ['boss', 'enemy-boss-level-1', 'enemy-boss-level-2', 'enemy-boss-level-3', 'battleship'];
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -2015,7 +2015,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'crystalEntity', 'destroyer', 'carrier', 'mine'];
+            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'enemy-boss-level-2', 'enemy-boss-level-3', 'destroyer', 'carrier', 'mine'];
             if (scalableEnemies.includes(enemyType) && enemy.width > 0) {
                 let targetWidth = config.size.width;
                 
@@ -2264,8 +2264,8 @@ class Level1Scene extends Phaser.Scene {
                 enemy.rotation += enemy.rotationSpeed * ASTEROID_ROTATION_FACTOR;
             }
             
-            // Pulsing effect for crystalNode and crystalEntity
-            if (enemy.enemyType === 'crystalNode' || enemy.enemyType === 'crystalEntity') {
+            // Pulsing effect for enemy-boss-level-2 and enemy-boss-level-3
+            if (enemy.enemyType === 'enemy-boss-level-2' || enemy.enemyType === 'enemy-boss-level-3') {
                 if (enemy.pulseScale === undefined) {
                     enemy.pulseScale = 1.0;
                     enemy.pulseDirection = 1;
@@ -2287,8 +2287,8 @@ class Level1Scene extends Phaser.Scene {
                 // Apply pulse as a multiplier on the base scale
                 enemy.setScale(enemy.baseScale * enemy.pulseScale);
                 
-                // Add rotation effect for crystalEntity
-                if (enemy.enemyType === 'crystalEntity') {
+                // Add rotation effect for enemy-boss-level-3
+                if (enemy.enemyType === 'enemy-boss-level-3') {
                     enemy.rotation += BOSS_ROTATION_SPEED;
                 }
             }
