@@ -166,6 +166,9 @@ class PreloadScene extends Phaser.Scene {
         crystalNodeGraphics.generateTexture('crystal-node', 120, 120);
         crystalNodeGraphics.destroy();
         
+        // Load Crystal Entity boss image (Level 3 boss)
+        this.load.image('crystal-entity', 'assets/images/crystal-entity.png');
+        
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
         

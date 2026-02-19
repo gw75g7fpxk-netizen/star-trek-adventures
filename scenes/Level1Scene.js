@@ -66,6 +66,9 @@ const CRYSTAL_PULSE = {
     minScale: 0.9         // Minimum scale during pulse
 };
 
+// Boss rotation constant for crystalEntity
+const BOSS_ROTATION_SPEED = 0.005; // Slow rotation speed in radians per frame
+
 // Boss movement constants
 const CONFIG_SPEED_TO_PIXELS_DIVISOR = 20; // Converts config speed to frame-based pixel movement
 const DEFAULT_BOSS_MOVEMENT_SPEED = 2; // Default boss movement speed in pixels per frame
@@ -85,7 +88,7 @@ const PLAYER_HEALTH_BAR = {
 };
 
 // Boss-type enemies that get special explosion effects
-const BOSS_TYPE_ENEMIES = ['boss', 'crystalNode', 'battleship', 'vanguard'];
+const BOSS_TYPE_ENEMIES = ['boss', 'crystalNode', 'crystalEntity', 'battleship', 'vanguard'];
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -1997,6 +2000,7 @@ class Level1Scene extends Phaser.Scene {
         if (enemyType === 'weaponPlatform') texture = 'weapon-platform';
         if (enemyType === 'asteroid') texture = 'asteroid';
         if (enemyType === 'crystalNode') texture = 'crystal-node';
+        if (enemyType === 'crystalEntity') texture = 'crystal-entity';
         if (enemyType === 'destroyer') texture = 'enemy-cruiser'; // Use cruiser texture for now
         if (enemyType === 'carrier') texture = 'enemy-carrier';
         if (enemyType === 'mine') texture = 'mine';
@@ -2019,7 +2023,7 @@ class Level1Scene extends Phaser.Scene {
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'destroyer', 'carrier', 'mine'];
+            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'crystalNode', 'crystalEntity', 'destroyer', 'carrier', 'mine'];
             if (scalableEnemies.includes(enemyType) && enemy.width > 0) {
                 let targetWidth = config.size.width;
                 
@@ -2100,6 +2104,8 @@ class Level1Scene extends Phaser.Scene {
         let texture = 'boss-core';
         if (bossType === 'crystalNode') {
             texture = 'crystal-node';
+        } else if (bossType === 'crystalEntity') {
+            texture = 'crystal-entity';
         } else if (bossType === 'vanguard') {
             texture = 'enemy-cruiser'; // Use cruiser texture for vanguard boss
         }
@@ -2273,8 +2279,8 @@ class Level1Scene extends Phaser.Scene {
                 enemy.rotation += enemy.rotationSpeed * ASTEROID_ROTATION_FACTOR;
             }
             
-            // Pulsing effect for crystalNode
-            if (enemy.enemyType === 'crystalNode') {
+            // Pulsing effect for crystalNode and crystalEntity
+            if (enemy.enemyType === 'crystalNode' || enemy.enemyType === 'crystalEntity') {
                 if (enemy.pulseScale === undefined) {
                     enemy.pulseScale = 1.0;
                     enemy.pulseDirection = 1;
@@ -2295,6 +2301,11 @@ class Level1Scene extends Phaser.Scene {
                 
                 // Apply pulse as a multiplier on the base scale
                 enemy.setScale(enemy.baseScale * enemy.pulseScale);
+                
+                // Add rotation effect for crystalEntity
+                if (enemy.enemyType === 'crystalEntity') {
+                    enemy.rotation += BOSS_ROTATION_SPEED;
+                }
             }
             
             // Update movement pattern

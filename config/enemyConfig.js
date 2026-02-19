@@ -131,6 +131,25 @@ const EnemyConfig = {
         pulsing: true // Visual effect - node pulses periodically
     },
     
+    // Crystal Entity - Level 3 Boss (Orbital Defense Commander)
+    crystalEntity: {
+        health: 250,
+        shields: 50, // First boss with shields for added difficulty
+        speed: 35,
+        fireRate: 1000, // Faster attacks than crystalNode (1250ms)
+        bulletSpeed: 220,
+        damage: 2,
+        movementPattern: 'horizontal',
+        burstCount: 4, // More shots per burst than crystalNode (3)
+        burstDelay: 150, // Faster burst than crystalNode (200ms)
+        spreadShot: true, // Also fires spread pattern between bursts
+        spreadCount: 5, // Wide spread pattern
+        size: { width: 140, height: 140 }, // Larger than crystalNode
+        points: 4000,
+        pulsing: true, // Visual effect - entity pulses with energy
+        rotating: true // Visual effect - slowly rotates
+    },
+    
     // Destroyer - Medium ship that fires straight down and moves horizontally
     destroyer: {
         health: 4,
