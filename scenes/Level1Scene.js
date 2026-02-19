@@ -308,7 +308,8 @@ class Level1Scene extends Phaser.Scene {
         if (this.planetSprite && this.levelNumber === 3) {
             const planetScale = this.cameraWidth / 576;
             this.planetSprite.setScale(planetScale);
-            this.planetSprite.setPosition(this.cameraWidth / 2, this.cameraHeight + 150);
+            // Position at viewport bottom for consistent top-half visibility
+            this.planetSprite.setPosition(this.cameraWidth / 2, this.cameraHeight);
         }
         
         // Update world bounds
@@ -394,7 +395,9 @@ class Level1Scene extends Phaser.Scene {
             // Add planet sprite - show only top half by positioning it below viewport
             // The planet image is 576x574, we want top half visible
             const planetScale = this.cameraWidth / 576; // Scale to fit screen width
-            this.planetSprite = this.add.sprite(this.cameraWidth / 2, this.cameraHeight + 150, 'planet-under-siege');
+            // Position planet center at viewport bottom so exactly top half is visible
+            // This ensures consistent visibility across all screen sizes
+            this.planetSprite = this.add.sprite(this.cameraWidth / 2, this.cameraHeight, 'planet-under-siege');
             this.planetSprite.setScale(planetScale);
             this.planetSprite.setDepth(-1); // Behind game objects, same as nebula
             this.planetSprite.setAlpha(0.9); // Slightly transparent
