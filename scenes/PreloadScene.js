@@ -232,6 +232,13 @@ class PreloadScene extends Phaser.Scene {
         enemyBulletGraphics.generateTexture('enemy-bullet', 10, 10);
         enemyBulletGraphics.destroy();
         
+        // Player torpedo placeholder (blue circle, same size as enemy bullet)
+        const torpedoGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        torpedoGraphics.fillStyle(0x0088FF, 1);
+        torpedoGraphics.fillCircle(5, 5, 5);
+        torpedoGraphics.generateTexture('torpedo', 10, 10);
+        torpedoGraphics.destroy();
+        
         // Power-up placeholders (various colors)
         const powerUpGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         

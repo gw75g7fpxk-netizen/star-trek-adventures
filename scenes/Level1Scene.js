@@ -217,9 +217,17 @@ class Level1Scene extends Phaser.Scene {
         
         // Setup weapon system
         this.lastFired = 0;
+        this.lastTorpedoFired = -PlayerConfig.torpedoCooldown; // Ready to fire at start
         this.bullets = this.physics.add.group({
             classType: Phaser.Physics.Arcade.Image,
             maxSize: 50,
+            runChildUpdate: true
+        });
+        
+        // Setup torpedo system (separate group for collision handling)
+        this.torpedoes = this.physics.add.group({
+            classType: Phaser.Physics.Arcade.Image,
+            maxSize: 10,
             runChildUpdate: true
         });
         
@@ -336,6 +344,14 @@ class Level1Scene extends Phaser.Scene {
             this.fireIcon.x = this.cameraWidth - 80;
             this.fireIcon.y = this.cameraHeight - safeAreaOffset;
         }
+        if (this.torpedoButton) {
+            this.torpedoButton.x = this.cameraWidth - 80;
+            this.torpedoButton.y = this.cameraHeight - safeAreaOffset - 115;
+        }
+        if (this.torpedoIcon) {
+            this.torpedoIcon.x = this.cameraWidth - 80;
+            this.torpedoIcon.y = this.cameraHeight - safeAreaOffset - 115;
+        }
         
         // Update joystick zone size
         if (this.joystickZone) {
@@ -449,6 +465,9 @@ class Level1Scene extends Phaser.Scene {
         };
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         
+        // Torpedo key (T)
+        this.torpedoKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T);
+        
         // Pause key (ESC)
         this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         this.escKey.on('down', () => {
@@ -473,6 +492,7 @@ class Level1Scene extends Phaser.Scene {
         // Mobile controls
         this.isFiring = false;
         this.autoFire = false;
+        this.isTorpedoFiring = false;
         this.joystickActive = false;
         this.joystickVector = { x: 0, y: 0 };
         
@@ -620,6 +640,50 @@ class Level1Scene extends Phaser.Scene {
                 this.isFiring = false;
                 this.fireButton.setAlpha(0.4);
             }
+        });
+        
+        // Torpedo button (above fire button)
+        const torpButtonRadius = 40;
+        const torpButtonX = buttonX;
+        const torpButtonY = buttonY - 115;
+        
+        this.torpedoButton = this.add.circle(torpButtonX, torpButtonY, torpButtonRadius, 0x0055FF, 0.4);
+        this.torpedoButton.setScrollFactor(0);
+        this.torpedoButton.setDepth(1000);
+        this.torpedoButton.setInteractive();
+        this.torpedoButton.setVisible(this.isMobileDevice);
+        
+        // Torpedo charge ring (Graphics arc drawn each frame in updateTorpedoButton)
+        this.torpedoButtonRing = this.add.graphics();
+        this.torpedoButtonRing.setScrollFactor(0);
+        this.torpedoButtonRing.setDepth(1002);
+        this.torpedoButtonRing.setVisible(this.isMobileDevice);
+        
+        // Torpedo button icon
+        this.torpedoIcon = this.add.text(torpButtonX, torpButtonY, 'TORP', {
+            fontSize: '14px',
+            color: '#FFFFFF',
+            fontFamily: 'Arial',
+            fontStyle: 'bold'
+        });
+        this.torpedoIcon.setOrigin(0.5);
+        this.torpedoIcon.setScrollFactor(0);
+        this.torpedoIcon.setDepth(1001);
+        this.torpedoIcon.setVisible(this.isMobileDevice);
+        
+        this.torpedoButton.on('pointerdown', () => {
+            this.isTorpedoFiring = true;
+            this.torpedoButton.setAlpha(0.8);
+        });
+        
+        this.torpedoButton.on('pointerup', () => {
+            this.isTorpedoFiring = false;
+            this.torpedoButton.setAlpha(0.4);
+        });
+        
+        this.torpedoButton.on('pointerout', () => {
+            this.isTorpedoFiring = false;
+            this.torpedoButton.setAlpha(0.4);
         });
     }
 
@@ -910,6 +974,9 @@ class Level1Scene extends Phaser.Scene {
         // Handle shooting
         this.handleShooting(time);
         
+        // Update torpedo button charge ring
+        this.updateTorpedoButton(time);
+        
         // Update enemies
         this.updateEnemies(time);
         
@@ -1055,6 +1122,14 @@ class Level1Scene extends Phaser.Scene {
                 }
             }
         }
+        
+        // Handle torpedo fire (T key or torpedo button) - independent of primary fire
+        if (Phaser.Input.Keyboard.JustDown(this.torpedoKey) || this.isTorpedoFiring) {
+            if (time > this.lastTorpedoFired + PlayerConfig.torpedoCooldown) {
+                this.fireTorpedo();
+                this.lastTorpedoFired = time;
+            }
+        }
     }
 
     fireBullet() {
@@ -1071,6 +1146,61 @@ class Level1Scene extends Phaser.Scene {
             
             // Haptic feedback on fire
             this.triggerHaptic('light');
+        }
+    }
+    
+    fireTorpedo() {
+        // Get torpedo from pool using torpedo texture (blue circle)
+        const torpedo = this.torpedoes.get(this.player.x, this.player.y - 20, 'torpedo');
+        
+        if (torpedo) {
+            this.enableBulletPhysics(torpedo);
+            torpedo.isTorpedo = true;
+            torpedo.damage = PlayerConfig.torpedoDamage;
+            torpedo.body.setVelocity(0, -PlayerConfig.bulletSpeed);
+            
+            // Play torpedo sound (different from primary phaser)
+            this.playSound('torpedo');
+            
+            // Haptic feedback
+            this.triggerHaptic('medium');
+        }
+    }
+    
+    updateTorpedoButton(time) {
+        if (!this.torpedoButtonRing || !this.torpedoButton) return;
+        
+        const cooldown = PlayerConfig.torpedoCooldown;
+        const elapsed = time - this.lastTorpedoFired;
+        const chargePercent = Math.min(elapsed / cooldown, 1);
+        
+        this.torpedoButtonRing.clear();
+        
+        if (!this.torpedoButton.visible) return;
+        
+        const x = this.torpedoButton.x;
+        const y = this.torpedoButton.y;
+        const ringRadius = 46;
+        
+        if (chargePercent >= 1) {
+            // Fully charged - bright ring indicating ready to fire
+            this.torpedoButtonRing.lineStyle(4, 0x00AAFF, 1);
+            this.torpedoButtonRing.beginPath();
+            this.torpedoButtonRing.arc(x, y, ringRadius, 0, Math.PI * 2, false);
+            this.torpedoButtonRing.strokePath();
+        } else {
+            // Partial ring showing charge progress (dim background ring + bright arc)
+            this.torpedoButtonRing.lineStyle(2, 0x003388, 0.4);
+            this.torpedoButtonRing.beginPath();
+            this.torpedoButtonRing.arc(x, y, ringRadius, 0, Math.PI * 2, false);
+            this.torpedoButtonRing.strokePath();
+            
+            if (chargePercent > 0) {
+                this.torpedoButtonRing.lineStyle(4, 0x0088FF, 0.9);
+                this.torpedoButtonRing.beginPath();
+                this.torpedoButtonRing.arc(x, y, ringRadius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * chargePercent, false);
+                this.torpedoButtonRing.strokePath();
+            }
         }
     }
     
@@ -1280,6 +1410,9 @@ class Level1Scene extends Phaser.Scene {
         // Player bullets vs enemies
         this.physics.add.overlap(this.bullets, this.enemies, this.hitEnemy, null, this);
         
+        // Player torpedoes vs enemies
+        this.physics.add.overlap(this.torpedoes, this.enemies, this.hitEnemyWithTorpedo, null, this);
+        
         // Enemy bullets vs player
         this.physics.add.overlap(this.player, this.enemyBullets, this.playerHit, null, this);
         
@@ -1360,6 +1493,57 @@ class Level1Scene extends Phaser.Scene {
             if (healthPercent <= config.fractureThreshold) {
                 this.fractureBoss(enemy, config);
                 enemy.hasFractured = true; // Prevent multiple fractures
+            }
+        }
+        
+        if (enemy.health <= 0) {
+            this.destroyEnemy(enemy);
+        }
+    }
+    
+    hitEnemyWithTorpedo(torpedo, enemy) {
+        // Asteroids are invincible - torpedoes stop but asteroids take no damage
+        if (enemy.enemyType === 'asteroid') {
+            this.disableBulletPhysics(torpedo);
+            return;
+        }
+        
+        // Check invincibility
+        if (this.time.now < (enemy.invincibleUntil || 0)) {
+            return;
+        }
+        
+        this.disableBulletPhysics(torpedo);
+        
+        const damage = torpedo.damage || PlayerConfig.torpedoDamage;
+        
+        // Apply damage to shields first, then health
+        if (enemy.shields > 0) {
+            this.showShieldImpactAt(enemy.x, enemy.y);
+            enemy.shields -= damage;
+            if (enemy.shields < 0) {
+                const overflow = Math.abs(enemy.shields);
+                enemy.shields = 0;
+                enemy.health -= overflow;
+            }
+        } else {
+            enemy.health -= damage;
+        }
+        
+        enemy.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
+        
+        this.playSound('hit');
+        this.updateHealthBar(enemy);
+        
+        // Check for boss fracture mechanic
+        const config = EnemyConfig[enemy.enemyType];
+        if (config && config.fractures && !enemy.hasFractured) {
+            const maxHealth = config.health + config.shields;
+            const currentHealth = enemy.health + enemy.shields;
+            const healthPercent = currentHealth / maxHealth;
+            if (healthPercent <= config.fractureThreshold) {
+                this.fractureBoss(enemy, config);
+                enemy.hasFractured = true;
             }
         }
         
@@ -3013,6 +3197,13 @@ class Level1Scene extends Phaser.Scene {
         this.bullets.children.each((bullet) => {
             if (bullet.active && bullet.y < -20) {
                 this.disableBulletPhysics(bullet);
+            }
+        });
+        
+        // Clean up off-screen torpedoes
+        this.torpedoes.children.each((torpedo) => {
+            if (torpedo.active && torpedo.y < -20) {
+                this.disableBulletPhysics(torpedo);
             }
         });
         
