@@ -193,13 +193,52 @@ const WaveConfig = {
         }
     },
     level5: {
+        // Wave 1-2: Sentinel is damaged, no weapons. Crystalis swarms pursue the Aurora and Sentinel.
         wave1: { 
-            enemyCount: 5, 
-            enemyTypes: ['fighter'],
-            shipCounts: { fighter: 5 },
+            enemyCount: 10, 
+            enemyTypes: ['fighter', 'scout'],
+            shipCounts: { fighter: 6, scout: 4 },
             spawnRate: 2000, 
-            difficulty: 1,
-            duration: 20000
+            difficulty: 1.5,
+            duration: 22000
+        },
+        wave2: { 
+            enemyCount: 14, 
+            enemyTypes: ['fighter', 'scout', 'mine'],
+            shipCounts: { fighter: 7, scout: 4, mine: 3 },
+            spawnRate: 1800, 
+            difficulty: 1.8,
+            duration: 26000
+        },
+        // Wave 3: Sentinel primary weapons come back online at wave start
+        wave3: { 
+            enemyCount: 18, 
+            enemyTypes: ['fighter', 'cruiser', 'mine'],
+            shipCounts: { fighter: 8, cruiser: 4, mine: 6 },
+            spawnRate: 1600, 
+            difficulty: 2.2,
+            duration: 28000
+        },
+        wave4: {
+            enemyCount: 22,
+            enemyTypes: ['fighter', 'cruiser', 'destroyer', 'mine'],
+            shipCounts: { fighter: 8, cruiser: 6, destroyer: 4, mine: 4 },
+            spawnRate: 1400,
+            difficulty: 2.6,
+            duration: 32000
+        },
+        // Wave 5: Sentinel torpedo systems come back online at wave start
+        wave5: {
+            enemyCount: 26,
+            enemyTypes: ['cruiser', 'destroyer', 'mine', 'battleship'],
+            shipCounts: { cruiser: 8, destroyer: 6, mine: 6, battleship: 6 },
+            spawnRate: 1200,
+            difficulty: 3.2,
+            duration: 36000
+        },
+        bossWave: {
+            threshold: 5, // Boss appears after wave 5
+            type: 'enemyBossLevel5'
         }
     },
     level6: {

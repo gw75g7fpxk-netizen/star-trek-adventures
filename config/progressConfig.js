@@ -28,7 +28,7 @@ const ProgressConfig = {
         2: { name: 'Echoes of the Entity', description: 'Navigate asteroid field, rescue escape pods, and destroy communication jammer' },
         3: { name: 'Siege of New Horizon', description: 'Provide orbital defense and evacuate civilians from the colony' },
         4: { name: 'Fractured Nexus', description: 'Fight through weapon platforms and mine fields to save a Federation convoy' },
-        5: { name: 'Enemy Territory', description: 'Strike behind enemy lines' },
+        5: { name: 'Guardian Protocol', description: 'Escort and shield the damaged USS Sentinel through a gauntlet of Crystalis pursuit forces, buying time for emergency repairs' },
         6: { name: 'The Badlands', description: 'Navigate treacherous plasma storms' },
         7: { name: 'Battle of Sector 001', description: 'Defend Earth from invasion' },
         8: { name: 'Wormhole Defense', description: 'Secure the Bajoran wormhole' },
