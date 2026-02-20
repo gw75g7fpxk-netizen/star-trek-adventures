@@ -96,7 +96,7 @@ const SENTINEL_SPEED = 80; // Lateral movement speed in pixels/second
 const SENTINEL_FIRE_RATE = 125; // Matches player max primary phaser fire rate (ms)
 const SENTINEL_EVASION_RADIUS = 220; // Detection radius for incoming enemy bullets
 const SENTINEL_HEALTH = 10;
-const SENTINEL_SHIELDS = 5;
+const SENTINEL_SHIELDS = 10;
 const SENTINEL_SCALE_MULTIPLIER = 1.5; // Scale relative to player ship (Galaxy-class is larger)
 const SENTINEL_BOUNDARY_MARGIN = 60; // Pixels from screen edge where direction reverses
 const SENTINEL_OSCILLATION_PERIOD = 3000; // Period of sine-wave oscillation in milliseconds
@@ -106,7 +106,6 @@ const SENTINEL_TORPEDO_STAGGER_MS = 80; // Milliseconds between each torpedo in 
 const SENTINEL_TORPEDO_SPREAD_PX = 8; // Pixel spacing between torpedo launch positions
 const SENTINEL_BAR_WIDTH = 50; // Width of Sentinel health/shield bars in pixels
 const SENTINEL_BAR_HEIGHT = 4; // Height of Sentinel health/shield bars in pixels
-const SENTINEL_BOSS_TARGET_CHANCE = 0.4; // Probability that the boss fires a burst salvo at the Sentinel
 // System restoration wave thresholds for Level 5
 const SENTINEL_PRIMARY_WEAPONS_WAVE = 3; // Wave at which Sentinel primary weapons come online
 const SENTINEL_TORPEDOS_WAVE = 5; // Wave at which Sentinel torpedo systems come online
@@ -3218,16 +3217,13 @@ class Level1Scene extends Phaser.Scene {
             const burstCount = config.burstCount;
             const burstDelay = config.burstDelay || 200;
             
-            // Level 5 boss: SENTINEL_BOSS_TARGET_CHANCE probability each burst fires at the Sentinel
-            const aimAtSentinel = config.targetsSentinel && this.sentinel && this.sentinel.active && Math.random() < SENTINEL_BOSS_TARGET_CHANCE;
-            
             // Fire multiple bullets with delays (burst attack)
             for (let burst = 0; burst < burstCount; burst++) {
                 this.time.delayedCall(burst * burstDelay, () => {
                     // Check if enemy is still active before firing
                     if (!enemy || !enemy.active) return;
                     
-                    // Fire single bullet straight down (or at Sentinel if targeted)
+                    // Fire single bullet straight down
                     const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
                     if (bullet) {
                         bullet.setActive(true);
@@ -3235,12 +3231,7 @@ class Level1Scene extends Phaser.Scene {
                         // Re-enable physics body if it was disabled
                         if (bullet.body) {
                             bullet.body.enable = true;
-                            if (aimAtSentinel && this.sentinel && this.sentinel.active) {
-                                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.sentinel.x, this.sentinel.y);
-                                bullet.body.setVelocity(Math.cos(angle) * config.bulletSpeed, Math.sin(angle) * config.bulletSpeed);
-                            } else {
-                                bullet.body.setVelocity(0, config.bulletSpeed);
-                            }
+                            bullet.body.setVelocity(0, config.bulletSpeed);
                         }
                     }
                 });

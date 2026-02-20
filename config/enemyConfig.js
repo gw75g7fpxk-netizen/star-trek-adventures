@@ -238,7 +238,6 @@ const EnemyConfig = {
         burstDelay: 150,
         spreadShot: true, // Also fires spread pattern
         spreadCount: 4,
-        targetsSentinel: true, // Boss specifically targets the Sentinel's warp core
         size: { width: 160, height: 160 },
         points: 6000,
         texture: 'enemy-boss-level-3'
