@@ -2488,11 +2488,10 @@ class Level1Scene extends Phaser.Scene {
         const sentinelX = this.cameraWidth / 2;
         const sentinelY = this.cameraHeight * SENTINEL_Y_FRACTION;
         
-        // Spawn Sentinel using the player ship texture with a cyan tint (Galaxy-class)
-        this.sentinel = this.physics.add.sprite(sentinelX, sentinelY, 'player-ship');
+        // Spawn Sentinel using the uss-sentinel texture (Galaxy-class)
+        this.sentinel = this.physics.add.sprite(sentinelX, sentinelY, 'uss-sentinel');
         this.sentinel.setCollideWorldBounds(true);
         this.sentinel.setScale(PlayerConfig.scale * SENTINEL_SCALE_MULTIPLIER); // Slightly larger than the Aurora
-        this.sentinel.setTint(0x66CCFF); // Cyan tint to distinguish from player
         
         // Sentinel stats
         this.sentinelStats = {
@@ -2503,7 +2502,8 @@ class Level1Scene extends Phaser.Scene {
             weaponsOnline: false, // Primary weapons offline until wave 3
             torpedosOnline: false, // Torpedo systems offline until wave 5
             lastFired: 0,
-            lastTorpedoFired: -PlayerConfig.torpedoCooldown // Ready to fire immediately when online
+            lastTorpedoFired: -PlayerConfig.torpedoCooldown, // Ready to fire immediately when online
+            invincibleUntil: 0 // Timestamp for invincibility after taking damage
         };
         
         // Health and shield bars for the Sentinel
@@ -2533,6 +2533,9 @@ class Level1Scene extends Phaser.Scene {
         this.updateSentinelMovement();
         this.updateSentinelFiring(time);
         this.updateSentinelBars();
+        
+        // Flash semi-transparent during invulnerability period (like the player ship)
+        this.sentinel.setAlpha(this.time.now < this.sentinelStats.invincibleUntil ? 0.5 : 1.0);
         
         // Keep status label positioned above the Sentinel
         if (this.sentinelStatusLabel) {
@@ -2572,9 +2575,8 @@ class Level1Scene extends Phaser.Scene {
         if (this.sentinel.x >= this.cameraWidth - SENTINEL_BOUNDARY_MARGIN && velX > 0) velX = -SENTINEL_SPEED;
         
         // Gently return to target Y position if drifted
-        const velY = (targetY - this.sentinel.y) * SENTINEL_Y_CORRECTION;
-        
-        this.sentinel.setVelocity(velX, velY);
+        this.sentinel.y = targetY;
+        this.sentinel.setVelocityX(velX);
     }
     
     updateSentinelFiring(time) {
@@ -2654,6 +2656,11 @@ class Level1Scene extends Phaser.Scene {
         bullet.setActive(false);
         bullet.setVisible(false);
         if (bullet.body) bullet.body.enable = false;
+
+        // Check invulnerability (prevents multiple hits in rapid succession)
+        if (this.time.now < this.sentinelStats.invincibleUntil) {
+            return;
+        }
         
         this.playSound('hit');
         
@@ -2663,6 +2670,9 @@ class Level1Scene extends Phaser.Scene {
         } else {
             this.sentinelStats.health--;
         }
+
+        // Set invulnerability after taking damage
+        this.sentinelStats.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.player;
         
         if (this.sentinelStats.health <= 0) {
             // Sentinel is destroyed — play explosion and hide it
