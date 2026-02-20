@@ -1157,7 +1157,36 @@ class Level1Scene extends Phaser.Scene {
             this.enableBulletPhysics(torpedo);
             torpedo.isTorpedo = true;
             torpedo.damage = PlayerConfig.torpedoDamage;
-            torpedo.body.setVelocity(0, -PlayerConfig.bulletSpeed);
+
+            // Find nearest enemy and fire towards them
+            let nearestEnemy = null;
+            let minDistSq = Infinity;
+            let nearestDx = 0;
+            let nearestDy = 0;
+            this.enemies.children.each(enemy => {
+                if (enemy.active && enemy.visible) {
+                    const dx = enemy.x - torpedo.x;
+                    const dy = enemy.y - torpedo.y;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq < minDistSq) {
+                        minDistSq = distSq;
+                        nearestEnemy = enemy;
+                        nearestDx = dx;
+                        nearestDy = dy;
+                    }
+                }
+            });
+
+            if (nearestEnemy) {
+                const distance = Math.sqrt(nearestDx * nearestDx + nearestDy * nearestDy);
+                torpedo.body.setVelocity(
+                    (nearestDx / distance) * PlayerConfig.bulletSpeed,
+                    (nearestDy / distance) * PlayerConfig.bulletSpeed
+                );
+            } else {
+                // No enemies - fire straight forward
+                torpedo.body.setVelocity(0, -PlayerConfig.bulletSpeed);
+            }
             
             // Play torpedo sound (different from primary phaser)
             this.playSound('torpedo');
@@ -3205,7 +3234,7 @@ class Level1Scene extends Phaser.Scene {
         
         // Clean up off-screen torpedoes
         this.torpedoes.children.each((torpedo) => {
-            if (torpedo.active && torpedo.y < -20) {
+            if (torpedo.active && (torpedo.y < -20 || torpedo.y > this.cameraHeight + 20 || torpedo.x < -20 || torpedo.x > this.cameraWidth + 20)) {
                 this.disableBulletPhysics(torpedo);
             }
         });
