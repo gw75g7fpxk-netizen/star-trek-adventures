@@ -100,7 +100,7 @@ const SENTINEL_SHIELDS = 10;
 const SENTINEL_SCALE_MULTIPLIER = 1.5; // Scale relative to player ship (Galaxy-class is larger)
 const SENTINEL_BOUNDARY_MARGIN = 60; // Pixels from screen edge where direction reverses
 const SENTINEL_OSCILLATION_PERIOD = 3000; // Period of sine-wave oscillation in milliseconds
-const SENTINEL_Y_CORRECTION = 0.1; // Factor for returning to target Y position each frame
+const SENTINEL_Y_CORRECTION = 6; // Y velocity correction in pixels/sec per pixel of Y offset
 const SENTINEL_STATUS_LABEL_OFFSET = 40; // Pixels above the Sentinel sprite for the status label
 const SENTINEL_TORPEDO_STAGGER_MS = 80; // Milliseconds between each torpedo in a volley
 const SENTINEL_TORPEDO_SPREAD_PX = 8; // Pixel spacing between torpedo launch positions
@@ -1891,8 +1891,7 @@ class Level1Scene extends Phaser.Scene {
     }
     
     playerHit(player, bullet) {
-        bullet.setActive(false);
-        bullet.setVisible(false);
+        this.disableBulletPhysics(bullet);
         
         this.takeDamage(1);
     }
@@ -2575,8 +2574,10 @@ class Level1Scene extends Phaser.Scene {
         if (this.sentinel.x <= SENTINEL_BOUNDARY_MARGIN && velX < 0) velX = SENTINEL_SPEED;
         if (this.sentinel.x >= this.cameraWidth - SENTINEL_BOUNDARY_MARGIN && velX > 0) velX = -SENTINEL_SPEED;
         
-        // Gently return to target Y position if drifted
-        this.sentinel.y = targetY;
+        // Lock Y position via velocity (avoids direct position override jitter)
+        // Apply a proportional correction toward targetY to handle drift and screen resize
+        const yDiff = targetY - this.sentinel.y;
+        this.sentinel.setVelocityY(yDiff * SENTINEL_Y_CORRECTION);
         this.sentinel.setVelocityX(velX);
     }
     
@@ -2654,9 +2655,10 @@ class Level1Scene extends Phaser.Scene {
     }
     
     sentinelHit(bullet, sentinel) {
-        bullet.setActive(false);
-        bullet.setVisible(false);
-        if (bullet.body) bullet.body.enable = false;
+        this.disableBulletPhysics(bullet);
+
+        // Guard: ignore hits if sentinel or stats are gone
+        if (!this.sentinelStats || !sentinel.active) return;
 
         // Check invulnerability (prevents multiple hits in rapid succession)
         if (this.time.now < this.sentinelStats.invincibleUntil) {
