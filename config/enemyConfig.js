@@ -223,5 +223,23 @@ const EnemyConfig = {
         fractures: true, // Special flag for fracturing behavior
         fractureThreshold: 0.5, // Fractures at 50% health
         fractureSpawnCount: 4 // Spawns 4 agile enemies when fractured
+    },
+
+    // Guardian Protocol Boss - Level 5 Boss (Multi-phase boss targeting Sentinel's warp core)
+    enemyBossLevel5: {
+        health: 350,
+        shields: 100, // Strong shields
+        speed: 40,
+        fireRate: 1200,
+        bulletSpeed: 240,
+        damage: 2,
+        movementPattern: 'horizontal',
+        burstCount: 4, // Fires in rapid bursts
+        burstDelay: 150,
+        spreadShot: true, // Also fires spread pattern
+        spreadCount: 4,
+        size: { width: 160, height: 160 },
+        points: 6000,
+        texture: 'enemy-boss-level-3'
     }
 };

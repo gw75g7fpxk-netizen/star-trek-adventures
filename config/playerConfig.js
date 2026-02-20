@@ -19,6 +19,7 @@ const PlayerConfig = {
     // Torpedo Configuration
     torpedoCooldown: 5000, // milliseconds between torpedo shots (5 seconds)
     torpedoDamage: 3,      // damage per torpedo hit
+    sentinelTorpedoVolleyCount: 5, // Number of torpedoes the USS Sentinel fires per volley
     
     // Starting position (will be calculated relative to screen size)
     startX: 0.5, // 50% of screen width

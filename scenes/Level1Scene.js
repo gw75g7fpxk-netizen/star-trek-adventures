@@ -88,7 +88,27 @@ const PLAYER_HEALTH_BAR = {
 };
 
 // Boss-type enemies that get special explosion effects
-const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyBossLevel3', 'enemyBossLevel4', 'battleship'];
+const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyBossLevel3', 'enemyBossLevel4', 'enemyBossLevel5', 'battleship'];
+
+// USS Sentinel constants for Level 5
+const SENTINEL_Y_FRACTION = 0.85; // Y position as fraction of screen height
+const SENTINEL_SPEED = 80; // Lateral movement speed in pixels/second
+const SENTINEL_FIRE_RATE = 125; // Matches player max primary phaser fire rate (ms)
+const SENTINEL_EVASION_RADIUS = 220; // Detection radius for incoming enemy bullets
+const SENTINEL_HEALTH = 10;
+const SENTINEL_SHIELDS = 10;
+const SENTINEL_SCALE_MULTIPLIER = 1.5; // Scale relative to player ship (Galaxy-class is larger)
+const SENTINEL_BOUNDARY_MARGIN = 60; // Pixels from screen edge where direction reverses
+const SENTINEL_OSCILLATION_PERIOD = 3000; // Period of sine-wave oscillation in milliseconds
+const SENTINEL_Y_CORRECTION = 0.1; // Factor for returning to target Y position each frame
+const SENTINEL_STATUS_LABEL_OFFSET = 40; // Pixels above the Sentinel sprite for the status label
+const SENTINEL_TORPEDO_STAGGER_MS = 80; // Milliseconds between each torpedo in a volley
+const SENTINEL_TORPEDO_SPREAD_PX = 8; // Pixel spacing between torpedo launch positions
+const SENTINEL_BAR_WIDTH = 50; // Width of Sentinel health/shield bars in pixels
+const SENTINEL_BAR_HEIGHT = 4; // Height of Sentinel health/shield bars in pixels
+// System restoration wave thresholds for Level 5
+const SENTINEL_PRIMARY_WEAPONS_WAVE = 3; // Wave at which Sentinel primary weapons come online
+const SENTINEL_TORPEDOS_WAVE = 5; // Wave at which Sentinel torpedo systems come online
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -263,6 +283,11 @@ class Level1Scene extends Phaser.Scene {
         
         // Initialize shield recharge timer to current time
         this.lastShieldRecharge = this.time.now;
+        
+        // Level 5: Spawn the USS Sentinel at the bottom of the screen
+        if (this.levelNumber === 5) {
+            this.createSentinel();
+        }
         
         // Check for level intro dialog
         if (DialogConfig.hasDialog(this.levelNumber, 'intro')) {
@@ -976,6 +1001,11 @@ class Level1Scene extends Phaser.Scene {
         
         // Update torpedo button charge ring
         this.updateTorpedoButton(time);
+        
+        // Update USS Sentinel (Level 5)
+        if (this.levelNumber === 5 && this.sentinel && this.sentinel.active) {
+            this.updateSentinel(time);
+        }
         
         // Update enemies
         this.updateEnemies(time);
@@ -2073,6 +2103,11 @@ class Level1Scene extends Phaser.Scene {
         this.isWaveActive = true;
         this.enemiesSpawned = 0;
         
+        // Level 5: Update Sentinel systems based on current wave
+        if (this.levelNumber === 5) {
+            this.updateSentinelSystems();
+        }
+        
         // Initialize wave spawn pool based on shipCounts
         this.waveSpawnPool = [];
         if (waveConfig.shipCounts) {
@@ -2312,6 +2347,13 @@ class Level1Scene extends Phaser.Scene {
         // Play boss alert sound
         this.playSound('boss');
         
+        // Level 5: Activate Sentinel full combat mode for boss fight
+        if (this.levelNumber === 5 && this.sentinel && this.sentinel.active) {
+            this.sentinelStats.weaponsOnline = true;
+            this.sentinelStats.torpedosOnline = true;
+            this.showSentinelStatus('USS SENTINEL: COMBAT READY', '#00FF00');
+        }
+        
         // Get boss config
         const config = EnemyConfig[bossType];
         
@@ -2435,6 +2477,292 @@ class Level1Scene extends Phaser.Scene {
             duration: 100,
             yoyo: true,
             repeat: 5
+        });
+    }
+    
+    // ========================================
+    // USS SENTINEL SYSTEM (Level 5)
+    // ========================================
+    
+    createSentinel() {
+        const sentinelX = this.cameraWidth / 2;
+        const sentinelY = this.cameraHeight * SENTINEL_Y_FRACTION;
+        
+        // Spawn Sentinel using the player ship texture with a cyan tint (Galaxy-class)
+        this.sentinel = this.physics.add.sprite(sentinelX, sentinelY, 'player-ship');
+        this.sentinel.setCollideWorldBounds(true);
+        this.sentinel.setScale(PlayerConfig.scale * SENTINEL_SCALE_MULTIPLIER); // Slightly larger than the Aurora
+        this.sentinel.setTint(0x66CCFF); // Cyan tint to distinguish from player
+        
+        // Sentinel stats
+        this.sentinelStats = {
+            health: SENTINEL_HEALTH,
+            maxHealth: SENTINEL_HEALTH,
+            shields: SENTINEL_SHIELDS,
+            maxShields: SENTINEL_SHIELDS,
+            weaponsOnline: false, // Primary weapons offline until wave 3
+            torpedosOnline: false, // Torpedo systems offline until wave 5
+            lastFired: 0,
+            lastTorpedoFired: -PlayerConfig.torpedoCooldown // Ready to fire immediately when online
+        };
+        
+        // Health and shield bars for the Sentinel
+        this.sentinelHealthBar = this.add.graphics();
+        this.sentinelShieldBar = this.add.graphics();
+        this.updateSentinelBars();
+        
+        // Status label displayed above the Sentinel
+        this.sentinelStatusLabel = this.add.text(sentinelX, sentinelY - SENTINEL_STATUS_LABEL_OFFSET, 'USS SENTINEL [DAMAGED]', {
+            fontSize: '11px',
+            color: '#FF6666',
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold'
+        });
+        this.sentinelStatusLabel.setOrigin(0.5, 1);
+        this.sentinelStatusLabel.setDepth(100);
+        
+        // Enemy bullets can pass through the player and hit the Sentinel below
+        this.physics.add.overlap(this.enemyBullets, this.sentinel, this.sentinelHit, null, this);
+        
+        console.log('Level5: USS Sentinel spawned at bottom of screen');
+    }
+    
+    updateSentinel(time) {
+        if (!this.sentinel || !this.sentinel.active) return;
+        
+        this.updateSentinelMovement();
+        this.updateSentinelFiring(time);
+        this.updateSentinelBars();
+        
+        // Keep status label positioned above the Sentinel
+        if (this.sentinelStatusLabel) {
+            this.sentinelStatusLabel.setPosition(this.sentinel.x, this.sentinel.y - SENTINEL_STATUS_LABEL_OFFSET);
+        }
+    }
+    
+    updateSentinelMovement() {
+        const targetY = this.cameraHeight * SENTINEL_Y_FRACTION;
+        let velX = 0;
+        
+        // Look for the nearest incoming enemy bullet as a threat to dodge
+        let threatX = null;
+        let minThreatDist = SENTINEL_EVASION_RADIUS;
+        
+        this.enemyBullets.children.each(bullet => {
+            if (!bullet.active) return;
+            // Only react to bullets moving downward (toward the Sentinel)
+            if (!bullet.body || bullet.body.velocity.y <= 0) return;
+            const dist = Phaser.Math.Distance.Between(this.sentinel.x, this.sentinel.y, bullet.x, bullet.y);
+            if (dist < minThreatDist) {
+                minThreatDist = dist;
+                threatX = bullet.x;
+            }
+        });
+        
+        if (threatX !== null) {
+            // Move away from the nearest threatening bullet
+            velX = threatX < this.sentinel.x ? SENTINEL_SPEED : -SENTINEL_SPEED;
+        } else {
+            // Gentle sine-wave oscillation when no immediate threat
+            velX = Math.sin(this.time.now / SENTINEL_OSCILLATION_PERIOD) * SENTINEL_SPEED;
+        }
+        
+        // Hard boundary: reverse direction if near screen edges
+        if (this.sentinel.x <= SENTINEL_BOUNDARY_MARGIN && velX < 0) velX = SENTINEL_SPEED;
+        if (this.sentinel.x >= this.cameraWidth - SENTINEL_BOUNDARY_MARGIN && velX > 0) velX = -SENTINEL_SPEED;
+        
+        // Gently return to target Y position if drifted
+        const velY = (targetY - this.sentinel.y) * SENTINEL_Y_CORRECTION;
+        
+        this.sentinel.setVelocity(velX, velY);
+    }
+    
+    updateSentinelFiring(time) {
+        // Primary weapon — fires straight up at max player fire rate
+        if (this.sentinelStats.weaponsOnline) {
+            if (time > this.sentinelStats.lastFired + SENTINEL_FIRE_RATE) {
+                const bullet = this.bullets.get(this.sentinel.x, this.sentinel.y - 20, 'bullet');
+                if (bullet) {
+                    this.enableBulletPhysics(bullet);
+                    bullet.setTint(0x66CCFF); // Cyan tint to match Sentinel color
+                    bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
+                    this.sentinelStats.lastFired = time;
+                }
+            }
+        }
+        
+        // Torpedo volley — fires a configurable number of torpedoes at the nearest enemy
+        if (this.sentinelStats.torpedosOnline) {
+            if (time > this.sentinelStats.lastTorpedoFired + PlayerConfig.torpedoCooldown) {
+                this.fireSentinelTorpedoVolley();
+                this.sentinelStats.lastTorpedoFired = time;
+            }
+        }
+    }
+    
+    fireSentinelTorpedoVolley() {
+        const volleyCount = PlayerConfig.sentinelTorpedoVolleyCount;
+        
+        // Find the nearest active enemy to target
+        let nearestEnemy = null;
+        let minDistSq = Infinity;
+        this.enemies.children.each(enemy => {
+            if (!enemy.active || !enemy.visible) return;
+            const dx = enemy.x - this.sentinel.x;
+            const dy = enemy.y - this.sentinel.y;
+            const distSq = dx * dx + dy * dy;
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                nearestEnemy = enemy;
+            }
+        });
+        
+        // Pre-calculate the base direction toward the target once for all torpedoes in the volley
+        let baseDirX = 0;
+        let baseDirY = -1; // Default: straight up if no target
+        if (nearestEnemy) {
+            const dx = nearestEnemy.x - this.sentinel.x;
+            const dy = nearestEnemy.y - this.sentinel.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 0) {
+                baseDirX = dx / dist;
+                baseDirY = dy / dist;
+            }
+        }
+        
+        // Fire each torpedo with a small stagger so they form a visible spread
+        for (let i = 0; i < volleyCount; i++) {
+            this.time.delayedCall(i * SENTINEL_TORPEDO_STAGGER_MS, () => {
+                if (!this.sentinel || !this.sentinel.active) return;
+                
+                // Spread launch positions slightly across the Sentinel's width
+                const spreadOffset = (i - Math.floor(volleyCount / 2)) * SENTINEL_TORPEDO_SPREAD_PX;
+                const torpedo = this.torpedoes.get(this.sentinel.x + spreadOffset, this.sentinel.y - 20, 'torpedo');
+                if (!torpedo) return;
+                
+                this.enableBulletPhysics(torpedo);
+                torpedo.isTorpedo = true;
+                torpedo.damage = PlayerConfig.torpedoDamage;
+                torpedo.body.setVelocity(baseDirX * PlayerConfig.bulletSpeed, baseDirY * PlayerConfig.bulletSpeed);
+                
+                this.playSound('torpedo');
+            });
+        }
+    }
+    
+    sentinelHit(bullet, sentinel) {
+        bullet.setActive(false);
+        bullet.setVisible(false);
+        if (bullet.body) bullet.body.enable = false;
+        
+        this.playSound('hit');
+        
+        if (this.sentinelStats.shields > 0) {
+            this.showShieldImpactAt(sentinel.x, sentinel.y);
+            this.sentinelStats.shields--;
+        } else {
+            this.sentinelStats.health--;
+        }
+        
+        if (this.sentinelStats.health <= 0) {
+            // Sentinel is destroyed — play explosion and hide it
+            this.sentinelStats.health = 0;
+            this.createExplosion(sentinel.x, sentinel.y);
+            this.playSound('explosion');
+            sentinel.setActive(false);
+            sentinel.setVisible(false);
+            if (this.sentinelStatusLabel) {
+                this.sentinelStatusLabel.setText('USS SENTINEL: DESTROYED');
+                this.sentinelStatusLabel.setColor('#FF0000');
+                // Fade out the label after a short delay
+                this.tweens.add({
+                    targets: this.sentinelStatusLabel,
+                    alpha: 0,
+                    duration: 1500,
+                    delay: 2000,
+                    onComplete: () => {
+                        if (this.sentinelStatusLabel) this.sentinelStatusLabel.destroy();
+                    }
+                });
+            }
+            console.log('Level5: USS Sentinel has been destroyed!');
+        }
+    }
+    
+    updateSentinelBars() {
+        if (!this.sentinel || !this.sentinel.active) return;
+        
+        const barWidth = SENTINEL_BAR_WIDTH;
+        const barHeight = SENTINEL_BAR_HEIGHT;
+        const barX = this.sentinel.x - barWidth / 2;
+        const shieldBarY = this.sentinel.y - this.sentinel.displayHeight / 2 - 16;
+        const healthBarY = shieldBarY + barHeight + 2;
+        
+        // Shield bar (cyan)
+        if (this.sentinelShieldBar) {
+            this.sentinelShieldBar.clear();
+            this.sentinelShieldBar.fillStyle(0x000000, 0.8);
+            this.sentinelShieldBar.fillRect(barX, shieldBarY, barWidth, barHeight);
+            const shieldPct = this.sentinelStats.shields / this.sentinelStats.maxShields;
+            this.sentinelShieldBar.fillStyle(0x00FFFF, 1);
+            this.sentinelShieldBar.fillRect(barX, shieldBarY, barWidth * shieldPct, barHeight);
+            this.sentinelShieldBar.lineStyle(1, 0xFFFFFF, 0.8);
+            this.sentinelShieldBar.strokeRect(barX, shieldBarY, barWidth, barHeight);
+        }
+        
+        // Health bar (green → yellow → red)
+        if (this.sentinelHealthBar) {
+            this.sentinelHealthBar.clear();
+            this.sentinelHealthBar.fillStyle(0x000000, 0.8);
+            this.sentinelHealthBar.fillRect(barX, healthBarY, barWidth, barHeight);
+            const healthPct = this.sentinelStats.health / this.sentinelStats.maxHealth;
+            const hColor = healthPct > 0.6 ? 0x00FF00 : (healthPct > 0.3 ? 0xFFFF00 : 0xFF0000);
+            this.sentinelHealthBar.fillStyle(hColor, 1);
+            this.sentinelHealthBar.fillRect(barX, healthBarY, barWidth * healthPct, barHeight);
+            this.sentinelHealthBar.lineStyle(1, 0xFFFFFF, 0.8);
+            this.sentinelHealthBar.strokeRect(barX, healthBarY, barWidth, barHeight);
+        }
+    }
+    
+    updateSentinelSystems() {
+        if (!this.sentinel) return;
+        
+        if (this.currentWave === SENTINEL_PRIMARY_WEAPONS_WAVE && !this.sentinelStats.weaponsOnline) {
+            this.sentinelStats.weaponsOnline = true;
+            this.showSentinelStatus('USS SENTINEL: PRIMARY WEAPONS ONLINE', '#FFFF00');
+        } else if (this.currentWave === SENTINEL_TORPEDOS_WAVE && !this.sentinelStats.torpedosOnline) {
+            this.sentinelStats.torpedosOnline = true;
+            this.showSentinelStatus('USS SENTINEL: TORPEDO SYSTEMS ONLINE', '#00FF00');
+        }
+    }
+    
+    showSentinelStatus(message, color = '#00FF00') {
+        // Update the persistent status label above the Sentinel
+        if (this.sentinelStatusLabel) {
+            this.sentinelStatusLabel.setText(message);
+            this.sentinelStatusLabel.setColor(color);
+        }
+        
+        // Show a temporary flash message in the center of the screen
+        const flash = this.add.text(this.cameraWidth / 2, this.cameraHeight / 2 - 40, message, {
+            fontSize: '18px',
+            color: color,
+            fontFamily: 'Courier New, monospace',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        flash.setOrigin(0.5);
+        flash.setScrollFactor(0);
+        flash.setDepth(500);
+        
+        this.tweens.add({
+            targets: flash,
+            alpha: 0,
+            y: flash.y - 30,
+            duration: 2500,
+            delay: 800,
+            onComplete: () => flash.destroy()
         });
     }
     
