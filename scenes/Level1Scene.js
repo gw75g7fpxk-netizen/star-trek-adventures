@@ -109,6 +109,7 @@ const SENTINEL_BAR_HEIGHT = 4; // Height of Sentinel health/shield bars in pixel
 // System restoration wave thresholds for Level 5
 const SENTINEL_PRIMARY_WEAPONS_WAVE = 3; // Wave at which Sentinel primary weapons come online
 const SENTINEL_TORPEDOS_WAVE = 5; // Wave at which Sentinel torpedo systems come online
+const SENTINEL_VELOCITY_LERP_FACTOR = 0.15; // Fraction of velocity change applied per frame (~300ms to reach full speed at 60fps)
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -2503,7 +2504,8 @@ class Level1Scene extends Phaser.Scene {
             torpedosOnline: false, // Torpedo systems offline until wave 5
             lastFired: 0,
             lastTorpedoFired: -PlayerConfig.torpedoCooldown, // Ready to fire immediately when online
-            invincibleUntil: 0 // Timestamp for invincibility after taking damage
+            invincibleUntil: 0, // Timestamp for invincibility after taking damage
+            currentVelX: 0 // Smoothed lateral velocity to prevent jitter
         };
         
         // Health and shield bars for the Sentinel
@@ -2545,7 +2547,7 @@ class Level1Scene extends Phaser.Scene {
     
     updateSentinelMovement() {
         const targetY = this.cameraHeight * SENTINEL_Y_FRACTION;
-        let velX = 0;
+        let targetVelX = 0;
         
         // Look for the nearest incoming enemy bullet as a threat to dodge
         let threatX = null;
@@ -2564,21 +2566,24 @@ class Level1Scene extends Phaser.Scene {
         
         if (threatX !== null) {
             // Move away from the nearest threatening bullet
-            velX = threatX < this.sentinel.x ? SENTINEL_SPEED : -SENTINEL_SPEED;
+            targetVelX = threatX < this.sentinel.x ? SENTINEL_SPEED : -SENTINEL_SPEED;
         } else {
             // Gentle sine-wave oscillation when no immediate threat
-            velX = Math.sin(this.time.now / SENTINEL_OSCILLATION_PERIOD) * SENTINEL_SPEED;
+            targetVelX = Math.sin(this.time.now / SENTINEL_OSCILLATION_PERIOD) * SENTINEL_SPEED;
         }
         
         // Hard boundary: reverse direction if near screen edges
-        if (this.sentinel.x <= SENTINEL_BOUNDARY_MARGIN && velX < 0) velX = SENTINEL_SPEED;
-        if (this.sentinel.x >= this.cameraWidth - SENTINEL_BOUNDARY_MARGIN && velX > 0) velX = -SENTINEL_SPEED;
+        if (this.sentinel.x <= SENTINEL_BOUNDARY_MARGIN && targetVelX < 0) targetVelX = SENTINEL_SPEED;
+        if (this.sentinel.x >= this.cameraWidth - SENTINEL_BOUNDARY_MARGIN && targetVelX > 0) targetVelX = -SENTINEL_SPEED;
+        
+        // Lerp toward the target velocity to avoid abrupt direction changes that cause jitter
+        this.sentinelStats.currentVelX = Phaser.Math.Linear(this.sentinelStats.currentVelX, targetVelX, SENTINEL_VELOCITY_LERP_FACTOR);
         
         // Lock Y position via velocity (avoids direct position override jitter)
         // Apply a proportional correction toward targetY to handle drift and screen resize
         const yDiff = targetY - this.sentinel.y;
         this.sentinel.setVelocityY(yDiff * SENTINEL_Y_CORRECTION);
-        this.sentinel.setVelocityX(velX);
+        this.sentinel.setVelocityX(this.sentinelStats.currentVelX);
     }
     
     updateSentinelFiring(time) {
@@ -2656,50 +2661,62 @@ class Level1Scene extends Phaser.Scene {
     
     sentinelHit(bullet, sentinel) {
         this.disableBulletPhysics(bullet);
+        this.takeSentinelDamage(1);
+    }
 
-        // Guard: ignore hits if sentinel or stats are gone
-        if (!this.sentinelStats || !sentinel.active) return;
+    // Mirror of takeDamage() for the USS Sentinel — same invincibility and shield/health logic
+    takeSentinelDamage(amount) {
+        // Guard: ignore if sentinel or stats are not available
+        if (!this.sentinel || !this.sentinel.active || !this.sentinelStats) return;
 
-        // Check invulnerability (prevents multiple hits in rapid succession)
+        // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < this.sentinelStats.invincibleUntil) {
             return;
         }
-        
+
         this.playSound('hit');
-        
+
         if (this.sentinelStats.shields > 0) {
-            this.showShieldImpactAt(sentinel.x, sentinel.y);
-            this.sentinelStats.shields--;
+            this.showShieldImpactAt(this.sentinel.x, this.sentinel.y);
+            this.sentinelStats.shields -= amount;
+            if (this.sentinelStats.shields < 0) {
+                const overflow = Math.abs(this.sentinelStats.shields);
+                this.sentinelStats.shields = 0;
+                this.sentinelStats.health -= overflow;
+            }
         } else {
-            this.sentinelStats.health--;
+            this.sentinelStats.health -= amount;
         }
 
-        // Set invulnerability after taking damage
+        // Set invincibility after taking damage (same duration as player)
         this.sentinelStats.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.player;
-        
+
         if (this.sentinelStats.health <= 0) {
-            // Sentinel is destroyed — play explosion and hide it
             this.sentinelStats.health = 0;
-            this.createExplosion(sentinel.x, sentinel.y);
-            this.playSound('explosion');
-            sentinel.setActive(false);
-            sentinel.setVisible(false);
-            if (this.sentinelStatusLabel) {
-                this.sentinelStatusLabel.setText('USS SENTINEL: DESTROYED');
-                this.sentinelStatusLabel.setColor('#FF0000');
-                // Fade out the label after a short delay
-                this.tweens.add({
-                    targets: this.sentinelStatusLabel,
-                    alpha: 0,
-                    duration: 1500,
-                    delay: 2000,
-                    onComplete: () => {
-                        if (this.sentinelStatusLabel) this.sentinelStatusLabel.destroy();
-                    }
-                });
-            }
-            console.log('Level5: USS Sentinel has been destroyed!');
+            this.destroySentinel();
         }
+    }
+
+    destroySentinel() {
+        if (!this.sentinel || !this.sentinel.active) return;
+        this.createExplosion(this.sentinel.x, this.sentinel.y);
+        this.playSound('explosion');
+        this.sentinel.setActive(false);
+        this.sentinel.setVisible(false);
+        if (this.sentinelStatusLabel) {
+            this.sentinelStatusLabel.setText('USS SENTINEL: DESTROYED');
+            this.sentinelStatusLabel.setColor('#FF0000');
+            this.tweens.add({
+                targets: this.sentinelStatusLabel,
+                alpha: 0,
+                duration: 1500,
+                delay: 2000,
+                onComplete: () => {
+                    if (this.sentinelStatusLabel) this.sentinelStatusLabel.destroy();
+                }
+            });
+        }
+        console.log('Level5: USS Sentinel has been destroyed!');
     }
     
     updateSentinelBars() {
