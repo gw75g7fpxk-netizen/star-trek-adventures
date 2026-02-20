@@ -2324,7 +2324,8 @@ class Level1Scene extends Phaser.Scene {
             if (enemyType === 'mine') {
                 enemy.isChasing = false; // Track if mine is currently chasing
                 enemy.chaseSpeed = config.chaseSpeed || 220; // Store chase speed with fallback
-                enemy.proximityDistance = config.proximityDistance || 150; // Store trigger distance with fallback
+                // Activate when player is within two player-ship widths
+                enemy.proximityDistance = this.player ? this.player.displayWidth * 2 : (config.proximityDistance || 150);
             }
             
             // Set initial velocity so enemy moves onto screen
@@ -3174,8 +3175,8 @@ class Level1Scene extends Phaser.Scene {
                 break;
             case 'mine':
                 // Mine - stationary until player gets close, then chase
-                // Safety check: ensure playerShip exists
-                if (!this.playerShip || !this.playerShip.active) {
+                // Safety check: ensure player exists
+                if (!this.player || !this.player.active) {
                     enemy.body.setVelocityX(0);
                     break;
                 }
@@ -3184,7 +3185,7 @@ class Level1Scene extends Phaser.Scene {
                     // Check distance to player
                     const distanceToPlayer = Phaser.Math.Distance.Between(
                         enemy.x, enemy.y,
-                        this.playerShip.x, this.playerShip.y
+                        this.player.x, this.player.y
                     );
                     
                     if (distanceToPlayer < enemy.proximityDistance) {
@@ -3198,7 +3199,7 @@ class Level1Scene extends Phaser.Scene {
                     // Chase the player - move towards player position
                     const angle = Phaser.Math.Angle.Between(
                         enemy.x, enemy.y,
-                        this.playerShip.x, this.playerShip.y
+                        this.player.x, this.player.y
                     );
                     enemy.body.setVelocity(
                         Math.cos(angle) * enemy.chaseSpeed,
