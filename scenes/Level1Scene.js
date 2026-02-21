@@ -110,12 +110,13 @@ const SENTINEL_PRIMARY_WEAPONS_WAVE = 3; // Wave at which Sentinel primary weapo
 const SENTINEL_TORPEDOS_WAVE = 5; // Wave at which Sentinel torpedo systems come online
 
 // Sentinel phaser beam weapon constants
-const SENTINEL_BEAM_FIRE_RATE = 6000; // Milliseconds between phaser beam shots
-const SENTINEL_BEAM_DURATION = 2000;  // Milliseconds the beam remains visible
-const SENTINEL_BEAM_DAMAGE = 3;       // Damage dealt per beam hit
-const SENTINEL_BEAM_WIDTH = 4;        // Beam line width in pixels (matches bullet width)
-const SENTINEL_BEAM_COLOR = 0xFFFF00; // Yellow, matches bullet color
-const SENTINEL_BEAM_ORIGIN_OFFSET = 20; // Y offset above Sentinel for beam origin (matches torpedo/bullet launch offset)
+const SENTINEL_BEAM_FIRE_RATE = 6000;        // Milliseconds between phaser beam shots
+const SENTINEL_BEAM_ACTIVE_DURATION = 1500;  // Milliseconds the beam is fully visible before fading
+const SENTINEL_BEAM_FADE_DURATION = 500;     // Milliseconds the beam takes to fade out
+const SENTINEL_BEAM_DAMAGE = 3;              // Damage dealt per beam hit
+const SENTINEL_BEAM_WIDTH = 4;              // Beam line width in pixels (matches bullet width)
+const SENTINEL_BEAM_COLOR = 0xFFFF00;        // Yellow, matches bullet color
+const SENTINEL_BEAM_ORIGIN_OFFSET = 20;      // Y offset above Sentinel for beam origin (matches torpedo/bullet launch offset)
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -2594,6 +2595,7 @@ class Level1Scene extends Phaser.Scene {
         
         this.updateSentinelMovement();
         this.updateSentinelFiring(time);
+        this.updateSentinelBeam();
         this.updateSentinelBars();
         
         // Flash semi-transparent during invulnerability period (like the player ship)
@@ -2713,14 +2715,13 @@ class Level1Scene extends Phaser.Scene {
 
         if (!nearestEnemy) return;
 
-        // Capture target position before applying damage (enemy may be destroyed by applyBeamDamage)
-        const targetX = nearestEnemy.x;
-        const targetY = nearestEnemy.y;
-
         // Draw the phaser beam from the Sentinel to the target
         const beam = this.add.graphics();
         beam.lineStyle(SENTINEL_BEAM_WIDTH, SENTINEL_BEAM_COLOR, 1);
-        beam.lineBetween(this.sentinel.x, this.sentinel.y - SENTINEL_BEAM_ORIGIN_OFFSET, targetX, targetY);
+        beam.lineBetween(this.sentinel.x, this.sentinel.y - SENTINEL_BEAM_ORIGIN_OFFSET, nearestEnemy.x, nearestEnemy.y);
+
+        // Store beam and live target reference so the beam tracks their movement each frame
+        this.activeBeam = { graphics: beam, target: nearestEnemy, lastTargetX: nearestEnemy.x, lastTargetY: nearestEnemy.y };
 
         // Deal damage to the targeted enemy
         this.applyBeamDamage(nearestEnemy, SENTINEL_BEAM_DAMAGE);
@@ -2728,10 +2729,32 @@ class Level1Scene extends Phaser.Scene {
         // Play phaser beam sound
         this.playSound('phaserBeam');
 
-        // Remove beam graphic after it has been visible for the configured duration
-        this.time.delayedCall(SENTINEL_BEAM_DURATION, () => {
-            beam.destroy();
+        // After the active period, fade the beam out instead of cutting it instantly
+        this.time.delayedCall(SENTINEL_BEAM_ACTIVE_DURATION, () => {
+            if (!beam.active) return;
+            // Stop live tracking during fade so the frozen image fades cleanly
+            this.activeBeam = null;
+            this.tweens.add({
+                targets: beam,
+                alpha: 0,
+                duration: SENTINEL_BEAM_FADE_DURATION,
+                onComplete: () => { beam.destroy(); }
+            });
         });
+    }
+
+    updateSentinelBeam() {
+        if (!this.activeBeam) return;
+        const { graphics, target } = this.activeBeam;
+        if (!graphics.active) { this.activeBeam = null; return; }
+        // Redraw with current positions so beam follows both ships as they move
+        graphics.clear();
+        graphics.lineStyle(SENTINEL_BEAM_WIDTH, SENTINEL_BEAM_COLOR, 1);
+        if (target && target.active) {
+            this.activeBeam.lastTargetX = target.x;
+            this.activeBeam.lastTargetY = target.y;
+        }
+        graphics.lineBetween(this.sentinel.x, this.sentinel.y - SENTINEL_BEAM_ORIGIN_OFFSET, this.activeBeam.lastTargetX, this.activeBeam.lastTargetY);
     }
 
     applyBeamDamage(enemy, damage) {
