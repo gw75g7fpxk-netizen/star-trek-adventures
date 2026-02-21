@@ -133,6 +133,9 @@ class PreloadScene extends Phaser.Scene {
         // Load USS Sentinel image (reinforcement flagship)
         this.load.image('uss-sentinel', 'assets/images/uss-sentinel.png');
         
+        // Load Starfleet Command portrait (used in dialog communications)
+        this.load.image('starfleet-command', 'assets/images/starfleet-command.png');
+        
         // Create procedural mine texture (sphere with spikes)
         const mineGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         mineGraphics.fillStyle(0x333333, 1); // Dark gray body

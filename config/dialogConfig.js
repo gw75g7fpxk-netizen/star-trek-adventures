@@ -79,6 +79,7 @@ const DialogConfig = {
         enemyBattleship: 'enemy-battleship', // Crystalis battleship
         escapePod: 'escape-pod',             // Federation escape pod
         ussSentinel: 'uss-sentinel',         // USS Sentinel (reinforcement flagship)
+        starfleetCommand: 'starfleet-command', // Starfleet Command
         
         // For future use with custom portrait assets
         // captain: 'captain-portrait',
@@ -220,7 +221,7 @@ const DialogConfig = {
                     {
                         speaker: 'Starfleet Command',
                         ship: 'Starbase 47',
-                        portrait: 'playerShip',
+                        portrait: 'starfleetCommand',
                         text: 'Aurora, New Horizon is under heavy Crystalis attack. Provide orbital defense until reinforcements arrive.',
                         audio: null
                     },
