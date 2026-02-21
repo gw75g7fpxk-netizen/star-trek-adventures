@@ -2686,17 +2686,12 @@ class Level1Scene extends Phaser.Scene {
         if (this.sentinelStatusLabel) {
             this.sentinelStatusLabel.setText('USS SENTINEL: DESTROYED');
             this.sentinelStatusLabel.setColor('#FF0000');
-            this.tweens.add({
-                targets: this.sentinelStatusLabel,
-                alpha: 0,
-                duration: 1500,
-                delay: 2000,
-                onComplete: () => {
-                    if (this.sentinelStatusLabel) this.sentinelStatusLabel.destroy();
-                }
-            });
         }
-        console.log('Level5: USS Sentinel has been destroyed!');
+        console.log('Level5: USS Sentinel has been destroyed — mission failure!');
+        // Sentinel destruction is a mission failure — trigger game over after a brief pause
+        this.time.delayedCall(1500, () => {
+            this.gameOver();
+        });
     }
     
     updateSentinelBars() {
