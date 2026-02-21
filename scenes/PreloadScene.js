@@ -168,6 +168,9 @@ class PreloadScene extends Phaser.Scene {
         
         // Load enemy-boss-level-3 image (Level 3 boss - formerly IMG_8423.png)
         this.load.image('enemy-boss-level-3', 'assets/images/enemy-boss-level-3.png');
+
+        // Load Romulan Warbird image (Level 7 enemy - formerly IMG_8433.png)
+        this.load.image('romulan-warbird', 'assets/images/romulan-warbird.png');
         
         // Load torpedo sound effect
         this.load.audio('torpedo-sound', 'assets/audio/tng_torpedo3_clean.mp3');

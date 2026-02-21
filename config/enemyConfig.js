@@ -239,5 +239,21 @@ const EnemyConfig = {
         size: { width: 160, height: 160 },
         points: 6000,
         texture: 'enemy-boss-level-3'
+    },
+
+    // Romulan Warbird - Level 7 enemy (chases Aurora from behind)
+    romulanWarbird: {
+        health: 20,
+        shields: 10,
+        speed: 150,
+        fireRate: 1500,
+        bulletSpeed: 280,
+        damage: 1,
+        points: 2000,
+        movementPattern: 'chase', // Always chases the player
+        size: { width: 120, height: 120 },
+        texture: 'romulan-warbird',
+        spawnAtBottom: true, // Spawns at bottom of screen behind the Aurora
+        startAngle: Math.PI  // Rotated 180 degrees to face upward (toward Aurora)
     }
 };

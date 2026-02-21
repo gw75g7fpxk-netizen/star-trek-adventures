@@ -251,14 +251,15 @@ const WaveConfig = {
             duration: 20000
         }
     },
+    // Level 7: Romulan Shadows - A single Romulan warbird decloaks and pursues the Aurora
     level7: {
-        wave1: { 
-            enemyCount: 5, 
-            enemyTypes: ['fighter'],
-            shipCounts: { fighter: 5 },
-            spawnRate: 2000, 
+        wave1: {
+            enemyCount: 1,
+            enemyTypes: ['romulanWarbird'],
+            shipCounts: { romulanWarbird: 1 },
+            spawnRate: 5000,
             difficulty: 1,
-            duration: 20000
+            duration: 60000
         }
     },
     level8: {
