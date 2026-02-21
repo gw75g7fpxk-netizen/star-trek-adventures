@@ -2740,7 +2740,8 @@ class Level1Scene extends Phaser.Scene {
         if (this.currentWave === SENTINEL_PRIMARY_WEAPONS_WAVE && !this.sentinelStats.weaponsOnline) {
             this.sentinelStats.weaponsOnline = true;
             this.showSentinelStatus('USS SENTINEL: PRIMARY WEAPONS ONLINE', '#FFFF00');
-        } else if (this.currentWave === SENTINEL_TORPEDOS_WAVE && !this.sentinelStats.torpedosOnline) {
+        }
+        if (this.currentWave === SENTINEL_TORPEDOS_WAVE && !this.sentinelStats.torpedosOnline) {
             this.sentinelStats.torpedosOnline = true;
             this.showSentinelStatus('USS SENTINEL: TORPEDO SYSTEMS ONLINE', '#00FF00');
         }
