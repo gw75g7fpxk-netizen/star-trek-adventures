@@ -131,8 +131,7 @@ class Level1Scene extends Phaser.Scene {
         this.podsRescued = 0;
         this.isWaveActive = false;
         this.isFinalWave = false;
-        
-        // Power-up effects
+        this.victoryTriggered = false;
         this.activePowerUps = [];
         
         // Escape pod rescue tracking
@@ -205,6 +204,7 @@ class Level1Scene extends Phaser.Scene {
         this.podsRescued = 0;
         this.isWaveActive = false;
         this.isFinalWave = false;
+        this.victoryTriggered = false;
         this.activePowerUps = [];
         this.podRescueTracking = new Map();
         this.invincibleUntil = 0; // Timestamp for invincibility after taking damage
@@ -1661,8 +1661,13 @@ class Level1Scene extends Phaser.Scene {
                     enemy.destroy();
                 }
                 
-                // Check victory condition after boss-type enemy is fully destroyed
-                this.checkVictoryCondition();
+                // Boss defeat triggers victory on the final wave, regardless of other enemies
+                if (this.isFinalWave) {
+                    this.victory();
+                } else {
+                    // Check victory condition after boss-type enemy is fully destroyed
+                    this.checkVictoryCondition();
+                }
             });
         } else {
             // Regular enemy - simple explosion
@@ -3683,6 +3688,10 @@ class Level1Scene extends Phaser.Scene {
     }
     
     victory() {
+        // Guard against being called multiple times
+        if (this.victoryTriggered) return;
+        this.victoryTriggered = true;
+        
         console.log('Level1Scene: Victory!');
         
         // Stop all timers
