@@ -3440,8 +3440,8 @@ class Level1Scene extends Phaser.Scene {
                 const config = EnemyConfig[enemy.enemyType];
                 const speed = config.speed || 150;
                 enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
-                // Cap how high the warbird can go so the entire sprite remains on screen
-                const minY = (enemy.displayHeight / 2) + 5;
+                // Keep the warbird near the bottom so only the sprite height worth of travel above the bottom edge is allowed
+                const minY = this.cameraHeight - (enemy.displayHeight / 2) - 20;
                 if (enemy.y < minY) {
                     enemy.y = minY;
                     if (enemy.body.velocity.y < 0) {
@@ -3564,9 +3564,9 @@ class Level1Scene extends Phaser.Scene {
                 bullet.body.enable = true;
             }
             
-            // Romulan warbird fires green torpedoes with its own sound
+            // Romulan warbird fires plasma green torpedoes with its own sound
             if (enemy.enemyType === 'romulanWarbird') {
-                bullet.setTint(0x00FF00);
+                bullet.setTintFill(0x39FF14);
                 this.playSound('romulan-torpedo');
             }
             
