@@ -92,7 +92,7 @@ const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyB
 
 // USS Sentinel constants for Level 5
 const SENTINEL_Y_FRACTION = 0.85; // Y position as fraction of screen height
-const SENTINEL_SPEED = 80; // Lateral movement speed in pixels/second
+const SENTINEL_SPEED = 56; // Lateral movement speed in pixels/second (reduced by 30%)
 const SENTINEL_FIRE_RATE = 125; // Matches player max primary phaser fire rate (ms)
 const SENTINEL_HEALTH = 10;
 const SENTINEL_SHIELDS = 10;
