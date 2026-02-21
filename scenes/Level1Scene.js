@@ -964,14 +964,34 @@ class Level1Scene extends Phaser.Scene {
                 oscillator.stop(time + config.duration);
                 break;
             case 'torpedo':
-                // Deep rumbling torpedo sound that rises in pitch
-                oscillator.type = 'triangle';
-                oscillator.frequency.setValueAtTime(config.startFreq, time);
-                oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
-                gainNode.gain.setValueAtTime(config.gain, time);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
-                oscillator.start(time);
-                oscillator.stop(time + config.duration);
+                // Play the TNG torpedo audio file
+                if (this.cache.audio.exists('torpedo-sound')) {
+                    oscillator.disconnect();
+                    gainNode.disconnect();
+                    try {
+                        this.sound.play('torpedo-sound');
+                    } catch (e) {
+                        // Audio file failed to play; fall through to procedural sound
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        oscillator.type = 'triangle';
+                        oscillator.frequency.setValueAtTime(config.startFreq, time);
+                        oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                        gainNode.gain.setValueAtTime(config.gain, time);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                        oscillator.start(time);
+                        oscillator.stop(time + config.duration);
+                    }
+                } else {
+                    // Fallback: deep rumbling torpedo sound that rises in pitch
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(config.startFreq, time);
+                    oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                    gainNode.gain.setValueAtTime(config.gain, time);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                    oscillator.start(time);
+                    oscillator.stop(time + config.duration);
+                }
                 break;
         }
     }
