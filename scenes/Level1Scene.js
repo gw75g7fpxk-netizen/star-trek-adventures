@@ -3205,22 +3205,29 @@ class Level1Scene extends Phaser.Scene {
                     enemy.body.setVelocity(horizontalSpeed, diagonalSpeed);
                 }
                 break;
-            case 'mine':
-                // Mine - stationary until player gets close, then chase
-                // Safety check: ensure player exists
-                if (!this.player || !this.player.active) {
+            case 'mine': {
+                // Mine - stationary until player or Sentinel gets close, then chase nearest target
+                const playerActive = this.player && this.player.active;
+                const sentinelActive = this.sentinel && this.sentinel.active;
+
+                if (!playerActive && !sentinelActive) {
                     enemy.body.setVelocityX(0);
                     break;
                 }
-                
+
                 if (!enemy.isChasing) {
-                    // Check distance to player
-                    const distanceToPlayer = Phaser.Math.Distance.Between(
-                        enemy.x, enemy.y,
-                        this.player.x, this.player.y
-                    );
-                    
-                    if (distanceToPlayer < enemy.proximityDistance) {
+                    // Check distance to player and/or Sentinel
+                    let minDistance = Infinity;
+                    if (playerActive) {
+                        const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+                        if (d < minDistance) minDistance = d;
+                    }
+                    if (sentinelActive) {
+                        const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.sentinel.x, this.sentinel.y);
+                        if (d < minDistance) minDistance = d;
+                    }
+
+                    if (minDistance < enemy.proximityDistance) {
                         // Activate chase mode
                         enemy.isChasing = true;
                     } else {
@@ -3228,17 +3235,27 @@ class Level1Scene extends Phaser.Scene {
                         enemy.body.setVelocityX(0);
                     }
                 } else {
-                    // Chase the player - move towards player position
-                    const angle = Phaser.Math.Angle.Between(
-                        enemy.x, enemy.y,
-                        this.player.x, this.player.y
-                    );
+                    // Chase the nearest active target (player or Sentinel)
+                    let targetX = null;
+                    let targetY = null;
+                    let nearestDist = Infinity;
+                    if (playerActive) {
+                        const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+                        if (d < nearestDist) { nearestDist = d; targetX = this.player.x; targetY = this.player.y; }
+                    }
+                    if (sentinelActive) {
+                        const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.sentinel.x, this.sentinel.y);
+                        if (d < nearestDist) { nearestDist = d; targetX = this.sentinel.x; targetY = this.sentinel.y; }
+                    }
+                    if (targetX === null) { enemy.body.setVelocity(0, 0); break; }
+                    const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, targetX, targetY);
                     enemy.body.setVelocity(
                         Math.cos(angle) * enemy.chaseSpeed,
                         Math.sin(angle) * enemy.chaseSpeed
                     );
                 }
                 break;
+            }
         }
     }
     
