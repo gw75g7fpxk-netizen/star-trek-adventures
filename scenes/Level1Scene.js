@@ -3,6 +3,7 @@
 // Sound effect frequency constants for Web Audio API
 const SOUND_CONFIG = {
     phaser: { startFreq: 800, endFreq: 200, duration: 0.1, gain: 0.1 },
+    phaserBeam: { startFreq: 800, endFreq: 200, duration: 0.1, gain: 0.1 }, // Sentinel phaser beam (uses audio file with fallback)
     explosion: { startFreq: 100, endFreq: 50, duration: 0.3, gain: 0.2 },
     rescue: { startFreq: 400, endFreq: 800, duration: 0.2, gain: 0.15 },
     boss: { freq: 80, duration: 0.5, gain: 0.2 },
@@ -107,6 +108,14 @@ const SENTINEL_BAR_HEIGHT = 4; // Height of Sentinel health/shield bars in pixel
 // System restoration wave thresholds for Level 5
 const SENTINEL_PRIMARY_WEAPONS_WAVE = 3; // Wave at which Sentinel primary weapons come online
 const SENTINEL_TORPEDOS_WAVE = 5; // Wave at which Sentinel torpedo systems come online
+
+// Sentinel phaser beam weapon constants
+const SENTINEL_BEAM_FIRE_RATE = 6000; // Milliseconds between phaser beam shots
+const SENTINEL_BEAM_DURATION = 2000;  // Milliseconds the beam remains visible
+const SENTINEL_BEAM_DAMAGE = 3;       // Damage dealt per beam hit
+const SENTINEL_BEAM_WIDTH = 4;        // Beam line width in pixels (matches bullet width)
+const SENTINEL_BEAM_COLOR = 0xFFFF00; // Yellow, matches bullet color
+const SENTINEL_BEAM_ORIGIN_OFFSET = 20; // Y offset above Sentinel for beam origin (matches torpedo/bullet launch offset)
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -985,6 +994,34 @@ class Level1Scene extends Phaser.Scene {
                 } else {
                     // Fallback: deep rumbling torpedo sound that rises in pitch
                     oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(config.startFreq, time);
+                    oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                    gainNode.gain.setValueAtTime(config.gain, time);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                    oscillator.start(time);
+                    oscillator.stop(time + config.duration);
+                }
+                break;
+            case 'phaserBeam':
+                // Play the TNG phaser beam audio file
+                if (this.cache.audio.exists('phaser-beam-sound')) {
+                    oscillator.disconnect();
+                    gainNode.disconnect();
+                    try {
+                        this.sound.play('phaser-beam-sound', { volume: 0.2 });
+                    } catch (e) {
+                        // Audio file failed to play; fall through to procedural sound
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        oscillator.frequency.setValueAtTime(config.startFreq, time);
+                        oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                        gainNode.gain.setValueAtTime(config.gain, time);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                        oscillator.start(time);
+                        oscillator.stop(time + config.duration);
+                    }
+                } else {
+                    // Fallback: procedural phaser sound
                     oscillator.frequency.setValueAtTime(config.startFreq, time);
                     oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
                     gainNode.gain.setValueAtTime(config.gain, time);
@@ -2525,7 +2562,7 @@ class Level1Scene extends Phaser.Scene {
             maxShields: SENTINEL_SHIELDS,
             weaponsOnline: false, // Primary weapons offline until wave 3
             torpedosOnline: false, // Torpedo systems offline until wave 5
-            lastFired: 0,
+            lastBeamFired: 0,
             lastTorpedoFired: -PlayerConfig.torpedoCooldown, // Ready to fire immediately when online
             invincibleUntil: 0, // Timestamp for invincibility after taking damage
             currentVelX: SENTINEL_SPEED // Start moving right
@@ -2585,16 +2622,11 @@ class Level1Scene extends Phaser.Scene {
     }
     
     updateSentinelFiring(time) {
-        // Primary weapon — fires straight up at max player fire rate
+        // Primary weapon — phaser beam targeting nearest enemy, fires every 6 seconds
         if (this.sentinelStats.weaponsOnline) {
-            if (time > this.sentinelStats.lastFired + SENTINEL_FIRE_RATE) {
-                const bullet = this.bullets.get(this.sentinel.x, this.sentinel.y - 20, 'bullet');
-                if (bullet) {
-                    this.enableBulletPhysics(bullet);
-                    bullet.setTint(0xFFFF00); // Yellow tint to match player ship weapon color
-                    bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
-                    this.sentinelStats.lastFired = time;
-                }
+            if (time > this.sentinelStats.lastBeamFired + SENTINEL_BEAM_FIRE_RATE) {
+                this.fireSentinelPhaserBeam();
+                this.sentinelStats.lastBeamFired = time;
             }
         }
         
@@ -2660,6 +2692,85 @@ class Level1Scene extends Phaser.Scene {
     sentinelHit(sentinel, bullet) {
         this.disableBulletPhysics(bullet);
         this.takeSentinelDamage(1);
+    }
+
+    fireSentinelPhaserBeam() {
+        if (!this.sentinel || !this.sentinel.active) return;
+
+        // Find the nearest active enemy to target (excluding asteroids which are invincible)
+        let nearestEnemy = null;
+        let minDistSq = Infinity;
+        this.enemies.children.each(enemy => {
+            if (!enemy.active || !enemy.visible || enemy.enemyType === 'asteroid') return;
+            const dx = enemy.x - this.sentinel.x;
+            const dy = enemy.y - this.sentinel.y;
+            const distSq = dx * dx + dy * dy;
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                nearestEnemy = enemy;
+            }
+        });
+
+        if (!nearestEnemy) return;
+
+        // Capture target position before applying damage (enemy may be destroyed by applyBeamDamage)
+        const targetX = nearestEnemy.x;
+        const targetY = nearestEnemy.y;
+
+        // Draw the phaser beam from the Sentinel to the target
+        const beam = this.add.graphics();
+        beam.lineStyle(SENTINEL_BEAM_WIDTH, SENTINEL_BEAM_COLOR, 1);
+        beam.lineBetween(this.sentinel.x, this.sentinel.y - SENTINEL_BEAM_ORIGIN_OFFSET, targetX, targetY);
+
+        // Deal damage to the targeted enemy
+        this.applyBeamDamage(nearestEnemy, SENTINEL_BEAM_DAMAGE);
+
+        // Play phaser beam sound
+        this.playSound('phaserBeam');
+
+        // Remove beam graphic after it has been visible for the configured duration
+        this.time.delayedCall(SENTINEL_BEAM_DURATION, () => {
+            beam.destroy();
+        });
+    }
+
+    applyBeamDamage(enemy, damage) {
+        if (!enemy.active) return;
+        if (enemy.enemyType === 'asteroid') return;
+        if (this.time.now < (enemy.invincibleUntil || 0)) return;
+
+        if (enemy.shields > 0) {
+            this.showShieldImpactAt(enemy.x, enemy.y);
+            enemy.shields -= damage;
+            if (enemy.shields < 0) {
+                const overflow = Math.abs(enemy.shields);
+                enemy.shields = 0;
+                enemy.health -= overflow;
+            }
+        } else {
+            enemy.health -= damage;
+        }
+
+        enemy.invincibleUntil = this.time.now + INVINCIBILITY_DURATION.enemy;
+
+        this.playSound('hit');
+        this.updateHealthBar(enemy);
+
+        // Check for boss fracture mechanic
+        const config = EnemyConfig[enemy.enemyType];
+        if (config && config.fractures && !enemy.hasFractured) {
+            const maxHealth = config.health + config.shields;
+            const currentHealth = enemy.health + enemy.shields;
+            const healthPercent = currentHealth / maxHealth;
+            if (healthPercent <= config.fractureThreshold) {
+                this.fractureBoss(enemy, config);
+                enemy.hasFractured = true;
+            }
+        }
+
+        if (enemy.health <= 0) {
+            this.destroyEnemy(enemy);
+        }
     }
 
     // Mirror of takeDamage() for the USS Sentinel — same invincibility and shield/health logic

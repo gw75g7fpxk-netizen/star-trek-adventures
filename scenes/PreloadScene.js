@@ -172,6 +172,9 @@ class PreloadScene extends Phaser.Scene {
         // Load torpedo sound effect
         this.load.audio('torpedo-sound', 'assets/audio/tng_torpedo3_clean.mp3');
         
+        // Load Sentinel phaser beam sound effect
+        this.load.audio('phaser-beam-sound', 'assets/audio/tng_phaser7_clean.mp3');
+        
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
         
