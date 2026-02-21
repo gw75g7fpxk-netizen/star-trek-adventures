@@ -169,6 +169,9 @@ class PreloadScene extends Phaser.Scene {
         // Load enemy-boss-level-3 image (Level 3 boss - formerly IMG_8423.png)
         this.load.image('enemy-boss-level-3', 'assets/images/enemy-boss-level-3.png');
         
+        // Load torpedo sound effect
+        this.load.audio('torpedo-sound', 'assets/audio/tng_torpedo3_clean.mp3');
+        
         // Create placeholder graphics as textures for other game objects
         // These will be replaced with actual sprites later
         
