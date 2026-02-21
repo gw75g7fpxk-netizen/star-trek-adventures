@@ -2591,7 +2591,7 @@ class Level1Scene extends Phaser.Scene {
                 const bullet = this.bullets.get(this.sentinel.x, this.sentinel.y - 20, 'bullet');
                 if (bullet) {
                     this.enableBulletPhysics(bullet);
-                    bullet.setTint(0x66CCFF); // Cyan tint to match Sentinel color
+                    bullet.setTint(0xFFFF00); // Yellow tint to match player ship weapon color
                     bullet.body.setVelocity(0, -PlayerConfig.bulletSpeed);
                     this.sentinelStats.lastFired = time;
                 }
