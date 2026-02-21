@@ -94,12 +94,10 @@ const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyB
 const SENTINEL_Y_FRACTION = 0.85; // Y position as fraction of screen height
 const SENTINEL_SPEED = 80; // Lateral movement speed in pixels/second
 const SENTINEL_FIRE_RATE = 125; // Matches player max primary phaser fire rate (ms)
-const SENTINEL_EVASION_RADIUS = 220; // Detection radius for incoming enemy bullets
 const SENTINEL_HEALTH = 10;
 const SENTINEL_SHIELDS = 10;
 const SENTINEL_SCALE_MULTIPLIER = 1.5; // Scale relative to player ship (Galaxy-class is larger)
 const SENTINEL_BOUNDARY_MARGIN = 60; // Pixels from screen edge where direction reverses
-const SENTINEL_OSCILLATION_PERIOD = 3000; // Period of sine-wave oscillation in milliseconds
 const SENTINEL_Y_CORRECTION = 6; // Y velocity correction in pixels/sec per pixel of Y offset
 const SENTINEL_STATUS_LABEL_OFFSET = 40; // Pixels above the Sentinel sprite for the status label
 const SENTINEL_TORPEDO_STAGGER_MS = 80; // Milliseconds between each torpedo in a volley
@@ -109,7 +107,6 @@ const SENTINEL_BAR_HEIGHT = 4; // Height of Sentinel health/shield bars in pixel
 // System restoration wave thresholds for Level 5
 const SENTINEL_PRIMARY_WEAPONS_WAVE = 3; // Wave at which Sentinel primary weapons come online
 const SENTINEL_TORPEDOS_WAVE = 5; // Wave at which Sentinel torpedo systems come online
-const SENTINEL_VELOCITY_LERP_FACTOR = 0.15; // Fraction of velocity change applied per frame (~300ms to reach full speed at 60fps)
 
 class Level1Scene extends Phaser.Scene {
     constructor() {
@@ -1496,6 +1493,12 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitEnemy(bullet, enemy) {
+        // Sentinel is a friendly ship - player bullets pass through without damage
+        if (enemy === this.sentinel) {
+            this.disableBulletPhysics(bullet);
+            return;
+        }
+
         // Asteroids are invincible - bullets stop but asteroids take no damage
         if (enemy.enemyType === 'asteroid') {
             // Disable bullet (it stops at the asteroid)
@@ -1562,6 +1565,12 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitEnemyWithTorpedo(torpedo, enemy) {
+        // Sentinel is a friendly ship - torpedoes pass through without damage
+        if (enemy === this.sentinel) {
+            this.disableBulletPhysics(torpedo);
+            return;
+        }
+
         // Asteroids are invincible - torpedoes stop but asteroids take no damage
         if (enemy.enemyType === 'asteroid') {
             this.disableBulletPhysics(torpedo);
@@ -2491,7 +2500,6 @@ class Level1Scene extends Phaser.Scene {
         
         // Spawn Sentinel using the uss-sentinel texture (Galaxy-class)
         this.sentinel = this.physics.add.sprite(sentinelX, sentinelY, 'uss-sentinel');
-        this.sentinel.setCollideWorldBounds(true);
         this.sentinel.setScale(PlayerConfig.scale * SENTINEL_SCALE_MULTIPLIER); // Slightly larger than the Aurora
         
         // Sentinel stats
@@ -2505,7 +2513,7 @@ class Level1Scene extends Phaser.Scene {
             lastFired: 0,
             lastTorpedoFired: -PlayerConfig.torpedoCooldown, // Ready to fire immediately when online
             invincibleUntil: 0, // Timestamp for invincibility after taking damage
-            currentVelX: 0 // Smoothed lateral velocity to prevent jitter
+            currentVelX: SENTINEL_SPEED // Start moving right
         };
         
         // Health and shield bars for the Sentinel
@@ -2547,40 +2555,15 @@ class Level1Scene extends Phaser.Scene {
     
     updateSentinelMovement() {
         const targetY = this.cameraHeight * SENTINEL_Y_FRACTION;
-        let targetVelX = 0;
-        
-        // Look for the nearest incoming enemy bullet as a threat to dodge
-        let threatX = null;
-        let minThreatDist = SENTINEL_EVASION_RADIUS;
-        
-        this.enemyBullets.children.each(bullet => {
-            if (!bullet.active) return;
-            // Only react to bullets moving downward (toward the Sentinel)
-            if (!bullet.body || bullet.body.velocity.y <= 0) return;
-            const dist = Phaser.Math.Distance.Between(this.sentinel.x, this.sentinel.y, bullet.x, bullet.y);
-            if (dist < minThreatDist) {
-                minThreatDist = dist;
-                threatX = bullet.x;
-            }
-        });
-        
-        if (threatX !== null) {
-            // Move away from the nearest threatening bullet
-            targetVelX = threatX < this.sentinel.x ? SENTINEL_SPEED : -SENTINEL_SPEED;
-        } else {
-            // Gentle sine-wave oscillation when no immediate threat
-            targetVelX = Math.sin(this.time.now / SENTINEL_OSCILLATION_PERIOD) * SENTINEL_SPEED;
+
+        // Simple horizontal movement — reverse direction at screen boundaries (mirrors battleship pattern)
+        if (this.sentinel.x <= SENTINEL_BOUNDARY_MARGIN && this.sentinelStats.currentVelX < 0) {
+            this.sentinelStats.currentVelX = SENTINEL_SPEED;
+        } else if (this.sentinel.x >= this.cameraWidth - SENTINEL_BOUNDARY_MARGIN && this.sentinelStats.currentVelX > 0) {
+            this.sentinelStats.currentVelX = -SENTINEL_SPEED;
         }
-        
-        // Hard boundary: reverse direction if near screen edges
-        if (this.sentinel.x <= SENTINEL_BOUNDARY_MARGIN && targetVelX < 0) targetVelX = SENTINEL_SPEED;
-        if (this.sentinel.x >= this.cameraWidth - SENTINEL_BOUNDARY_MARGIN && targetVelX > 0) targetVelX = -SENTINEL_SPEED;
-        
-        // Lerp toward the target velocity to avoid abrupt direction changes that cause jitter
-        this.sentinelStats.currentVelX = Phaser.Math.Linear(this.sentinelStats.currentVelX, targetVelX, SENTINEL_VELOCITY_LERP_FACTOR);
-        
-        // Lock Y position via velocity (avoids direct position override jitter)
-        // Apply a proportional correction toward targetY to handle drift and screen resize
+
+        // Lock Y position via velocity correction
         const yDiff = targetY - this.sentinel.y;
         this.sentinel.setVelocityY(yDiff * SENTINEL_Y_CORRECTION);
         this.sentinel.setVelocityX(this.sentinelStats.currentVelX);
@@ -2703,6 +2686,15 @@ class Level1Scene extends Phaser.Scene {
         this.playSound('explosion');
         this.sentinel.setActive(false);
         this.sentinel.setVisible(false);
+        // Hide health and shield bars
+        if (this.sentinelHealthBar) {
+            this.sentinelHealthBar.clear();
+            this.sentinelHealthBar.setVisible(false);
+        }
+        if (this.sentinelShieldBar) {
+            this.sentinelShieldBar.clear();
+            this.sentinelShieldBar.setVisible(false);
+        }
         if (this.sentinelStatusLabel) {
             this.sentinelStatusLabel.setText('USS SENTINEL: DESTROYED');
             this.sentinelStatusLabel.setColor('#FF0000');
