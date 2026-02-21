@@ -158,6 +158,8 @@ class Level1Scene extends Phaser.Scene {
         // Initialize pause state
         this.isPaused = false
         this.pauseMenu = null
+        // Ensure time is running (Phaser Clock persists paused state across scene restarts)
+        this.time.paused = false
         console.log(`Level1Scene: Initializing level ${this.levelNumber}`)
     }
     
@@ -4008,7 +4010,8 @@ class Level1Scene extends Phaser.Scene {
         // Clean up pause menu
         this.cleanupPauseMenu();
         
-        // Resume physics before transitioning (so next scene starts normally)
+        // Resume physics and time before transitioning (so next scene starts normally)
+        this.time.paused = false;
         this.physics.resume();
         
         // Return to main menu
