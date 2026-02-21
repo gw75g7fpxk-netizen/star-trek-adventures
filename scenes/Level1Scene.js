@@ -2740,7 +2740,8 @@ class Level1Scene extends Phaser.Scene {
         if (this.currentWave === SENTINEL_PRIMARY_WEAPONS_WAVE && !this.sentinelStats.weaponsOnline) {
             this.sentinelStats.weaponsOnline = true;
             this.showSentinelStatus('USS SENTINEL: PRIMARY WEAPONS ONLINE', '#FFFF00');
-        } else if (this.currentWave === SENTINEL_TORPEDOS_WAVE && !this.sentinelStats.torpedosOnline) {
+        }
+        if (this.currentWave === SENTINEL_TORPEDOS_WAVE && !this.sentinelStats.torpedosOnline) {
             this.sentinelStats.torpedosOnline = true;
             this.showSentinelStatus('USS SENTINEL: TORPEDO SYSTEMS ONLINE', '#00FF00');
         }
@@ -3230,10 +3231,11 @@ class Level1Scene extends Phaser.Scene {
             // Fire multiple bullets with delays (burst attack)
             for (let burst = 0; burst < burstCount; burst++) {
                 this.time.delayedCall(burst * burstDelay, () => {
-                    // Check if enemy is still active before firing
+                    // Check if enemy and player are still active before firing
                     if (!enemy || !enemy.active) return;
+                    if (!this.player || !this.player.active) return;
                     
-                    // Fire single bullet straight down
+                    // Fire bullet aimed at the player's current position
                     const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
                     if (bullet) {
                         bullet.setActive(true);
@@ -3241,7 +3243,8 @@ class Level1Scene extends Phaser.Scene {
                         // Re-enable physics body if it was disabled
                         if (bullet.body) {
                             bullet.body.enable = true;
-                            bullet.body.setVelocity(0, config.bulletSpeed);
+                            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+                            bullet.body.setVelocity(Math.cos(angle) * config.bulletSpeed, Math.sin(angle) * config.bulletSpeed);
                         }
                     }
                 });
