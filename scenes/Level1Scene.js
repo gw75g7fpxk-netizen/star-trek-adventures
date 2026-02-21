@@ -9,7 +9,7 @@ const SOUND_CONFIG = {
     powerup: { startFreq: 600, endFreq: 1200, duration: 0.15, gain: 0.15 },
     hit: { startFreq: 300, endFreq: 150, duration: 0.08, gain: 0.12 },
     charging: { startFreq: 200, endFreq: 600, duration: 0.5, gain: 0.08 },
-    torpedo: { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.15 }
+    torpedo: { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.075 }
 };
 
 // Invincibility durations (in milliseconds)
@@ -969,7 +969,7 @@ class Level1Scene extends Phaser.Scene {
                     oscillator.disconnect();
                     gainNode.disconnect();
                     try {
-                        this.sound.play('torpedo-sound');
+                        this.sound.play('torpedo-sound', { volume: 0.5 });
                     } catch (e) {
                         // Audio file failed to play; fall through to procedural sound
                         oscillator.connect(gainNode);
