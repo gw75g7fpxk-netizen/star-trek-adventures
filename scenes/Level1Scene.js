@@ -1005,6 +1005,36 @@ class Level1Scene extends Phaser.Scene {
                     oscillator.stop(time + config.duration);
                 }
                 break;
+            case 'romulan-torpedo':
+                // Play the Romulan warbird torpedo audio file
+                if (this.cache.audio.exists('romulan-torpedo-sound')) {
+                    oscillator.disconnect();
+                    gainNode.disconnect();
+                    try {
+                        this.sound.play('romulan-torpedo-sound', { volume: 0.2 });
+                    } catch (e) {
+                        // Audio file failed to play; fall through to procedural sound
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        oscillator.type = 'triangle';
+                        oscillator.frequency.setValueAtTime(150, time);
+                        oscillator.frequency.exponentialRampToValueAtTime(400, time + 0.25);
+                        gainNode.gain.setValueAtTime(0.075, time);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.25);
+                        oscillator.start(time);
+                        oscillator.stop(time + 0.25);
+                    }
+                } else {
+                    // Fallback: rising pitch sweep sound
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(150, time);
+                    oscillator.frequency.exponentialRampToValueAtTime(400, time + 0.25);
+                    gainNode.gain.setValueAtTime(0.075, time);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.25);
+                    oscillator.start(time);
+                    oscillator.stop(time + 0.25);
+                }
+                break;
             case 'phaserBeam':
                 // Play the TNG phaser beam audio file
                 if (this.cache.audio.exists('phaser-beam-sound')) {
@@ -3410,6 +3440,14 @@ class Level1Scene extends Phaser.Scene {
                 const config = EnemyConfig[enemy.enemyType];
                 const speed = config.speed || 150;
                 enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+                // Cap how high the warbird can go so the entire sprite remains on screen
+                const minY = (enemy.displayHeight / 2) + 5;
+                if (enemy.y < minY) {
+                    enemy.y = minY;
+                    if (enemy.body.velocity.y < 0) {
+                        enemy.body.setVelocityY(0);
+                    }
+                }
                 break;
             }
         }
@@ -3524,6 +3562,12 @@ class Level1Scene extends Phaser.Scene {
             // Re-enable physics body if it was disabled
             if (bullet.body) {
                 bullet.body.enable = true;
+            }
+            
+            // Romulan warbird fires green torpedoes with its own sound
+            if (enemy.enemyType === 'romulanWarbird') {
+                bullet.setTint(0x00FF00);
+                this.playSound('romulan-torpedo');
             }
             
             // Aim at player
