@@ -89,7 +89,7 @@ const PLAYER_HEALTH_BAR = {
 };
 
 // Boss-type enemies that get special explosion effects
-const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyBossLevel3', 'enemyBossLevel4', 'enemyBossLevel5', 'battleship'];
+const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyBossLevel3', 'enemyBossLevel4', 'enemyBossLevel5', 'battleship', 'romulanWarbird'];
 
 // USS Sentinel constants for Level 5
 const SENTINEL_Y_FRACTION = 0.85; // Y position as fraction of screen height
@@ -465,7 +465,9 @@ class Level1Scene extends Phaser.Scene {
     createPlayer() {
         // Create player ship (USS Aurora) - use percentage-based positioning for mobile compatibility
         const startX = this.cameraWidth * PlayerConfig.startX;
-        const startY = this.cameraHeight * PlayerConfig.startY;
+        // For level 7, the Romulan warbird starts at the bottom, so the Aurora needs to start higher
+        const startYFraction = this.levelNumber === 7 ? 0.35 : PlayerConfig.startY;
+        const startY = this.cameraHeight * startYFraction;
         this.player = this.physics.add.sprite(startX, startY, 'player-ship');
         this.player.setCollideWorldBounds(true);
         
@@ -2313,9 +2315,12 @@ class Level1Scene extends Phaser.Scene {
             return;
         }
         
-        // Random spawn position at top
-        const x = Phaser.Math.Between(50, this.cameraWidth - 50);
-        const y = -50;
+        // Random spawn position at top (or near player for enemies with spawnAtBottom flag)
+        const spawnAtBottom = config.spawnAtBottom || false;
+        const x = spawnAtBottom
+            ? (this.player ? this.player.x : this.cameraWidth / 2)
+            : Phaser.Math.Between(50, this.cameraWidth - 50);
+        const y = spawnAtBottom ? this.cameraHeight + 50 : -50;
         
         // Get texture from config
         const texture = config.texture || 'enemy-fighter'; // Fallback to fighter if not specified
@@ -2334,11 +2339,12 @@ class Level1Scene extends Phaser.Scene {
             enemy.invincibleUntil = 0; // Initialize invincibility timer
             enemy.movementPattern = config.movementPattern;
             enemy.patternOffset = Math.random() * Math.PI * 2; // Random phase for patterns
-            enemy.hasEnteredScreen = false; // Track if enemy has entered visible area
+            // Bottom-spawned enemies start on screen; top-spawned enemies must scroll in first
+            enemy.hasEnteredScreen = spawnAtBottom;
             enemy.initialSpeed = config.speed; // Store initial speed for when body is enabled
             
             // Scale enemy sprites to correct size while maintaining aspect ratio
-            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'enemyBossLevel2', 'enemyBossLevel3', 'destroyer', 'carrier', 'mine'];
+            const scalableEnemies = ['fighter', 'cruiser', 'battleship', 'weaponPlatform', 'asteroid', 'enemyBossLevel2', 'enemyBossLevel3', 'destroyer', 'carrier', 'mine', 'romulanWarbird'];
             if (scalableEnemies.includes(enemyType) && enemy.width > 0) {
                 let targetWidth = config.size.width;
                 
@@ -2390,13 +2396,20 @@ class Level1Scene extends Phaser.Scene {
                 enemy.proximityDistance = this.player ? this.player.displayWidth * 2 : (config.proximityDistance || 150);
             }
             
+            // Apply initial rotation if specified in config (e.g., Romulan warbird faces upward)
+            if (config.startAngle !== undefined) {
+                enemy.setRotation(config.startAngle);
+            }
+
             // Set initial velocity so enemy moves onto screen
             // For stationary enemies (speed=0), use a default scroll speed so they enter the screen
+            // Bottom-spawned enemies move upward (negative Y) to enter the screen
             const verticalSpeed = config.speed > 0 ? config.speed : DEFAULT_VERTICAL_SCROLL_SPEED;
-            enemy.body.setVelocity(0, verticalSpeed);
+            enemy.body.setVelocity(0, spawnAtBottom ? -verticalSpeed : verticalSpeed);
             
             // Disable collision detection initially - will be enabled when enemy enters screen
-            enemy.body.checkCollision.none = true;
+            // Bottom-spawned enemies already have hasEnteredScreen=true so collision stays enabled
+            enemy.body.checkCollision.none = !spawnAtBottom;
             
             // Create health bar for this enemy (excludes asteroids)
             this.createHealthBar(enemy);
@@ -3388,6 +3401,15 @@ class Level1Scene extends Phaser.Scene {
                         Math.sin(angle) * enemy.chaseSpeed
                     );
                 }
+                break;
+            }
+            case 'chase': {
+                // Always chase the player directly (used by Romulan warbird in level 7)
+                if (!this.player || !this.player.active) break;
+                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+                const config = EnemyConfig[enemy.enemyType];
+                const speed = config.speed || 150;
+                enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
                 break;
             }
         }
