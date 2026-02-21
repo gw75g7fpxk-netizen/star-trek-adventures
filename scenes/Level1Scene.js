@@ -1493,12 +1493,6 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitEnemy(bullet, enemy) {
-        // Sentinel is a friendly ship - player bullets pass through without damage
-        if (enemy === this.sentinel) {
-            this.disableBulletPhysics(bullet);
-            return;
-        }
-
         // Asteroids are invincible - bullets stop but asteroids take no damage
         if (enemy.enemyType === 'asteroid') {
             // Disable bullet (it stops at the asteroid)
@@ -1565,12 +1559,6 @@ class Level1Scene extends Phaser.Scene {
     }
     
     hitEnemyWithTorpedo(torpedo, enemy) {
-        // Sentinel is a friendly ship - torpedoes pass through without damage
-        if (enemy === this.sentinel) {
-            this.disableBulletPhysics(torpedo);
-            return;
-        }
-
         // Asteroids are invincible - torpedoes stop but asteroids take no damage
         if (enemy.enemyType === 'asteroid') {
             this.disableBulletPhysics(torpedo);
