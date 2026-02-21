@@ -96,21 +96,21 @@ const DialogConfig = {
                 title: 'INCOMING TRANSMISSION',
                 sequence: [
                     {
-                        speaker: 'Science Officer',
+                        speaker: 'Commander T\'Vorin',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Captain, sensors are detecting an unknown fleet ahead. They match no known signatures in our database.',
                         audio: null
                     },
                     {
-                        speaker: 'Tactical Officer',
+                        speaker: 'Lieutenant Solis',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Crystal-like vessels, Captain. And they\'re powering weapons! All frequencies jammed - we can\'t hail them.',
                         audio: null
                     },
                     {
-                        speaker: 'Captain',
+                        speaker: 'Captain Thorne',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Red alert! All hands to battle stations. This first contact just went hostile. Shields up, prepare to engage!',
@@ -124,21 +124,21 @@ const DialogConfig = {
                 title: 'INCOMING TRANSMISSION',
                 sequence: [
                     {
-                        speaker: 'Tactical Officer',
+                        speaker: 'Lieutenant Solis',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'The vanguard ship is destroyed, Captain. The remaining Crystalis forces are retreating.',
                         audio: null
                     },
                     {
-                        speaker: 'Captain',
+                        speaker: 'Captain Thorne',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Good work. Helm, take us toward that asteroid field. We need cover to regroup and figure out what we\'re dealing with.',
                         audio: null
                     },
                     {
-                        speaker: 'Science Officer',
+                        speaker: 'Commander T\'Vorin',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Communications are still jammed, Captain. We\'re on our own for now.',
@@ -154,21 +154,21 @@ const DialogConfig = {
                 title: 'INCOMING TRANSMISSION',
                 sequence: [
                     {
-                        speaker: 'Captain',
+                        speaker: 'Captain Thorne',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Communications are heavily jammed. We need to navigate through this asteroid field carefully.',
                         audio: null  // Optional: path to audio file for voice-over
                     },
                     {
-                        speaker: 'Science Officer',
+                        speaker: 'Commander T\'Vorin',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Sensors detect multiple escape pods in the field, Captain. Survivors from a Federation science vessel.',
                         audio: null
                     },
                     {
-                        speaker: 'Captain',
+                        speaker: 'Captain Thorne',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'All hands to rescue stations. Helm, take us in. Tactical, keep shields at maximum. We have people to save.',
@@ -182,21 +182,21 @@ const DialogConfig = {
                 title: 'INCOMING TRANSMISSION',
                 sequence: [
                     {
-                        speaker: 'Tactical Officer',
+                        speaker: 'Lieutenant Solis',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'The crystal node is destroyed! Communications jamming has ceased.',
                         audio: null
                     },
                     {
-                        speaker: 'Science Officer',
+                        speaker: 'Commander T\'Vorin',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Incredible... these Crystalis vessels are constructed from fragments of the Crystalline Entity itself.',
                         audio: null
                     },
                     {
-                        speaker: 'Captain',
+                        speaker: 'Captain Thorne',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Contact Starfleet immediately. They need to know what we\'re dealing with. Aurora out.',
@@ -212,28 +212,28 @@ const DialogConfig = {
                 title: 'INCOMING TRANSMISSION',
                 sequence: [
                     {
-                        speaker: 'Communications Officer',
+                        speaker: 'Commander T\'Vorin',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: "Captain, we're receiving a priority distress call from the Federation colony on New Horizon!",
                         audio: null
                     },
                     {
-                        speaker: 'Starfleet Command',
+                        speaker: 'Admiral Holt',
                         ship: 'Starbase 47',
                         portrait: 'starfleetCommand',
                         text: 'Aurora, New Horizon is under heavy Crystalis attack. Provide orbital defense until reinforcements arrive.',
                         audio: null
                     },
                     {
-                        speaker: 'Captain',
+                        speaker: 'Captain Thorne',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Understood, Command. Helm, set course for New Horizon. All hands to battle stations. We hold the line!',
                         audio: null
                     },
                     {
-                        speaker: 'Science Officer',
+                        speaker: 'Commander T\'Vorin',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: "Detecting multiple evacuation pods launching from the surface. They're evacuating civilians, Captain.",
@@ -245,28 +245,28 @@ const DialogConfig = {
                 title: 'INCOMING TRANSMISSION',
                 sequence: [
                     {
-                        speaker: 'Tactical Officer',
+                        speaker: 'Lieutenant Solis',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'The Crystalis flagship is destroyed! Remaining enemy forces are breaking off their attack.',
                         audio: null
                     },
                     {
-                        speaker: 'USS Sentinel',
+                        speaker: 'Captain Dray',
                         ship: 'USS Sentinel',
                         portrait: 'ussSentinel',
                         text: 'Well done, Aurora. Reinforcements have arrived and are securing the colony. New Horizon is safe.',
                         audio: null
                     },
                     {
-                        speaker: 'Captain',
+                        speaker: 'Captain Thorne',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'All civilian evacuation pods recovered successfully. New Horizon colony is secure. Aurora standing by.',
                         audio: null
                     },
                     {
-                        speaker: 'Science Officer',
+                        speaker: 'Commander T\'Vorin',
                         ship: 'USS Aurora',
                         portrait: 'playerShip',
                         text: 'Captain, the Crystalis are becoming more coordinated. Their attack patterns are evolving.',
