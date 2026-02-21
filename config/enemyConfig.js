@@ -234,9 +234,7 @@ const EnemyConfig = {
         bulletSpeed: 240,
         damage: 2,
         movementPattern: 'horizontal',
-        burstCount: 4, // Fires in rapid bursts
-        burstDelay: 150,
-        spreadShot: true, // Also fires spread pattern
+        spreadShot: true, // Fires spread pattern aimed at the player
         spreadCount: 4,
         size: { width: 160, height: 160 },
         points: 6000,

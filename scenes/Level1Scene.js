@@ -3231,11 +3231,10 @@ class Level1Scene extends Phaser.Scene {
             // Fire multiple bullets with delays (burst attack)
             for (let burst = 0; burst < burstCount; burst++) {
                 this.time.delayedCall(burst * burstDelay, () => {
-                    // Check if enemy and player are still active before firing
+                    // Check if enemy is still active before firing
                     if (!enemy || !enemy.active) return;
-                    if (!this.player || !this.player.active) return;
                     
-                    // Fire bullet aimed at the player's current position
+                    // Fire single bullet straight down
                     const bullet = this.enemyBullets.get(enemy.x, enemy.y + 20, 'enemy-bullet');
                     if (bullet) {
                         bullet.setActive(true);
@@ -3243,8 +3242,7 @@ class Level1Scene extends Phaser.Scene {
                         // Re-enable physics body if it was disabled
                         if (bullet.body) {
                             bullet.body.enable = true;
-                            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-                            bullet.body.setVelocity(Math.cos(angle) * config.bulletSpeed, Math.sin(angle) * config.bulletSpeed);
+                            bullet.body.setVelocity(0, config.bulletSpeed);
                         }
                     }
                 });
