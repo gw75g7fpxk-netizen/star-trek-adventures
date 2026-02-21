@@ -969,7 +969,7 @@ class Level1Scene extends Phaser.Scene {
                     oscillator.disconnect();
                     gainNode.disconnect();
                     try {
-                        this.sound.play('torpedo-sound', { volume: 0.5 });
+                        this.sound.play('torpedo-sound', { volume: 0.2 });
                     } catch (e) {
                         // Audio file failed to play; fall through to procedural sound
                         oscillator.connect(gainNode);
