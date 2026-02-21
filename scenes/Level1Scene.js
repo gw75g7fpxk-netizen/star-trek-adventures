@@ -2527,7 +2527,7 @@ class Level1Scene extends Phaser.Scene {
         this.sentinelStatusLabel.setDepth(100);
         
         // Enemy bullets can pass through the player and hit the Sentinel below
-        this.physics.add.overlap(this.enemyBullets, this.sentinel, this.sentinelHit, null, this);
+        this.physics.add.overlap(this.sentinel, this.enemyBullets, this.sentinelHit, null, this);
         
         console.log('Level5: USS Sentinel spawned at bottom of screen');
     }
@@ -2637,7 +2637,7 @@ class Level1Scene extends Phaser.Scene {
         }
     }
     
-    sentinelHit(bullet, sentinel) {
+    sentinelHit(sentinel, bullet) {
         this.disableBulletPhysics(bullet);
         this.takeSentinelDamage(1);
     }
