@@ -181,6 +181,10 @@ class PreloadScene extends Phaser.Scene {
         // Load Romulan warbird torpedo sound effect
         this.load.audio('romulan-torpedo-sound', 'assets/audio/romulan_torpedo.mp3');
         
+        // Load Romulan warbird cloak/decloak sound effects
+        this.load.audio('cloak-romulan-sound', 'assets/audio/cloak_romulan.mp3');
+        this.load.audio('decloak-romulan-sound', 'assets/audio/decloak_romulan.mp3');
+        
         // Load Sentinel phaser beam sound effect
         this.load.audio('phaser-beam-sound', 'assets/audio/tng_phaser7_clean.mp3');
         
