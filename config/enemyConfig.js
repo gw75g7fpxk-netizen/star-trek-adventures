@@ -246,7 +246,7 @@ const EnemyConfig = {
         health: 20,
         shields: 10,
         speed: 150,
-        fireRate: 1500,
+        fireRate: 1100,
         bulletSpeed: 280,
         damage: 1,
         points: 2000,

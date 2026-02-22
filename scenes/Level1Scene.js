@@ -98,7 +98,7 @@ const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyB
 const WARBIRD_CLOAK_FADE_DURATION = 2000; // Milliseconds for fade-in/out during cloaking
 const WARBIRD_CLOAK_MAX_COUNT = 3;        // Number of times warbird cloaks during the battle
 const WARBIRD_CLOAK_HEALTH_FRACTION = 0.5; // Triggers at 50% of total health+shields
-const WARBIRD_INITIAL_DECLOAK_DELAY = 1500; // Milliseconds after spawn before the warbird decloaks
+const WARBIRD_INITIAL_DECLOAK_DELAY = 750; // Milliseconds after spawn before the warbird decloaks
 
 // USS Sentinel constants for Level 5
 const SENTINEL_Y_FRACTION = 0.85; // Y position as fraction of screen height
@@ -3755,9 +3755,9 @@ class Level1Scene extends Phaser.Scene {
                 if (!this.player || !this.player.active) break;
                 const config = EnemyConfig[enemy.enemyType];
                 const speed = config.speed || 150;
-                // Only move horizontally toward the player
+                // Only move horizontally toward the player; stop within threshold to prevent jitter
                 const dx = this.player.x - enemy.x;
-                enemy.body.setVelocityX(Math.sign(dx) * speed);
+                enemy.body.setVelocityX(Math.abs(dx) < 10 ? 0 : Math.sign(dx) * speed);
                 enemy.body.setVelocityY(0);
                 // Lock Y to the bottom of the screen (max vertical position, fully visible)
                 const halfH = enemy.displayHeight / 2;
