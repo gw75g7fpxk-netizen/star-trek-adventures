@@ -1284,7 +1284,7 @@ class Level1Scene extends Phaser.Scene {
             let nearestDx = 0;
             let nearestDy = 0;
             this.enemies.children.each(enemy => {
-                if (enemy.active && enemy.visible) {
+                if (enemy.active && enemy.visible && enemy.enemyType !== 'asteroid') {
                     const dx = enemy.x - torpedo.x;
                     const dy = enemy.y - torpedo.y;
                     const distSq = dx * dx + dy * dy;
