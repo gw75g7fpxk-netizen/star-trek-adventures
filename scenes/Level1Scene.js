@@ -10,7 +10,8 @@ const SOUND_CONFIG = {
     powerup: { startFreq: 600, endFreq: 1200, duration: 0.15, gain: 0.15 },
     hit: { startFreq: 300, endFreq: 150, duration: 0.08, gain: 0.12 },
     charging: { startFreq: 200, endFreq: 600, duration: 0.5, gain: 0.08 },
-    torpedo: { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.075 }
+    torpedo: { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.075 },
+    'romulan-torpedo': { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.075 }
 };
 
 // Invincibility durations (in milliseconds)
@@ -3440,11 +3441,19 @@ class Level1Scene extends Phaser.Scene {
                 const config = EnemyConfig[enemy.enemyType];
                 const speed = config.speed || 150;
                 enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
-                // Keep the warbird near the bottom so only the sprite height worth of travel above the bottom edge is allowed
-                const minY = this.cameraHeight - (enemy.displayHeight / 2) - 20;
+                // Keep the warbird near the bottom: clamp Y so the entire sprite remains on screen
+                const halfH = enemy.displayHeight / 2;
+                const minY = this.cameraHeight - halfH - 40; // Allow up to 40px above full-sprite-visible position
+                const maxY = this.cameraHeight - halfH;      // Entire sprite just visible (bottom edge at screen edge)
                 if (enemy.y < minY) {
                     enemy.y = minY;
                     if (enemy.body.velocity.y < 0) {
+                        enemy.body.setVelocityY(0);
+                    }
+                }
+                if (enemy.y > maxY) {
+                    enemy.y = maxY;
+                    if (enemy.body.velocity.y > 0) {
                         enemy.body.setVelocityY(0);
                     }
                 }
