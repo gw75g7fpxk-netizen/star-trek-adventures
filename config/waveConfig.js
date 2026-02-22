@@ -241,14 +241,53 @@ const WaveConfig = {
             type: 'enemyBossLevel5'
         }
     },
+    // Level 6: Resonant Swarm - Synchronized waves with convoy rescue and carrier trio finale
     level6: {
         wave1: { 
-            enemyCount: 5, 
-            enemyTypes: ['fighter'],
-            shipCounts: { fighter: 5 },
-            spawnRate: 2000, 
-            difficulty: 1,
-            duration: 20000
+            enemyCount: 12, 
+            enemyTypes: ['fighter', 'scout', 'asteroid'],
+            shipCounts: { fighter: 7, scout: 3, asteroid: 2 },
+            spawnRate: 1900, 
+            difficulty: 1.6,
+            duration: 22000
+        },
+        wave2: { 
+            enemyCount: 16, 
+            enemyTypes: ['fighter', 'cruiser', 'scout', 'asteroid'],
+            shipCounts: { fighter: 8, cruiser: 3, scout: 3, asteroid: 2 },
+            spawnRate: 1700, 
+            difficulty: 2.0,
+            duration: 26000
+        },
+        wave3: { 
+            enemyCount: 20, 
+            enemyTypes: ['fighter', 'cruiser', 'destroyer', 'mine', 'asteroid'],
+            shipCounts: { fighter: 7, cruiser: 5, destroyer: 4, mine: 2, asteroid: 2 },
+            spawnRate: 1500, 
+            difficulty: 2.5,
+            duration: 30000
+        },
+        wave4: {
+            enemyCount: 24,
+            enemyTypes: ['cruiser', 'destroyer', 'battleship', 'mine', 'asteroid'],
+            shipCounts: { cruiser: 7, destroyer: 6, battleship: 5, mine: 4, asteroid: 2 },
+            spawnRate: 1300,
+            difficulty: 3.0,
+            duration: 34000
+        },
+        wave5: {
+            enemyCount: 28,
+            enemyTypes: ['cruiser', 'destroyer', 'battleship', 'carrier', 'mine', 'asteroid'],
+            shipCounts: { cruiser: 7, destroyer: 6, battleship: 5, carrier: 4, mine: 4, asteroid: 2 },
+            spawnRate: 1100,
+            difficulty: 3.5,
+            duration: 38000
+        },
+        bossWave: {
+            threshold: 5, // Boss appears after wave 5
+            type: 'carrier',
+            count: 3, // Three carriers appear together to overwhelm the player
+            xFractions: [0.25, 0.5, 0.75] // Spread across screen width
         }
     },
     // Level 7: Romulan Shadows - A single Romulan warbird decloaks and pursues the Aurora

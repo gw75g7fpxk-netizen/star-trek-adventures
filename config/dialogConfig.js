@@ -274,6 +274,69 @@ const DialogConfig = {
                     }
                 ]
             }
+        },
+
+        // Level 6: Resonant Swarm - Synchronized crystal formations with convoy rescue
+        6: {
+            intro: {
+                title: 'INCOMING TRANSMISSION',
+                sequence: [
+                    {
+                        speaker: 'Lieutenant Solis',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Captain, sensors are picking up Crystalis formations unlike anything we\'ve seen. They\'re moving in perfect synchronization.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Commander T\'Vorin',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Our previous engagements appear to have drawn them. The crystal resonance frequency is amplifying with each new ship that joins.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Admiral Holt',
+                        ship: 'Starbase 47',
+                        portrait: 'starfleetCommand',
+                        text: 'Aurora, a Federation supply convoy is caught in the middle of those formations. Get those pods out before the swarm closes in.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Captain Thorne',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Understood. Tactical, adapt firing patterns on the fly - these formations are going to learn our moves. Let\'s make it count.',
+                        audio: null
+                    }
+                ]
+            },
+            outro: {
+                title: 'INCOMING TRANSMISSION',
+                sequence: [
+                    {
+                        speaker: 'Lieutenant Solis',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'All three carrier ships destroyed! The crystal resonance is collapsing - their synchronized formations are breaking apart!',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Commander T\'Vorin',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Remarkable. The carriers were acting as a relay network for the swarm\'s coordination signal. Without them the drones are scattered.',
+                        audio: null
+                    },
+                    {
+                        speaker: 'Captain Thorne',
+                        ship: 'USS Aurora',
+                        portrait: 'playerShip',
+                        text: 'Supply convoy pods are secure. Helm, get us clear of the debris field. We need to report these new tactics to Starfleet.',
+                        audio: null
+                    }
+                ]
+            }
         }
     },
     
