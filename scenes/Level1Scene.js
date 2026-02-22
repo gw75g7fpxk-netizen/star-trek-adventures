@@ -2537,10 +2537,10 @@ class Level1Scene extends Phaser.Scene {
             const spawnY = boss.y + Math.sin(angle) * spawnRadius;
             
             // Spawn a destroyer (agile and fast enemy)
-            const fragment = this.enemies.get(spawnX, spawnY, 'enemy-cruiser');
+            const destroyerConfig = EnemyConfig.destroyer;
+            const fragment = this.enemies.get(spawnX, spawnY, destroyerConfig.texture);
             
             if (fragment) {
-                const destroyerConfig = EnemyConfig.destroyer;
                 fragment.setActive(true);
                 fragment.setVisible(true);
                 fragment.enemyType = 'destroyer';
