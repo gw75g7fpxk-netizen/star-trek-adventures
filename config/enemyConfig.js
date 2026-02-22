@@ -170,7 +170,7 @@ const EnemyConfig = {
         movementPattern: 'horizontal',
         straightFire: true, // Fires bullets straight down instead of targeting player
         size: { width: 70, height: 70 },
-        texture: 'enemy-cruiser' // Use cruiser texture for now
+        texture: 'enemy-destroyer'
     },
     
     // Carrier - Large ship that launches fighters from both sides
