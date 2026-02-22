@@ -2517,8 +2517,8 @@ class Level1Scene extends Phaser.Scene {
             
             // Romulan warbird (Level 7): spawn cloaked at the max vertical position (bottom of screen)
             if (enemyType === 'romulanWarbird') {
-                // Position warbird higher up so the entire ship is visible on mobile
-                enemy.y = this.cameraHeight * 0.75;
+                // Position warbird so the entire ship is visible on mobile
+                enemy.y = this.cameraHeight - enemy.displayHeight;
                 // Start fully cloaked (invisible, no collision)
                 enemy.setAlpha(0);
                 enemy.isCloaked = true;
