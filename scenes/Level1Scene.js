@@ -2185,7 +2185,7 @@ class Level1Scene extends Phaser.Scene {
         if (!waveConfig) {
             // Check for boss wave - spawn boss as regular enemy
             if (levelConfig.bossWave && this.currentWave > levelConfig.bossWave.threshold) {
-                this.spawnBossAsEnemy(levelConfig.bossWave.type);
+                this.spawnBossAsEnemy(levelConfig.bossWave.type, levelConfig.bossWave);
                 return;
             }
             // No more waves - mark this as the final wave
@@ -2447,7 +2447,7 @@ class Level1Scene extends Phaser.Scene {
         }
     }
     
-    spawnBossAsEnemy(bossType = 'boss') {
+    spawnBossAsEnemy(bossType = 'boss', bossWaveConfig = null) {
         // Mark as final wave since boss spawns after all waves
         this.isFinalWave = true;
         
@@ -2464,53 +2464,60 @@ class Level1Scene extends Phaser.Scene {
         // Get boss config
         const config = EnemyConfig[bossType];
         
-        // Spawn position - top center
-        const x = this.cameraWidth / 2;
-        const y = -100;
+        // Support spawning multiple enemies (e.g., carrier trio for level 6)
+        const count = bossWaveConfig?.count || 1;
+        const xFractions = bossWaveConfig?.xFractions || [0.5];
         
         // Get texture from config
         const texture = config.texture || 'boss-core'; // Fallback to boss-core if not specified
         
-        const boss = this.enemies.get(x, y, texture);
-        
-        if (boss) {
-            boss.setActive(true);
-            boss.setVisible(true);
-            boss.enemyType = bossType;
-            boss.health = config.health;
-            boss.shields = config.shields || 0;
-            boss.points = config.points;
-            boss.fireRate = config.fireRate;
-            boss.lastFired = 0;
-            boss.invincibleUntil = 0;
-            boss.movementPattern = config.movementPattern;
-            boss.patternOffset = Math.random() * Math.PI * 2;
-            boss.hasEnteredScreen = false;
-            boss.initialSpeed = config.speed;
+        for (let i = 0; i < count; i++) {
+            // Use matching xFraction or fall back to the last one if count exceeds xFractions length
+            const xFraction = i < xFractions.length ? xFractions[i] : xFractions[xFractions.length - 1];
+            const x = this.cameraWidth * xFraction;
+            const y = -100;
             
-            // Scale boss sprite to correct size
-            if (boss.width > 0) {
-                const targetWidth = config.size.width;
-                const scale = targetWidth / boss.width;
-                boss.setScale(scale);
+            const boss = this.enemies.get(x, y, texture);
+            
+            if (boss) {
+                boss.setActive(true);
+                boss.setVisible(true);
+                boss.enemyType = bossType;
+                boss.health = config.health;
+                boss.shields = config.shields || 0;
+                boss.points = config.points;
+                boss.fireRate = config.fireRate;
+                boss.lastFired = 0;
+                boss.invincibleUntil = 0;
+                boss.movementPattern = config.movementPattern;
+                boss.patternOffset = Math.random() * Math.PI * 2;
+                boss.hasEnteredScreen = false;
+                boss.initialSpeed = config.speed;
+                
+                // Scale boss sprite to correct size
+                if (boss.width > 0) {
+                    const targetWidth = config.size.width;
+                    const scale = targetWidth / boss.width;
+                    boss.setScale(scale);
+                }
+                
+                // Set initial velocity - boss enters from top
+                boss.body.setVelocity(0, config.speed);
+                
+                // Disable collision detection initially - will be enabled when boss enters screen
+                boss.body.checkCollision.none = true;
+                
+                // Create health bar for boss
+                this.createHealthBar(boss);
+                
+                // Move boss into position with tween animation
+                this.tweens.add({
+                    targets: boss,
+                    y: 150,
+                    duration: 3000,
+                    ease: 'Power2'
+                });
             }
-            
-            // Set initial velocity - boss enters from top
-            boss.body.setVelocity(0, config.speed);
-            
-            // Disable collision detection initially - will be enabled when boss enters screen
-            boss.body.checkCollision.none = true;
-            
-            // Create health bar for boss
-            this.createHealthBar(boss);
-            
-            // Move boss into position with tween animation
-            this.tweens.add({
-                targets: boss,
-                y: 150,
-                duration: 3000,
-                ease: 'Power2'
-            });
         }
     }
     
