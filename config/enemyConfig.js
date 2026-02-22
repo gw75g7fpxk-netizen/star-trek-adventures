@@ -251,7 +251,7 @@ const EnemyConfig = {
         damage: 1,
         points: 2000,
         movementPattern: 'chase', // Always chases the player
-        size: { width: 120, height: 120 },
+        size: { width: 144, height: 144 },
         texture: 'romulan-warbird',
         spawnAtBottom: true, // Spawns at bottom of screen behind the Aurora
         startAngle: Math.PI  // Rotated 180 degrees to face upward (toward Aurora)
