@@ -3564,6 +3564,9 @@ class Level1Scene extends Phaser.Scene {
                 bullet.body.enable = true;
             }
             
+            // Reset tint so recycled bullets don't carry over a previous enemy's color
+            bullet.clearTint();
+            
             // Romulan warbird fires plasma green torpedoes with its own sound
             if (enemy.enemyType === 'romulanWarbird') {
                 bullet.setTintFill(0x39FF14);
