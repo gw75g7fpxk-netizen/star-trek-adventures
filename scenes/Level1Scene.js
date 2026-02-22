@@ -98,6 +98,7 @@ const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyB
 const WARBIRD_CLOAK_FADE_DURATION = 2000; // Milliseconds for fade-in/out during cloaking
 const WARBIRD_CLOAK_MAX_COUNT = 3;        // Number of times warbird cloaks during the battle
 const WARBIRD_CLOAK_HEALTH_FRACTION = 0.5; // Triggers at 50% of total health+shields
+const WARBIRD_INITIAL_DECLOAK_DELAY = 1500; // Milliseconds after spawn before the warbird decloaks
 
 // USS Sentinel constants for Level 5
 const SENTINEL_Y_FRACTION = 0.85; // Y position as fraction of screen height
@@ -1809,6 +1810,10 @@ class Level1Scene extends Phaser.Scene {
                 this.spawnPowerUp(enemyX, enemyY);
             }
             
+            // Save enemy type before the delayed callback; the enemy object may be
+            // destroyed by then, so its properties must be captured now.
+            const defeatedEnemyType = enemy.enemyType;
+            
             // Destroy enemy after explosions complete
             this.time.delayedCall(explosionCount * 200 + 500, () => {
                 if (enemy) {
@@ -1816,7 +1821,9 @@ class Level1Scene extends Phaser.Scene {
                 }
                 
                 // Boss defeat triggers victory on the final wave, regardless of other enemies
-                if (this.isFinalWave) {
+                // Exception: in level 7, only the warbird defeat triggers victory directly;
+                // battleships spawned in cloak waves must not prematurely end the level
+                if (this.isFinalWave && (this.levelNumber !== 7 || defeatedEnemyType === 'romulanWarbird')) {
                     this.victory();
                 } else {
                     // Check victory condition after boss-type enemy is fully destroyed
@@ -2507,6 +2514,27 @@ class Level1Scene extends Phaser.Scene {
             // Disable collision detection initially - will be enabled when enemy enters screen
             // Bottom-spawned enemies already have hasEnteredScreen=true so collision stays enabled
             enemy.body.checkCollision.none = !spawnAtBottom;
+            
+            // Romulan warbird (Level 7): spawn cloaked at the max vertical position (bottom of screen)
+            if (enemyType === 'romulanWarbird') {
+                // Position at the bottom of the screen so the sprite is fully visible
+                const halfH = enemy.displayHeight / 2;
+                enemy.y = this.cameraHeight - halfH;
+                // Start fully cloaked (invisible, no collision)
+                enemy.setAlpha(0);
+                enemy.isCloaked = true;
+                enemy.isCloaking = false;
+                enemy.body.setVelocity(0, 0);
+                enemy.body.checkCollision.none = true;
+                // Decloak with sound after a short delay to announce the battle
+                this.time.delayedCall(WARBIRD_INITIAL_DECLOAK_DELAY, () => {
+                    if (enemy && enemy.active) {
+                        this.triggerWarbirdDecloaking(enemy);
+                    }
+                });
+                // Skip normal health bar creation below; it will be created during decloak instead
+                return;
+            }
             
             // Create health bar for this enemy (excludes asteroids)
             this.createHealthBar(enemy);
@@ -3722,28 +3750,18 @@ class Level1Scene extends Phaser.Scene {
                 break;
             }
             case 'chase': {
-                // Always chase the player directly (used by Romulan warbird in level 7)
+                // Horizontal-only chase: follow the player's X, fixed Y at bottom of screen
+                // (used by Romulan warbird in level 7)
                 if (!this.player || !this.player.active) break;
-                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
                 const config = EnemyConfig[enemy.enemyType];
                 const speed = config.speed || 150;
-                enemy.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
-                // Keep the warbird near the bottom: clamp Y so the entire sprite remains on screen
+                // Only move horizontally toward the player
+                const dx = this.player.x - enemy.x;
+                enemy.body.setVelocityX(Math.sign(dx) * speed);
+                enemy.body.setVelocityY(0);
+                // Lock Y to the bottom of the screen (max vertical position, fully visible)
                 const halfH = enemy.displayHeight / 2;
-                const minY = this.cameraHeight - halfH - 40; // Allow up to 40px above full-sprite-visible position
-                const maxY = this.cameraHeight - halfH;      // Entire sprite just visible (bottom edge at screen edge)
-                if (enemy.y < minY) {
-                    enemy.y = minY;
-                    if (enemy.body.velocity.y < 0) {
-                        enemy.body.setVelocityY(0);
-                    }
-                }
-                if (enemy.y > maxY) {
-                    enemy.y = maxY;
-                    if (enemy.body.velocity.y > 0) {
-                        enemy.body.setVelocityY(0);
-                    }
-                }
+                enemy.y = this.cameraHeight - halfH;
                 break;
             }
         }
