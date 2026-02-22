@@ -299,6 +299,28 @@ const WaveConfig = {
             spawnRate: 5000,
             difficulty: 1,
             duration: 60000
+        },
+        // Waves spawned while the warbird is cloaked (3 rounds)
+        cloakWave1: {
+            enemyCount: 8,
+            enemyTypes: ['fighter', 'cruiser'],
+            shipCounts: { fighter: 6, cruiser: 2 },
+            spawnRate: 1800,
+            difficulty: 2
+        },
+        cloakWave2: {
+            enemyCount: 10,
+            enemyTypes: ['fighter', 'cruiser', 'destroyer'],
+            shipCounts: { fighter: 5, cruiser: 3, destroyer: 2 },
+            spawnRate: 1600,
+            difficulty: 2.5
+        },
+        cloakWave3: {
+            enemyCount: 12,
+            enemyTypes: ['fighter', 'cruiser', 'destroyer', 'battleship'],
+            shipCounts: { fighter: 5, cruiser: 3, destroyer: 2, battleship: 2 },
+            spawnRate: 1400,
+            difficulty: 3
         }
     },
     level8: {

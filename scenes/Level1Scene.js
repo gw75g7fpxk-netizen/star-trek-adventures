@@ -11,7 +11,9 @@ const SOUND_CONFIG = {
     hit: { startFreq: 300, endFreq: 150, duration: 0.08, gain: 0.12 },
     charging: { startFreq: 200, endFreq: 600, duration: 0.5, gain: 0.08 },
     torpedo: { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.075 },
-    'romulan-torpedo': { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.075 }
+    'romulan-torpedo': { startFreq: 150, endFreq: 400, duration: 0.25, gain: 0.075 },
+    'cloak-romulan': { startFreq: 600, endFreq: 100, duration: 1.5, gain: 0.15 },
+    'decloak-romulan': { startFreq: 100, endFreq: 600, duration: 1.5, gain: 0.15 }
 };
 
 // Invincibility durations (in milliseconds)
@@ -91,6 +93,11 @@ const PLAYER_HEALTH_BAR = {
 
 // Boss-type enemies that get special explosion effects
 const BOSS_TYPE_ENEMIES = ['boss', 'enemyBossLevel1', 'enemyBossLevel2', 'enemyBossLevel3', 'enemyBossLevel4', 'enemyBossLevel5', 'battleship', 'romulanWarbird'];
+
+// Romulan Warbird cloaking constants for Level 7
+const WARBIRD_CLOAK_FADE_DURATION = 2000; // Milliseconds for fade-in/out during cloaking
+const WARBIRD_CLOAK_MAX_COUNT = 3;        // Number of times warbird cloaks during the battle
+const WARBIRD_CLOAK_HEALTH_FRACTION = 0.5; // Triggers at 50% of total health+shields
 
 // USS Sentinel constants for Level 5
 const SENTINEL_Y_FRACTION = 0.85; // Y position as fraction of screen height
@@ -224,6 +231,10 @@ class Level1Scene extends Phaser.Scene {
         this.lastShieldRecharge = 0; // Timestamp for last shield recharge
         this.shieldRechargeRate = 30000; // 30 seconds in milliseconds
         this.scoutFormationId = 0; // Counter for unique formation IDs
+        
+        // Level 7: Romulan warbird cloaking state
+        this.warbirdCloakCount = 0;        // How many times the warbird has cloaked
+        this.warbirdCloakWaveActive = false; // True while a cloak-wave is in progress
         
         // Store camera dimensions for responsive layout
         this.updateCameraDimensions();
@@ -1064,6 +1075,35 @@ class Level1Scene extends Phaser.Scene {
                     oscillator.stop(time + config.duration);
                 }
                 break;
+            case 'cloak-romulan':
+            case 'decloak-romulan': {
+                // Play the Romulan warbird cloak/decloak audio file with procedural fallback
+                const cloakAudioKey = type === 'cloak-romulan' ? 'cloak-romulan-sound' : 'decloak-romulan-sound';
+                if (this.cache.audio.exists(cloakAudioKey)) {
+                    oscillator.disconnect();
+                    gainNode.disconnect();
+                    try {
+                        this.sound.play(cloakAudioKey, { volume: 0.5 });
+                    } catch (e) {
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        oscillator.frequency.setValueAtTime(config.startFreq, time);
+                        oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                        gainNode.gain.setValueAtTime(config.gain, time);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                        oscillator.start(time);
+                        oscillator.stop(time + config.duration);
+                    }
+                } else {
+                    oscillator.frequency.setValueAtTime(config.startFreq, time);
+                    oscillator.frequency.exponentialRampToValueAtTime(config.endFreq, time + config.duration);
+                    gainNode.gain.setValueAtTime(config.gain, time);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, time + config.duration);
+                    oscillator.start(time);
+                    oscillator.stop(time + config.duration);
+                }
+                break;
+            }
         }
     }
 
@@ -1096,6 +1136,11 @@ class Level1Scene extends Phaser.Scene {
         // Update USS Sentinel (Level 5)
         if (this.levelNumber === 5 && this.sentinel && this.sentinel.active) {
             this.updateSentinel(time);
+        }
+        
+        // Check for warbird cloak-wave completion (Level 7)
+        if (this.levelNumber === 7 && this.warbirdCloakWaveActive) {
+            this.checkWarbirdCloakWaveComplete();
         }
         
         // Update enemies
@@ -1285,7 +1330,7 @@ class Level1Scene extends Phaser.Scene {
             let nearestDx = 0;
             let nearestDy = 0;
             this.enemies.children.each(enemy => {
-                if (enemy.active && enemy.visible && enemy.enemyType !== 'asteroid') {
+                if (enemy.active && enemy.visible && enemy.enemyType !== 'asteroid' && !enemy.isCloaked) {
                     const dx = enemy.x - torpedo.x;
                     const dy = enemy.y - torpedo.y;
                     const distSq = dx * dx + dy * dy;
@@ -1394,7 +1439,7 @@ class Level1Scene extends Phaser.Scene {
         let maxHealth = 0
         
         this.enemies.children.each(enemy => {
-            if (enemy.active && enemy.visible && enemy.health > maxHealth) {
+            if (enemy.active && enemy.visible && !enemy.isCloaked && enemy.health > maxHealth) {
                 maxHealth = enemy.health
                 target = enemy
             }
@@ -1593,6 +1638,11 @@ class Level1Scene extends Phaser.Scene {
             return;
         }
         
+        // Cloaked warbird: bullets pass right through
+        if (enemy.enemyType === 'romulanWarbird' && enemy.isCloaked) {
+            return;
+        }
+        
         // Check invincibility (prevents multiple hits in rapid succession)
         if (this.time.now < (enemy.invincibleUntil || 0)) {
             return; // Still invincible, ignore damage
@@ -1646,6 +1696,9 @@ class Level1Scene extends Phaser.Scene {
             }
         }
         
+        // Check for Romulan warbird cloaking trigger (Level 7)
+        this.checkAndTriggerWarbirdCloaking(enemy);
+        
         if (enemy.health <= 0) {
             this.destroyEnemy(enemy);
         }
@@ -1655,6 +1708,11 @@ class Level1Scene extends Phaser.Scene {
         // Asteroids are invincible - torpedoes stop but asteroids take no damage
         if (enemy.enemyType === 'asteroid') {
             this.disableBulletPhysics(torpedo);
+            return;
+        }
+        
+        // Cloaked warbird: torpedoes pass right through
+        if (enemy.enemyType === 'romulanWarbird' && enemy.isCloaked) {
             return;
         }
         
@@ -1696,6 +1754,9 @@ class Level1Scene extends Phaser.Scene {
                 enemy.hasFractured = true;
             }
         }
+        
+        // Check for Romulan warbird cloaking trigger (Level 7)
+        this.checkAndTriggerWarbirdCloaking(enemy);
         
         if (enemy.health <= 0) {
             this.destroyEnemy(enemy);
@@ -1998,6 +2059,11 @@ class Level1Scene extends Phaser.Scene {
         // are still touching, causing rapid repeated damage before the enemy is fully destroyed
         if (enemy.body) {
             enemy.body.checkCollision.none = true;
+        }
+        
+        // Cloaked warbird: no collision damage in either direction
+        if (enemy.enemyType === 'romulanWarbird' && enemy.isCloaked) {
+            return;
         }
         
         // Get enemy configuration to determine collision damage
@@ -2595,6 +2661,220 @@ class Level1Scene extends Phaser.Scene {
     }
     
     // ========================================
+    // ROMULAN WARBIRD CLOAKING SYSTEM (Level 7)
+    // ========================================
+    
+    checkAndTriggerWarbirdCloaking(enemy) {
+        if (enemy.enemyType !== 'romulanWarbird') return;
+        if (enemy.isCloaked || enemy.isCloaking) return;
+        
+        const warbirdConfig = EnemyConfig.romulanWarbird;
+        const maxCombinedHealth = warbirdConfig.health + warbirdConfig.shields;
+        const currentCombinedHealth = enemy.health + enemy.shields;
+        if (currentCombinedHealth <= maxCombinedHealth * WARBIRD_CLOAK_HEALTH_FRACTION &&
+            this.warbirdCloakCount < WARBIRD_CLOAK_MAX_COUNT) {
+            this.triggerWarbirdCloaking(enemy);
+        }
+    }
+    
+    triggerWarbirdCloaking(warbird) {
+        // Prevent re-triggering during active cloaking/decloaking
+        warbird.isCloaking = true;
+        this.warbirdCloakCount++;
+        
+        console.log(`Level7: Romulan warbird cloaking (${this.warbirdCloakCount}/${WARBIRD_CLOAK_MAX_COUNT})`);
+        
+        // Play cloak sound
+        this.playSound('cloak-romulan');
+        
+        // Hide health bar during cloaking fade
+        this.destroyHealthBar(warbird);
+        
+        // Disable collision so the warbird can't hurt or be hurt during fade
+        if (warbird.body) {
+            warbird.body.checkCollision.none = true;
+        }
+        
+        // Fade out over 2 seconds
+        this.tweens.add({
+            targets: warbird,
+            alpha: 0,
+            duration: WARBIRD_CLOAK_FADE_DURATION,
+            ease: 'Linear',
+            onComplete: () => {
+                if (!warbird || !warbird.active) return;
+                
+                // Now fully cloaked
+                warbird.isCloaked = true;
+                warbird.isCloaking = false;
+                
+                // Restore health and shields to full
+                const warbirdConfig = EnemyConfig.romulanWarbird;
+                warbird.health = warbirdConfig.health;
+                warbird.shields = warbirdConfig.shields;
+                
+                // Spawn the cloak wave
+                this.startWarbirdCloakWave();
+            }
+        });
+    }
+    
+    triggerWarbirdDecloaking(warbird) {
+        if (!warbird || !warbird.active || warbird.isCloaking) return;
+        
+        console.log('Level7: Romulan warbird decloaking');
+        
+        // Mark as in the de-cloak transition
+        warbird.isCloaking = true;
+        
+        // Play decloak sound
+        this.playSound('decloak-romulan');
+        
+        // Fade back in over 2 seconds
+        this.tweens.add({
+            targets: warbird,
+            alpha: 1,
+            duration: WARBIRD_CLOAK_FADE_DURATION,
+            ease: 'Linear',
+            onComplete: () => {
+                if (!warbird || !warbird.active) return;
+                
+                // Fully visible and active again
+                warbird.isCloaked = false;
+                warbird.isCloaking = false;
+                
+                // Re-enable collision
+                if (warbird.body) {
+                    warbird.body.checkCollision.none = false;
+                }
+                
+                // Recreate health bar
+                this.createHealthBar(warbird);
+            }
+        });
+    }
+    
+    startWarbirdCloakWave() {
+        const levelConfig = WaveConfig.level7;
+        const cloakWaveKey = `cloakWave${this.warbirdCloakCount}`;
+        const cloakWaveConfig = levelConfig[cloakWaveKey];
+        
+        if (!cloakWaveConfig) {
+            console.warn(`Level7: No cloak wave config found for ${cloakWaveKey}`);
+            // Find the warbird and decloak it anyway
+            this.enemies.children.each(enemy => {
+                if (enemy.active && enemy.enemyType === 'romulanWarbird') {
+                    this.triggerWarbirdDecloaking(enemy);
+                }
+            });
+            return;
+        }
+        
+        this.warbirdCloakWaveActive = true;
+        this.warbirdCloakWaveSpawned = 0;
+        this.warbirdCloakWaveTotal = cloakWaveConfig.enemyCount;
+        
+        // Build spawn pool from shipCounts
+        const spawnPool = [];
+        if (cloakWaveConfig.shipCounts) {
+            for (const [shipType, count] of Object.entries(cloakWaveConfig.shipCounts)) {
+                for (let i = 0; i < count; i++) {
+                    spawnPool.push(shipType);
+                }
+            }
+            Phaser.Utils.Array.Shuffle(spawnPool);
+        }
+        
+        console.log(`Level7: Starting cloak wave ${this.warbirdCloakCount}`, cloakWaveConfig.shipCounts);
+        
+        // Spawn enemies at the configured rate using a dedicated cloak-wave spawner
+        const cloakWaveTimer = this.time.addEvent({
+            delay: cloakWaveConfig.spawnRate,
+            callback: () => {
+                if (spawnPool.length > 0) {
+                    const enemyType = spawnPool.pop();
+                    this.spawnCloakWaveEnemy(enemyType);
+                    this.warbirdCloakWaveSpawned++;
+                } else {
+                    cloakWaveTimer.remove();
+                }
+            },
+            loop: true
+        });
+    }
+    
+    spawnCloakWaveEnemy(enemyType) {
+        const config = EnemyConfig[enemyType];
+        if (!config) return;
+        
+        // Scout formations handled separately
+        if (enemyType === 'scout') {
+            this.spawnScoutFormation(config);
+            return;
+        }
+        
+        const x = Phaser.Math.Between(50, this.cameraWidth - 50);
+        const y = -50;
+        const texture = config.texture || 'enemy-fighter';
+        
+        const enemy = this.enemies.get(x, y, texture);
+        if (!enemy) return;
+        
+        enemy.setActive(true);
+        enemy.setVisible(true);
+        enemy.enemyType = enemyType;
+        enemy.health = config.health;
+        enemy.shields = config.shields || 0;
+        enemy.points = config.points;
+        enemy.fireRate = config.fireRate;
+        enemy.lastFired = 0;
+        enemy.invincibleUntil = 0;
+        enemy.movementPattern = config.movementPattern;
+        enemy.patternOffset = Math.random() * Math.PI * 2;
+        enemy.hasEnteredScreen = false;
+        enemy.initialSpeed = config.speed;
+        
+        // Scale enemy to correct size
+        if (enemy.width > 0 && config.size) {
+            const scale = config.size.width / enemy.width;
+            enemy.setScale(scale);
+        }
+        
+        // Set initial velocity
+        const verticalSpeed = config.speed > 0 ? config.speed : DEFAULT_VERTICAL_SCROLL_SPEED;
+        enemy.body.setVelocity(0, verticalSpeed);
+        enemy.body.checkCollision.none = true; // enabled when enters screen
+        
+        this.createHealthBar(enemy);
+    }
+    
+    checkWarbirdCloakWaveComplete() {
+        if (!this.warbirdCloakWaveActive) return;
+        
+        // Check if all spawned non-warbird enemies are defeated
+        let nonWarbirdActive = 0;
+        this.enemies.children.each(enemy => {
+            if (enemy.active && enemy.enemyType !== 'romulanWarbird') {
+                nonWarbirdActive++;
+            }
+        });
+        
+        // Also wait until all enemies for this wave have been spawned
+        const allSpawned = (this.warbirdCloakWaveSpawned || 0) >= (this.warbirdCloakWaveTotal || 0);
+        
+        if (allSpawned && nonWarbirdActive === 0) {
+            this.warbirdCloakWaveActive = false;
+            
+            // Find the warbird and trigger decloaking
+            this.enemies.children.each(enemy => {
+                if (enemy.active && enemy.enemyType === 'romulanWarbird' && enemy.isCloaked) {
+                    this.triggerWarbirdDecloaking(enemy);
+                }
+            });
+        }
+    }
+    
+    // ========================================
     // USS SENTINEL SYSTEM (Level 5)
     // ========================================
     
@@ -3145,14 +3425,14 @@ class Level1Scene extends Phaser.Scene {
             if (enemy.enemyType === 'carrier' && enemy.fireRate && enemy.y < this.cameraHeight && enemy.hasEnteredScreen && time > enemy.lastFired + enemy.fireRate) {
                 this.launchFighters(enemy);
                 enemy.lastFired = time;
-            } else if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.enemyType !== 'carrier' && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
+            } else if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.enemyType !== 'carrier' && !enemy.isCloaked && enemy.fireRate && enemy.y < this.cameraHeight && time > enemy.lastFired + enemy.fireRate) {
                 this.enemyFire(enemy);
                 enemy.lastFired = time;
             }
             
             // Target escape pods - only if on screen and has weapons
             const nearestPod = this.findNearestPod(enemy);
-            if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && enemy.fireRate && enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
+            if (enemy.enemyType !== 'scout' && enemy.enemyType !== 'asteroid' && !enemy.isCloaked && enemy.fireRate && enemy.y < this.cameraHeight && nearestPod && Phaser.Math.Distance.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y) < 200) {
                 // Shoot at pod only if fire rate allows
                 if (time > enemy.lastFired + enemy.fireRate) {
                     const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, nearestPod.x, nearestPod.y);
